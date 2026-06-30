@@ -17,6 +17,16 @@ O SERVIDOR é a única fonte da verdade do estado do jogo.
   "escondidos" no JSON. O servidor filtra o que cada socket recebe.
 - Cada partida é uma "room" do Socket.IO, isolada das demais.
 
+## Decisões de Arquitetura Conscientes
+- Estado em memória pura (sem banco de dados): escala de 2-6 jogadores não justifica DB.
+  Se o servidor reiniciar, a partida é perdida — isso é aceitável.
+- Sem autenticação: jogador é identificado pelo socket.id + nome digitado.
+- Sem clean architecture / camadas formais: separação mínima funcional
+  (lógica de jogo em lib/, transporte em server.ts, UI em components/).
+  Não criar abstrações antes de precisar delas.
+- Sem testes automatizados por enquanto: validação manual via duas abas.
+  TDD entra quando implementar a engine de regras do jogo.
+
 ## Convenções de código
 - TypeScript estrito, sem `any` salvo justificativa em comentário.
 - Componentes React pequenos e focados; lógica de jogo fica fora de
@@ -28,3 +38,7 @@ O SERVIDOR é a única fonte da verdade do estado do jogo.
 - Não adicionar autenticação/login — o jogo é "entra pelo link, escolhe nome".
 - Não instalar dependências novas sem avisar.
 - Não fazer commit automático sem eu revisar o diff antes.
+
+## Regras do jogo
+Para regras completas, mecânicas e timers, veja `game-rules.md`.
+Toda lógica de jogo implementada deve ser fiel a esse documento.

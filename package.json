@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "tsx server.ts",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "start": "NODE_ENV=production tsx server.ts",
+    "lint": "eslint",
+    "test": "node --import tsx --test \"src/lib/game/engine.test.ts\""
   },
   "dependencies": {
     "next": "16.2.9",
