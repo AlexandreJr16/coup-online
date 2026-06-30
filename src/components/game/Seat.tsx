@@ -7,6 +7,7 @@ import type { CSSProperties } from "react";
 
 import type { PublicPlayer } from "@/src/types/game";
 import Card from "./Card";
+import { CoinDelta, useCountUp } from "./CoinFx";
 import { avatarColor, avatarInitials, COLORS } from "./helpers";
 
 export default function Seat({
@@ -16,6 +17,8 @@ export default function Seat({
   selectable,
   onSelect,
   style,
+  coinDelta = 0,
+  deltaKey = 0,
 }: {
   player: PublicPlayer;
   isCurrent: boolean;
@@ -23,8 +26,11 @@ export default function Seat({
   selectable: boolean;
   onSelect?: () => void;
   style?: CSSProperties;
+  coinDelta?: number; // variação de moedas na última transição (Economia viva)
+  deltaKey?: number; // re-dispara a animação do "+N/−N"
 }) {
   const { name, coins, cards, eliminated } = player;
+  const shownCoins = useCountUp(coins);
 
   return (
     <div
@@ -79,7 +85,10 @@ export default function Seat({
         {isMe ? " (você)" : ""}
       </div>
 
-      <div style={{ color: COLORS.gold, fontWeight: 600 }}>🪙 {coins}</div>
+      <div style={{ position: "relative", color: COLORS.gold, fontWeight: 600 }}>
+        🪙 {shownCoins}
+        <CoinDelta delta={coinDelta} deltaKey={deltaKey} />
+      </div>
 
       {/* Cartas estilo UNO: versos visíveis (qtd = influências); ao perder, a
           carta vira em 3D mostrando o personagem dessaturado. */}
