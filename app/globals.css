@@ -29,3 +29,121 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+/* ── Botões de jogo: profundidade + afundar no clique (P5) ─────────────────────
+   Cor base via --c (cada botão seta a sua). Inline style não cobre :active/:hover,
+   por isso fica aqui em classe. */
+.game-btn {
+  --c: #46506b;
+  position: relative;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  border-radius: 10px;
+  color: #f0f0f0;
+  font-weight: 700;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--c) 82%, #fff 18%),
+    var(--c) 55%,
+    color-mix(in srgb, var(--c) 78%, #000 22%)
+  );
+  box-shadow:
+    0 3px 0 color-mix(in srgb, var(--c) 55%, #000 45%),
+    0 6px 12px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: transform 60ms ease, box-shadow 60ms ease, filter 120ms ease;
+}
+.game-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.game-btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    0 0 0 color-mix(in srgb, var(--c) 55%, #000 45%),
+    inset 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+.game-btn:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.7) brightness(0.55);
+  box-shadow: none;
+  color: #888;
+}
+
+/* ── Pulso do avatar no turno do jogador ativo (P3) ──────────────────────────── */
+@keyframes turn-pulse {
+  0% {
+    box-shadow: 0 0 0 3px var(--turn, #ffd866), 0 0 0 0 rgba(255, 216, 102, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 3px var(--turn, #ffd866), 0 0 0 14px rgba(255, 216, 102, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 3px var(--turn, #ffd866), 0 0 0 0 rgba(255, 216, 102, 0);
+  }
+}
+.turn-pulse {
+  animation: turn-pulse 1.4s ease-out infinite;
+}
+
+/* ── Selo de cera: estampa de contestação/bloqueio (gamificação) ─────────────── */
+@keyframes seal-stamp {
+  0% {
+    transform: translate(-50%, -50%) scale(2.4) rotate(-18deg);
+    opacity: 0;
+  }
+  18% {
+    transform: translate(-50%, -50%) scale(0.92) rotate(4deg);
+    opacity: 1;
+  }
+  32% {
+    transform: translate(-50%, -50%) scale(1.05) rotate(-2deg);
+  }
+  44% {
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  }
+}
+.seal-stamp {
+  animation: seal-stamp 1.6s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+}
+
+/* ── Economia viva: +N/−N subindo no avatar e moeda voando (gamificação) ─────── */
+@keyframes coin-rise {
+  0% {
+    transform: translate(-50%, 0) scale(0.8);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -44px) scale(1.1);
+    opacity: 0;
+  }
+}
+.coin-rise {
+  animation: coin-rise 1.1s ease-out forwards;
+}
+
+@keyframes coin-fly {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.85;
+    transform: translate(var(--dx, 0), var(--dy, 0)) scale(1);
+  }
+}
+.coin-fly {
+  animation: coin-fly 0.7s ease-in forwards;
+}
