@@ -113,3 +113,22 @@ Futuro: upload de imagem ou seleção de personagem do Coup.
 - Não implementar avatares com imagem agora — placeholder de iniciais é suficiente
 - Não escolher biblioteca de componentes UI genérica (MUI, Chakra etc) —
   o visual tem que parecer um jogo, não um dashboard
+
+  ## Cartas — Visual
+
+Cada personagem tem identidade visual própria via cor + ícone + nome.
+Sem imagem externa por enquanto — CSS/SVG puro.
+
+| Personagem  | Cor base  | Hex       | Ícone |
+|-------------|-----------|-----------|-------|
+| Duque       | Roxo      | #7b2d8b   | 👑    |
+| Assassino   | Preto     | #1a1a1a   | 🗡️    |
+| Capitão     | Azul      | #1a4a8a   | ⚓    |
+| Embaixador  | Verde     | #2d6a4f   | 🕊️    |
+| Condessa    | Vermelho  | #8b1a1a   | 💎    |
+
+Carta face-down: #2c3e50 com borda dourada sutil.
+Carta revelada (perdida): dessaturada, opacidade 50%, ícone ❌.
+Carta no HandView:
+- Que você TEM: cor cheia, borda brilhante
+- Que você pode BLEFAR: cor dessaturada + ícone 🎭 no canto
