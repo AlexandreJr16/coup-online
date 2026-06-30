@@ -7,6 +7,7 @@
 import { useState } from "react";
 
 import type { ActionType, Character } from "@/src/types/game";
+import Card from "./Card";
 import {
   ACTION_META,
   ALL_CHARACTERS,
@@ -74,44 +75,29 @@ export default function HandView({ view, myId, onAction }: InteractionModeProps)
           ))}
       </div>
 
-      {/* Leque de 5 cartas */}
-      <div style={{ display: "flex", justifyContent: "center" }}>
+      {/* Leque de 5 cartas: as que TENHO em cor cheia + borda brilhante; as que
+          posso BLEFAR dessaturadas + 🎭 (Card cuida do visual). */}
+      <div style={{ display: "flex", justifyContent: "center", paddingTop: 22 }}>
         {ALL_CHARACTERS.map((char, i) => {
           const have = owned.includes(char);
           const isSel = selected === char;
           return (
-            <button
+            <Card
               key={char}
+              size="lg"
+              character={char}
+              bluff={!have}
+              selected={isSel}
+              hint={CHAR_HINT[char]}
               onClick={() => setSelected(isSel ? null : char)}
               style={{
-                position: "relative",
-                width: 88,
-                height: 124,
                 marginLeft: i === 0 ? 0 : -16,
-                padding: 8,
-                borderRadius: 10,
-                cursor: "pointer",
-                color: COLORS.text,
-                background: "linear-gradient(160deg,#3b2f63,#241b3f)",
-                border: `2px solid ${have ? COLORS.gold : "#3a3a3a"}`,
-                filter: have ? "none" : "grayscale(0.85) brightness(0.7)",
                 transform: `rotate(${(i - 2) * 5}deg) translateY(${isSel ? -22 : 0}px) scale(${isSel ? 1.12 : 1})`,
                 transformOrigin: "bottom center",
                 transition: "transform 120ms ease",
                 zIndex: isSel ? 10 : i,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                alignItems: "center",
-                textAlign: "center",
               }}
-            >
-              <span style={{ fontWeight: 700, fontSize: 13 }}>{CHAR_LABEL[char]}</span>
-              <span style={{ fontSize: 10, color: COLORS.dim }}>{CHAR_HINT[char]}</span>
-              {!have && (
-                <span style={{ position: "absolute", top: 4, right: 6, fontSize: 12 }}>🎭</span>
-              )}
-            </button>
+            />
           );
         })}
       </div>
