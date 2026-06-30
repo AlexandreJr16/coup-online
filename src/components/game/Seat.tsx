@@ -44,28 +44,32 @@ export default function Seat({
         ...style,
       }}
     >
-      {/* Avatar */}
+      {/* Avatar — pulsa no turno (classe turn-pulse); anel vermelho quando é alvo */}
       <div
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontWeight: 700,
-          fontSize: 18,
-          color: "#fff",
-          background: eliminated ? "#555" : avatarColor(name),
-          filter: eliminated ? "grayscale(1)" : undefined,
-          // Borda luminosa no turno; anel de seleção quando é alvo possível.
-          boxShadow: isCurrent
-            ? `0 0 0 3px ${COLORS.turn}, 0 0 16px 2px ${COLORS.turn}`
-            : selectable
-              ? `0 0 0 3px ${COLORS.red}`
-              : "0 0 0 2px rgba(0,0,0,0.3)",
-          textDecoration: eliminated ? "line-through" : undefined,
-        }}
+        className={isCurrent && !eliminated ? "turn-pulse" : undefined}
+        style={
+          {
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 700,
+            fontSize: 18,
+            color: "#fff",
+            background: eliminated ? "#555" : avatarColor(name),
+            filter: eliminated ? "grayscale(1)" : undefined,
+            boxShadow:
+              isCurrent && !eliminated
+                ? undefined // o keyframe turn-pulse controla o box-shadow
+                : selectable
+                  ? `0 0 0 3px ${COLORS.red}`
+                  : "0 0 0 2px rgba(0,0,0,0.3)",
+            textDecoration: eliminated ? "line-through" : undefined,
+            "--turn": COLORS.turn,
+          } as CSSProperties
+        }
       >
         {avatarInitials(name)}
       </div>
@@ -77,16 +81,18 @@ export default function Seat({
 
       <div style={{ color: COLORS.gold, fontWeight: 600 }}>🪙 {coins}</div>
 
-      {/* Cartas: face-down = costas empilhadas (qtd = influências); reveladas =
-          personagem dessaturado e visivelmente distinto. */}
-      <div style={{ display: "flex", gap: 4, minHeight: 42 }}>
-        {cards.map((c, i) =>
-          c.revealed ? (
-            <Card key={i} size="sm" character={c.character} lost />
-          ) : (
-            <Card key={i} size="sm" faceDown />
-          ),
-        )}
+      {/* Cartas estilo UNO: versos visíveis (qtd = influências); ao perder, a
+          carta vira em 3D mostrando o personagem dessaturado. */}
+      <div style={{ display: "flex", gap: 5, minHeight: 56 }}>
+        {cards.map((c, i) => (
+          <Card
+            key={i}
+            flip
+            size="sm"
+            character={c.revealed ? c.character : null}
+            revealed={c.revealed}
+          />
+        ))}
       </div>
     </div>
   );
