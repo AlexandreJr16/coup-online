@@ -6,12 +6,8 @@
 import type { CSSProperties } from "react";
 
 import type { PublicPlayer } from "@/src/types/game";
-import {
-  avatarColor,
-  avatarInitials,
-  CHAR_LABEL,
-  COLORS,
-} from "./helpers";
+import Card from "./Card";
+import { avatarColor, avatarInitials, COLORS } from "./helpers";
 
 export default function Seat({
   player,
@@ -29,7 +25,6 @@ export default function Seat({
   style?: CSSProperties;
 }) {
   const { name, coins, cards, eliminated } = player;
-  const influences = cards.filter((c) => !c.revealed).length;
 
   return (
     <div
@@ -82,48 +77,16 @@ export default function Seat({
 
       <div style={{ color: COLORS.gold, fontWeight: 600 }}>🪙 {coins}</div>
 
-      {/* Cartas */}
-      <div style={{ display: "flex", gap: 3, minHeight: 30 }}>
+      {/* Cartas: face-down = costas empilhadas (qtd = influências); reveladas =
+          personagem dessaturado e visivelmente distinto. */}
+      <div style={{ display: "flex", gap: 4, minHeight: 42 }}>
         {cards.map((c, i) =>
           c.revealed ? (
-            <span
-              key={i}
-              title={c.character ? CHAR_LABEL[c.character] : undefined}
-              style={{
-                width: 22,
-                height: 30,
-                borderRadius: 3,
-                background: "#3a3a3a",
-                border: "1px solid #555",
-                color: "#bbb",
-                fontSize: 8,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                textAlign: "center",
-                lineHeight: 1,
-                transform: "rotate(6deg)",
-              }}
-            >
-              {c.character ? CHAR_LABEL[c.character].slice(0, 4) : "✖"}
-            </span>
+            <Card key={i} size="sm" character={c.character} lost />
           ) : (
-            <span
-              key={i}
-              style={{
-                width: 22,
-                height: 30,
-                borderRadius: 3,
-                background: "linear-gradient(135deg,#6b4f9e,#4a3570)",
-                border: "1px solid #2a1f44",
-              }}
-            />
+            <Card key={i} size="sm" faceDown />
           ),
         )}
-      </div>
-
-      <div style={{ fontSize: 10, color: COLORS.dim }}>
-        {influences} influência{influences === 1 ? "" : "s"}
       </div>
     </div>
   );
