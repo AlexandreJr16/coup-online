@@ -11,10 +11,11 @@ import { getSocket } from "@/src/lib/socket";
 import type { ActionType, Character, GameView } from "@/src/types/game";
 import type { GameActionAck } from "@/src/types/socket";
 import ActionBar from "./ActionBar";
+import Card from "./Card";
 import HandView from "./HandView";
 import ReactionOverlay from "./ReactionOverlay";
 import Table from "./Table";
-import { ACTION_META, CHAR_LABEL, COLORS } from "./helpers";
+import { ACTION_META, COLORS } from "./helpers";
 
 const REACTION_PHASES = new Set<GameView["phase"]>([
   "janela_reacao_global",
@@ -81,26 +82,37 @@ export default function GameBoard({
       : [];
 
   return (
-    <div style={{ position: "relative", color: COLORS.text }}>
-      <Table
-        players={view.players}
-        currentPlayerId={view.currentPlayerId}
-        myId={myId}
-        selectableTargetIds={targetIds}
-        onSelectTarget={selectTarget}
-      />
+    <div
+      style={{
+        position: "relative",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        color: COLORS.text,
+      }}
+    >
+      {/* Mesa — ocupa todo o espaço disponível */}
+      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+        <Table
+          players={view.players}
+          currentPlayerId={view.currentPlayerId}
+          myId={myId}
+          selectableTargetIds={targetIds}
+          onSelectTarget={selectTarget}
+        />
 
-      {/* Banner de seleção de alvo */}
-      {targetingAction && (
-        <div style={banner}>
-          🎯 Escolha o alvo de <b>{ACTION_META[targetingAction].label}</b> (clique num avatar)
-          <button onClick={() => setTargetingAction(null)} style={linkBtn}>
-            cancelar
-          </button>
-        </div>
-      )}
+        {/* Banner de seleção de alvo (sobre a mesa) */}
+        {targetingAction && (
+          <div style={banner}>
+            🎯 Escolha o alvo de <b>{ACTION_META[targetingAction].label}</b> (clique num avatar)
+            <button onClick={() => setTargetingAction(null)} style={linkBtn}>
+              cancelar
+            </button>
+          </div>
+        )}
+      </div>
 
-      {/* Overlay de reação (cobre a mesa) */}
+      {/* Overlay de reação (cobre o tabuleiro inteiro) */}
       {REACTION_PHASES.has(view.phase) && (
         <ReactionOverlay
           view={view}
@@ -117,8 +129,9 @@ export default function GameBoard({
         />
       )}
 
-      {/* Zona inferior: prompts da fase ou o modo de interação */}
-      <div style={{ marginTop: 16, minHeight: 80 }}>
+      {/* Barra inferior fixa: prompts da fase ou o modo de interação */}
+      <div style={bottomBar}>
+       <div style={{ width: "100%", maxWidth: 960, margin: "0 auto" }}>
         {view.phase === "aguardando_revelacao" &&
           (view.mustRevealPlayerId === myId ? (
             <div style={panel}>
@@ -126,16 +139,15 @@ export default function GameBoard({
               <div style={{ display: "flex", gap: 10 }}>
                 {me?.cards.map((c, i) =>
                   c.revealed ? null : (
-                    <button
+                    <Card
                       key={i}
+                      size="lg"
+                      character={c.character}
                       onClick={() => {
                         setError("");
                         socket.emit("game_reveal", { cardIndex: i }, ack);
                       }}
-                      style={cardBtn}
-                    >
-                      {c.character ? CHAR_LABEL[c.character] : "?"}
-                    </button>
+                    />
                   ),
                 )}
               </div>
@@ -189,9 +201,12 @@ export default function GameBoard({
             <h2 style={{ color: COLORS.gold }}>🏆 Vencedor: {name(view.winnerId)}</h2>
           </div>
         )}
-      </div>
 
-      {error && <p style={{ color: COLORS.red, marginTop: 8 }}>{error}</p>}
+        {error && (
+          <p style={{ color: COLORS.red, marginTop: 8, textAlign: "center" }}>{error}</p>
+        )}
+       </div>
+      </div>
     </div>
   );
 }
@@ -214,13 +229,17 @@ function ExchangePanel({
       <p>Troca (Embaixador): mantenha {keepCount} carta(s).</p>
       <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
         {pool.map((c, i) => (
-          <button
+          <Card
             key={i}
+            size="lg"
+            character={c}
+            selected={selected.includes(i)}
             onClick={() => onToggle(i, keepCount)}
-            style={{ ...cardBtn, background: selected.includes(i) ? COLORS.gold : "#3b2f63", color: selected.includes(i) ? "#1a1a2e" : COLORS.text }}
-          >
-            {CHAR_LABEL[c]}
-          </button>
+            style={{
+              transform: selected.includes(i) ? "translateY(-10px)" : undefined,
+              transition: "transform 120ms ease",
+            }}
+          />
         ))}
       </div>
       <button
@@ -239,14 +258,29 @@ function Center({ children }: { children: ReactNode }) {
 }
 
 const banner: CSSProperties = {
+  position: "absolute",
+  top: 12,
+  left: "50%",
+  transform: "translateX(-50%)",
+  zIndex: 5,
   display: "flex",
   gap: 8,
   alignItems: "center",
   justifyContent: "center",
-  padding: 8,
-  marginTop: 8,
-  background: "rgba(192,57,43,0.2)",
-  borderRadius: 8,
+  padding: "8px 14px",
+  background: "rgba(192,57,43,0.85)",
+  borderRadius: 999,
+  boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
+  whiteSpace: "nowrap",
+};
+const bottomBar: CSSProperties = {
+  flex: "none",
+  display: "flex",
+  alignItems: "center",
+  background: "#15152b",
+  borderTop: "1px solid rgba(255,255,255,0.07)",
+  padding: "14px 16px",
+  minHeight: 104,
 };
 const panel: CSSProperties = {
   padding: 16,
