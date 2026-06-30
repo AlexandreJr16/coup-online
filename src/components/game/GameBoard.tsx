@@ -5,7 +5,7 @@
 // InteractionModeProps e coordena a seleção de alvo pela mesa.
 "use client";
 
-import { type CSSProperties, type ReactNode, useEffect, useState } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 
 import { getSocket } from "@/src/lib/socket";
 import type { ActionType, Character, GameView } from "@/src/types/game";
@@ -13,9 +13,14 @@ import type { GameActionAck } from "@/src/types/socket";
 import ActionBar from "./ActionBar";
 import Card from "./Card";
 import HandView from "./HandView";
+import IntrigueFeed from "./IntrigueFeed";
 import ReactionOverlay from "./ReactionOverlay";
 import Table from "./Table";
-import { ACTION_META, COLORS } from "./helpers";
+import WaxSeal, { type SealData } from "./WaxSeal";
+import { ACTION_META, CHAR_LABEL, COLORS } from "./helpers";
+import { useGameEvents } from "./useGameEvents";
+
+const CINZEL = "var(--font-cinzel), Georgia, serif";
 
 const REACTION_PHASES = new Set<GameView["phase"]>([
   "janela_reacao_global",
@@ -57,6 +62,21 @@ export default function GameBoard({
   }, [windowKey, total]);
   const secondsLeft = tick && tick.key === windowKey ? tick.left : total;
 
+  // ── Eventos derivados (Feed/Economia) + selo de cera ──────────────────────
+  const events = useGameEvents(view);
+  const [seal, setSeal] = useState<SealData | null>(null);
+  const sealCounter = useRef(0);
+  const fireSeal = (title: string, subtitle?: string) =>
+    setSeal({ key: ++sealCounter.current, title, subtitle });
+  useEffect(() => {
+    if (!events.block) return; // bloqueio de qualquer jogador → estampa "BLOQUEIO"
+    setSeal({
+      key: ++sealCounter.current,
+      title: "BLOQUEIO",
+      subtitle: CHAR_LABEL[events.block.character],
+    });
+  }, [events.block]);
+
   // ── Emissores (ack devolve erro de regra, privado) ────────────────────────
   const ack = (a: GameActionAck) => setError(a.ok ? "" : a.error);
   const emitAction = (action: ActionType, targetId?: string) => {
@@ -97,9 +117,22 @@ export default function GameBoard({
           players={view.players}
           currentPlayerId={view.currentPlayerId}
           myId={myId}
+          treasury={view.treasury}
+          coinDeltas={events.coinDeltas}
+          deltaKey={events.deltaKey}
           selectableTargetIds={targetIds}
           onSelectTarget={selectTarget}
         />
+
+        {/* Feedback de turno do oponente: banner central (P3) */}
+        {view.phase === "aguardando_acao" && view.currentPlayerId !== myId && (
+          <div style={turnBanner}>
+            ⏳ Vez de{" "}
+            <b style={{ fontFamily: CINZEL, letterSpacing: 0.5 }}>
+              {name(view.currentPlayerId)}
+            </b>
+          </div>
+        )}
 
         {/* Banner de seleção de alvo (sobre a mesa) */}
         {targetingAction && (
@@ -110,6 +143,9 @@ export default function GameBoard({
             </button>
           </div>
         )}
+
+        {/* Feed de Intrigas (overlay recolhível) */}
+        <IntrigueFeed log={events.log} />
       </div>
 
       {/* Overlay de reação (cobre o tabuleiro inteiro) */}
@@ -124,10 +160,14 @@ export default function GameBoard({
           }}
           onChallenge={() => {
             setError("");
+            fireSeal("CONTESTADO!");
             socket.emit("game_challenge", ack);
           }}
         />
       )}
+
+      {/* Selo de cera — acima do overlay de reação */}
+      <WaxSeal seal={seal} />
 
       {/* Barra inferior fixa: prompts da fase ou o modo de interação */}
       <div style={bottomBar}>
@@ -269,6 +309,19 @@ const banner: CSSProperties = {
   justifyContent: "center",
   padding: "8px 14px",
   background: "rgba(192,57,43,0.85)",
+  borderRadius: 999,
+  boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
+  whiteSpace: "nowrap",
+};
+const turnBanner: CSSProperties = {
+  position: "absolute",
+  top: 12,
+  left: "50%",
+  transform: "translateX(-50%)",
+  zIndex: 5,
+  padding: "8px 16px",
+  background: "rgba(20,20,40,0.85)",
+  border: "1px solid rgba(255,255,255,0.12)",
   borderRadius: 999,
   boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
   whiteSpace: "nowrap",
