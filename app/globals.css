@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
+/* Tema escuro do jogo (DESIGN.md "Tipografia e Cores"). Forçado — sem variação
+   por prefers-color-scheme, para não haver flash branco no menu/sala. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #1a1a2e;
+  --foreground: #f0f0f0;
 }
 
 @theme inline {
@@ -12,15 +14,18 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
+  margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
