@@ -4,8 +4,9 @@
 // personagem) ficam numa tira à parte. Mesmo InteractionModeProps do ActionBar.
 "use client";
 
-import { useState } from "react";
+import { type CSSProperties, useState } from "react";
 
+import { CARD_BY_ID } from "@/src/lib/game/cards";
 import type { ActionType, Character } from "@/src/types/game";
 import Card from "./Card";
 import {
@@ -18,14 +19,6 @@ import {
   isBluff,
   myFaceDownChars,
 } from "./helpers";
-
-const CHAR_HINT: Record<Character, string> = {
-  duque: "Taxas +3",
-  assassino: "Assassinar",
-  capitao: "Extorquir",
-  embaixador: "Trocar",
-  condessa: "Bloqueia Assassinato",
-};
 
 export default function HandView({ view, myId, onAction }: InteractionModeProps) {
   const [selected, setSelected] = useState<Character | null>(null);
@@ -52,18 +45,18 @@ export default function HandView({ view, myId, onAction }: InteractionModeProps)
                 setSelected(null);
               }}
               disabled={disabled(selectedAction)}
-              style={{
-                padding: "10px 18px",
-                fontSize: 15,
-                fontWeight: 700,
-                color: COLORS.text,
-                background: disabled(selectedAction) ? "#2b2b2b" : COLORS.red,
-                border: isBluff(view, myId, selectedAction)
-                  ? "2px dashed rgba(255,255,255,0.85)"
-                  : "2px solid transparent",
-                borderRadius: 8,
-                cursor: disabled(selectedAction) ? "not-allowed" : "pointer",
-              }}
+              className="game-btn"
+              style={
+                {
+                  padding: "10px 18px",
+                  fontSize: 15,
+                  color: COLORS.text,
+                  border: isBluff(view, myId, selectedAction)
+                    ? "2px dashed rgba(255,255,255,0.85)"
+                    : undefined,
+                  "--c": COLORS.red,
+                } as CSSProperties
+              }
             >
               Usar {ACTION_META[selectedAction].label}
               {isBluff(view, myId, selectedAction) ? " 🎭 (blefe)" : ""}
@@ -88,7 +81,7 @@ export default function HandView({ view, myId, onAction }: InteractionModeProps)
               character={char}
               bluff={!have}
               selected={isSel}
-              hint={CHAR_HINT[char]}
+              hint={CARD_BY_ID[char].dica}
               onClick={() => setSelected(isSel ? null : char)}
               style={{
                 marginLeft: i === 0 ? 0 : -16,
@@ -134,16 +127,15 @@ function Gen({
     <button
       onClick={on}
       disabled={off}
-      style={{
-        padding: "8px 14px",
-        fontSize: 14,
-        fontWeight: 600,
-        color: off ? "#888" : dark ? "#1a1a2e" : COLORS.text,
-        background: off ? "#2b2b2b" : color,
-        border: "none",
-        borderRadius: 8,
-        cursor: off ? "not-allowed" : "pointer",
-      }}
+      className="game-btn"
+      style={
+        {
+          padding: "9px 14px",
+          fontSize: 14,
+          color: dark ? "#1a1a2e" : COLORS.text,
+          "--c": color,
+        } as CSSProperties
+      }
     >
       {label}
     </button>

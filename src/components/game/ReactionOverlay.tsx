@@ -4,7 +4,7 @@
 // (countdown client-side); a engine continua dona do expiry real.
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import type { Character, GameView } from "@/src/types/game";
 import { ACTION_META, CHAR_LABEL, COLORS, legalBlockChars } from "./helpers";
@@ -128,16 +128,8 @@ function Btn({
   return (
     <button
       onClick={on}
-      style={{
-        padding: "8px 16px",
-        fontSize: 14,
-        fontWeight: 600,
-        color: COLORS.text,
-        background: color,
-        border: "none",
-        borderRadius: 8,
-        cursor: "pointer",
-      }}
+      className="game-btn"
+      style={{ padding: "9px 16px", fontSize: 14, color: COLORS.text, "--c": color } as CSSProperties}
     >
       {children}
     </button>

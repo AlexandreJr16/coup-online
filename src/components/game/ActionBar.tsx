@@ -5,7 +5,7 @@
 // GameBoard (logo, intercambiável com HandView sem mudar nada).
 "use client";
 
-import { type ReactNode, useState } from "react";
+import { type CSSProperties, type ReactNode, useState } from "react";
 
 import type { ActionType, GameView } from "@/src/types/game";
 import {
@@ -130,16 +130,16 @@ function Plain({
       onClick={on}
       disabled={off}
       title={title}
-      style={{
-        padding: "8px 14px",
-        fontSize: 14,
-        fontWeight: 600,
-        color: off ? "#888" : dark ? "#1a1a2e" : COLORS.text,
-        background: off ? "#2b2b2b" : color,
-        border: bluff ? "2px dashed rgba(255,255,255,0.85)" : "2px solid transparent",
-        borderRadius: 8,
-        cursor: off ? "not-allowed" : "pointer",
-      }}
+      className="game-btn"
+      style={
+        {
+          padding: "9px 14px",
+          fontSize: 14,
+          color: dark ? "#1a1a2e" : COLORS.text,
+          border: bluff ? "2px dashed rgba(255,255,255,0.85)" : undefined,
+          "--c": color,
+        } as CSSProperties
+      }
     >
       {children}
       {bluff ? " 🎭" : ""}
