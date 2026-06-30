@@ -8,6 +8,7 @@ import type {
   GameView,
   PublicPlayer,
 } from "@/src/types/game";
+import { CARDS, CARD_BY_ID } from "@/src/lib/game/cards";
 
 // Paleta (DESIGN.md "Tipografia e Cores"). Inline styles, sem lib de UI.
 export const COLORS = {
@@ -24,43 +25,43 @@ export const COLORS = {
   cardBack: "#2c3e50", // costas da carta (face-down)
 } as const;
 
-export const CHAR_LABEL: Record<Character, string> = {
-  duque: "Duque",
-  assassino: "Assassino",
-  capitao: "Capitão",
-  embaixador: "Embaixador",
-  condessa: "Condessa",
-};
+// Rótulo de cada personagem — derivado do catálogo (cards.ts), nunca hard-coded.
+export const CHAR_LABEL = Object.fromEntries(
+  CARDS.map((c) => [c.id, c.nome]),
+) as Record<Character, string>;
 
-// Identidade visual de cada personagem (DESIGN.md "Cartas — Visual"): cor base +
-// ícone. Usado pelo componente Card (mesa e mão). Sem imagem externa — CSS puro.
-export const CHAR_VISUAL: Record<Character, { color: string; icon: string }> = {
-  duque: { color: "#7b2d8b", icon: "👑" },
-  assassino: { color: "#1a1a1a", icon: "🗡️" },
-  capitao: { color: "#1a4a8a", icon: "⚓" },
-  embaixador: { color: "#2d6a4f", icon: "🕊️" },
-  condessa: { color: "#8b1a1a", icon: "💎" },
-};
+// Identidade visual (cor + ícone) de cada personagem — derivada do catálogo.
+export const CHAR_VISUAL = Object.fromEntries(
+  CARDS.map((c) => [c.id, { color: c.cor, icon: c.icone }]),
+) as Record<Character, { color: string; icon: string }>;
 
 export type ActionCategory = "coin" | "aggressive" | "coup" | "neutral";
 
 export interface ActionMeta {
   label: string;
   category: ActionCategory;
-  requiredCharacter: Character | null; // personagem alegado (null = ação geral)
   needsTarget: boolean;
   coinCost?: number;
 }
 
+// Metadado de AÇÃO (não de carta): rótulo, categoria de cor, alvo, custo.
 export const ACTION_META: Record<ActionType, ActionMeta> = {
-  renda: { label: "Renda", category: "coin", requiredCharacter: null, needsTarget: false },
-  ajuda_externa: { label: "Ajuda Externa", category: "coin", requiredCharacter: null, needsTarget: false },
-  taxas: { label: "Taxas", category: "coin", requiredCharacter: "duque", needsTarget: false },
-  assassinar: { label: "Assassinar", category: "aggressive", requiredCharacter: "assassino", needsTarget: true, coinCost: 3 },
-  extorquir: { label: "Extorquir", category: "aggressive", requiredCharacter: "capitao", needsTarget: true },
-  golpe: { label: "Golpe de Estado", category: "coup", requiredCharacter: null, needsTarget: true, coinCost: 7 },
-  trocar: { label: "Trocar", category: "neutral", requiredCharacter: "embaixador", needsTarget: false },
+  renda: { label: "Renda", category: "coin", needsTarget: false },
+  ajuda_externa: { label: "Ajuda Externa", category: "coin", needsTarget: false },
+  taxas: { label: "Taxas", category: "coin", needsTarget: false },
+  assassinar: { label: "Assassinar", category: "aggressive", needsTarget: true, coinCost: 3 },
+  extorquir: { label: "Extorquir", category: "aggressive", needsTarget: true },
+  golpe: { label: "Golpe de Estado", category: "coup", needsTarget: true, coinCost: 7 },
+  trocar: { label: "Trocar", category: "neutral", needsTarget: false },
 };
+
+// Personagem exigido por cada ação (inverso de CardDef.acao) — derivado do catálogo.
+const ACTION_REQUIRES: Partial<Record<ActionType, Character>> = Object.fromEntries(
+  CARDS.filter((c) => c.acao).map((c) => [c.acao as ActionType, c.id]),
+);
+export function requiredCharacter(action: ActionType): Character | null {
+  return ACTION_REQUIRES[action] ?? null;
+}
 
 export function categoryColor(category: ActionCategory): string {
   switch (category) {
@@ -71,22 +72,13 @@ export function categoryColor(category: ActionCategory): string {
   }
 }
 
-// Ação de turno de cada personagem (Condessa não tem ação ativa).
-export const CHARACTER_ACTION: Record<Character, ActionType | null> = {
-  duque: "taxas",
-  assassino: "assassinar",
-  capitao: "extorquir",
-  embaixador: "trocar",
-  condessa: null,
-};
+// Ação de turno de cada personagem (Condessa não tem) — derivada do catálogo.
+export const CHARACTER_ACTION = Object.fromEntries(
+  CARDS.map((c) => [c.id, c.acao]),
+) as Record<Character, ActionType | null>;
 
-export const ALL_CHARACTERS: readonly Character[] = [
-  "duque",
-  "assassino",
-  "capitao",
-  "embaixador",
-  "condessa",
-];
+// Ordem/lista de personagens — derivada do catálogo (cards.ts).
+export const ALL_CHARACTERS: readonly Character[] = CARDS.map((c) => c.id);
 
 function me(view: GameView, myId: string): PublicPlayer | undefined {
   return view.players.find((p) => p.id === myId);
@@ -104,23 +96,26 @@ export function myFaceDownChars(view: GameView, myId: string): Character[] {
 // Indicador de blefe (DESIGN.md): a ação exige um personagem que não tenho.
 // Calculado SÓ no cliente, a partir do viewForPlayer; nunca trafega no socket.
 export function isBluff(view: GameView, myId: string, action: ActionType): boolean {
-  const req = ACTION_META[action].requiredCharacter;
+  const req = requiredCharacter(action);
   if (!req) return false;
   return !myFaceDownChars(view, myId).includes(req);
 }
 
-// Personagens que ESTE jogador pode alegar para bloquear a ação atual.
+// Personagens que ESTE jogador pode alegar para bloquear a ação atual. A LISTA de
+// personagens é derivada do catálogo (CardDef.bloqueia); a regra "qualquer um vs.
+// só a vítima" mora aqui (é regra de jogo de UI, não dado de carta).
 export function legalBlockChars(
   action: ActionType,
   targetId: string | null,
   myId: string,
 ): Character[] {
-  switch (action) {
-    case "ajuda_externa": return ["duque"]; // qualquer um
-    case "assassinar": return targetId === myId ? ["condessa"] : [];
-    case "extorquir": return targetId === myId ? ["capitao", "embaixador"] : [];
-    default: return [];
-  }
+  const blockers = Object.values(CARD_BY_ID)
+    .filter((c) => c.bloqueia.includes(action))
+    .map((c) => c.id);
+  if (blockers.length === 0) return [];
+  // Ajuda Externa pode ser bloqueada por qualquer um (Duque); as demais, só a vítima.
+  if (action === "ajuda_externa") return blockers;
+  return targetId === myId ? blockers : [];
 }
 
 // ── Avatar: iniciais + cor determinística do nome ───────────────────────────
