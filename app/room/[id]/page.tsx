@@ -1,9 +1,10 @@
 "use client";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 
 import GameBoard from "@/src/components/game/GameBoard";
+import { avatarColor, COLORS } from "@/src/components/game/helpers";
 import { getSocket } from "@/src/lib/socket";
 import type { GameView } from "@/src/types/game";
 import type { JoinRoomAck, Player } from "@/src/types/socket";
@@ -14,8 +15,11 @@ export default function RoomPage() {
   const searchParams = useSearchParams();
   const roomId = (params.id ?? "").toUpperCase();
   const name = searchParams.get("name") ?? "";
-  // Modo de interação para o teste A/B (?mode=hand|buttons). Default: buttons.
-  const interactionMode = searchParams.get("mode") === "hand" ? "hand" : "buttons";
+  // Modo de interação A/B. Semeado pelo ?mode=hand|buttons; depois alternável
+  // pelo botão na tela (troca só a prop do GameBoard — DESIGN.md).
+  const [interactionMode, setInteractionMode] = useState<"buttons" | "hand">(
+    searchParams.get("mode") === "hand" ? "hand" : "buttons",
+  );
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [view, setView] = useState<GameView | null>(null);
@@ -73,50 +77,198 @@ export default function RoomPage() {
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: "sans-serif", maxWidth: 640 }}>
-      <h1>Sala {roomId}</h1>
+    <main
+      style={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        background: COLORS.bg,
+      }}
+    >
+      {/* Barra superior slim: identidade, sala, toggle A/B, sair */}
+      <header style={topBar}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <span style={{ fontWeight: 800, whiteSpace: "nowrap" }}>
+            <span style={{ color: COLORS.gold }}>Coup</span> Online
+          </span>
+          <span style={roomChip}>Sala {roomId}</span>
+        </div>
 
-      {view ? (
-        // Partida em andamento: o tabuleiro assume.
-        <GameBoard view={view} myId={myId} interactionMode={interactionMode} />
-      ) : (
-        <>
-          <p>
-            Compartilhe:{" "}
-            <code style={{ userSelect: "all" }} suppressHydrationWarning>
-              {shareUrl || `…/room/${roomId}`}
-            </code>
-          </p>
-
-          {error && <p style={{ color: "crimson" }}>{error}</p>}
-
-          <h2>Jogadores ({players.length})</h2>
-          <ul>
-            {players.map((p) => (
-              <li key={p.id}>
-                {p.name}
-                {p.id === myId ? " (você)" : ""}
-                {players[0]?.id === p.id ? " — host" : ""}
-              </li>
-            ))}
-          </ul>
-
-          {isHost && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {view && (
             <button
-              onClick={startGame}
-              disabled={players.length < 2}
-              style={{ marginTop: 16, padding: "8px 16px" }}
+              onClick={() =>
+                setInteractionMode((m) => (m === "buttons" ? "hand" : "buttons"))
+              }
+              style={toggleBtn}
+              title="Alternar entre barra de botões (A) e cartas na mão (B)"
             >
-              Iniciar jogo
+              Modo {interactionMode === "buttons" ? "A · Botões" : "B · Cartas"} ⇄
             </button>
           )}
-          {!isHost && <p>Aguardando o host iniciar…</p>}
-        </>
-      )}
+          <button onClick={() => router.push("/")} style={leaveBtn}>
+            Sair
+          </button>
+        </div>
+      </header>
 
-      <button onClick={() => router.push("/")} style={{ marginTop: 16 }}>
-        Sair
-      </button>
+      {view ? (
+        // Partida em andamento: o tabuleiro ocupa todo o espaço restante.
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <GameBoard view={view} myId={myId} interactionMode={interactionMode} />
+        </div>
+      ) : (
+        // Lobby: card centralizado com link, jogadores e início.
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <div style={lobbyCard}>
+            <h2 style={{ margin: "0 0 4px", fontSize: 22 }}>Sala de espera</h2>
+            <p style={{ color: COLORS.dim, fontSize: 14, marginTop: 0 }}>
+              Compartilhe o link para os amigos entrarem:
+            </p>
+            <code style={shareBox} suppressHydrationWarning>
+              {shareUrl || `…/room/${roomId}`}
+            </code>
+
+            {error && <p style={{ color: COLORS.red, fontSize: 14 }}>{error}</p>}
+
+            <h3 style={{ margin: "20px 0 8px", fontSize: 15, color: COLORS.dim }}>
+              Jogadores ({players.length})
+            </h3>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+              {players.map((p) => (
+                <li key={p.id} style={playerItem}>
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: avatarColor(p.name),
+                      flex: "none",
+                    }}
+                  />
+                  <span style={{ fontWeight: p.id === myId ? 700 : 500 }}>
+                    {p.name}
+                    {p.id === myId ? " (você)" : ""}
+                  </span>
+                  {players[0]?.id === p.id && (
+                    <span style={{ marginLeft: "auto", fontSize: 12, color: COLORS.gold }}>
+                      host
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+
+            {isHost ? (
+              <button
+                onClick={startGame}
+                disabled={players.length < 2}
+                style={{
+                  ...startBtn,
+                  opacity: players.length < 2 ? 0.5 : 1,
+                  cursor: players.length < 2 ? "not-allowed" : "pointer",
+                }}
+              >
+                Iniciar jogo
+              </button>
+            ) : (
+              <p style={{ color: COLORS.dim, marginTop: 20 }}>Aguardando o host iniciar…</p>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
+
+const topBar: CSSProperties = {
+  flex: "none",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  padding: "10px 16px",
+  background: "#15152b",
+  borderBottom: "1px solid rgba(255,255,255,0.07)",
+  color: COLORS.text,
+};
+const roomChip: CSSProperties = {
+  padding: "3px 10px",
+  fontSize: 12,
+  fontWeight: 700,
+  letterSpacing: 1,
+  color: COLORS.gold,
+  background: "rgba(240,165,0,0.12)",
+  border: "1px solid rgba(240,165,0,0.4)",
+  borderRadius: 999,
+  whiteSpace: "nowrap",
+};
+const toggleBtn: CSSProperties = {
+  padding: "7px 12px",
+  fontSize: 13,
+  fontWeight: 600,
+  color: COLORS.text,
+  background: COLORS.neutral,
+  border: "none",
+  borderRadius: 8,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+};
+const leaveBtn: CSSProperties = {
+  padding: "7px 12px",
+  fontSize: 13,
+  fontWeight: 600,
+  color: COLORS.dim,
+  background: "transparent",
+  border: `1px solid ${COLORS.neutral}`,
+  borderRadius: 8,
+  cursor: "pointer",
+};
+const lobbyCard: CSSProperties = {
+  width: "100%",
+  maxWidth: 440,
+  background: "#20203a",
+  border: `1px solid ${COLORS.neutral}`,
+  borderRadius: 16,
+  padding: 28,
+  color: COLORS.text,
+  boxShadow: "0 18px 50px rgba(0,0,0,0.5)",
+};
+const shareBox: CSSProperties = {
+  display: "block",
+  padding: "10px 12px",
+  fontSize: 13,
+  color: COLORS.text,
+  background: "#15152b",
+  border: `1px solid ${COLORS.neutral}`,
+  borderRadius: 10,
+  userSelect: "all",
+  wordBreak: "break-all",
+};
+const playerItem: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  padding: "8px 12px",
+  background: "rgba(255,255,255,0.04)",
+  borderRadius: 8,
+};
+const startBtn: CSSProperties = {
+  width: "100%",
+  marginTop: 20,
+  padding: "12px 16px",
+  fontSize: 15,
+  fontWeight: 700,
+  color: "#1a1a2e",
+  background: COLORS.gold,
+  border: "none",
+  borderRadius: 10,
+};
