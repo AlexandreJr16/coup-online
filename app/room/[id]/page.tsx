@@ -3,7 +3,7 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import GameBoard from "@/src/components/GameBoard";
+import GameBoard from "@/src/components/game/GameBoard";
 import { getSocket } from "@/src/lib/socket";
 import type { GameView } from "@/src/types/game";
 import type { JoinRoomAck, Player } from "@/src/types/socket";
@@ -14,16 +14,17 @@ export default function RoomPage() {
   const searchParams = useSearchParams();
   const roomId = (params.id ?? "").toUpperCase();
   const name = searchParams.get("name") ?? "";
+  // Modo de interação para o teste A/B (?mode=hand|buttons). Default: buttons.
+  const interactionMode = searchParams.get("mode") === "hand" ? "hand" : "buttons";
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [view, setView] = useState<GameView | null>(null);
   const [myId, setMyId] = useState("");
   const [error, setError] = useState("");
-  const [shareUrl, setShareUrl] = useState("");
 
-  useEffect(() => {
-    setShareUrl(`${window.location.origin}/room/${roomId}`);
-  }, [roomId]);
+  // Só existe no cliente; o <code> usa suppressHydrationWarning (SSR renderiza vazio).
+  const shareUrl =
+    typeof window !== "undefined" ? `${window.location.origin}/room/${roomId}` : "";
 
   useEffect(() => {
     // Sem nome (entrou direto pelo link): manda de volta pra home pra digitar.
@@ -77,12 +78,12 @@ export default function RoomPage() {
 
       {view ? (
         // Partida em andamento: o tabuleiro assume.
-        <GameBoard view={view} myId={myId} />
+        <GameBoard view={view} myId={myId} interactionMode={interactionMode} />
       ) : (
         <>
           <p>
             Compartilhe:{" "}
-            <code style={{ userSelect: "all" }}>
+            <code style={{ userSelect: "all" }} suppressHydrationWarning>
               {shareUrl || `…/room/${roomId}`}
             </code>
           </p>
