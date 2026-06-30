@@ -21,6 +21,7 @@ export const COLORS = {
   text: "#f0f0f0",
   dim: "#9aa0a6",
   turn: "#ffd866", // brilho de turno
+  cardBack: "#2c3e50", // costas da carta (face-down)
 } as const;
 
 export const CHAR_LABEL: Record<Character, string> = {
@@ -29,6 +30,16 @@ export const CHAR_LABEL: Record<Character, string> = {
   capitao: "Capitão",
   embaixador: "Embaixador",
   condessa: "Condessa",
+};
+
+// Identidade visual de cada personagem (DESIGN.md "Cartas — Visual"): cor base +
+// ícone. Usado pelo componente Card (mesa e mão). Sem imagem externa — CSS puro.
+export const CHAR_VISUAL: Record<Character, { color: string; icon: string }> = {
+  duque: { color: "#7b2d8b", icon: "👑" },
+  assassino: { color: "#1a1a1a", icon: "🗡️" },
+  capitao: { color: "#1a4a8a", icon: "⚓" },
+  embaixador: { color: "#2d6a4f", icon: "🕊️" },
+  condessa: { color: "#8b1a1a", icon: "💎" },
 };
 
 export type ActionCategory = "coin" | "aggressive" | "coup" | "neutral";
