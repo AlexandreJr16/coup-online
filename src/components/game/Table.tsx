@@ -30,38 +30,43 @@ export default function Table({
       style={{
         position: "relative",
         width: "100%",
-        height: 460,
+        height: "100%",
+        minHeight: 420,
         background: COLORS.bg,
         borderRadius: 12,
         overflow: "hidden",
       }}
     >
-      {/* Feltro central */}
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          top: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "72%",
-          height: "64%",
-          borderRadius: "50%",
-          background: `radial-gradient(ellipse at center, ${COLORS.felt}, ${COLORS.feltEdge})`,
-          boxShadow: "inset 0 0 40px rgba(0,0,0,0.5), 0 0 0 8px #14130f",
-        }}
-      />
-
-      {ordered.map((p, i) => (
-        <Seat
-          key={p.id}
-          player={p}
-          isCurrent={p.id === currentPlayerId}
-          isMe={p.id === myId}
-          selectable={selectableTargetIds.includes(p.id)}
-          onSelect={onSelectTarget ? () => onSelectTarget(p.id) : undefined}
-          style={{ left: `${layout[i].leftPct}%`, top: `${layout[i].topPct}%` }}
+      {/* Arena: região interna com margem para os assentos não encostarem nas
+          bordas (assentos são posicionados em % desta caixa, não da tela toda). */}
+      <div style={{ position: "absolute", inset: "9% 5%" }}>
+        {/* Feltro central */}
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "84%",
+            height: "82%",
+            borderRadius: "50%",
+            background: `radial-gradient(ellipse at center, ${COLORS.felt}, ${COLORS.feltEdge})`,
+            boxShadow: "inset 0 0 40px rgba(0,0,0,0.5), 0 0 0 8px #14130f",
+          }}
         />
-      ))}
+
+        {ordered.map((p, i) => (
+          <Seat
+            key={p.id}
+            player={p}
+            isCurrent={p.id === currentPlayerId}
+            isMe={p.id === myId}
+            selectable={selectableTargetIds.includes(p.id)}
+            onSelect={onSelectTarget ? () => onSelectTarget(p.id) : undefined}
+            style={{ left: `${layout[i].leftPct}%`, top: `${layout[i].topPct}%` }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
