@@ -9,6 +9,8 @@ import { getSocket } from "@/src/lib/socket";
 import type { GameView } from "@/src/types/game";
 import type { JoinRoomAck, Player } from "@/src/types/socket";
 
+const CINZEL = "var(--font-cinzel), Georgia, serif";
+
 export default function RoomPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
@@ -88,7 +90,9 @@ export default function RoomPage() {
       {/* Barra superior slim: identidade, sala, toggle A/B, sair */}
       <header style={topBar}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-          <span style={{ fontWeight: 800, whiteSpace: "nowrap" }}>
+          <span
+            style={{ fontFamily: CINZEL, fontWeight: 800, letterSpacing: 0.5, whiteSpace: "nowrap" }}
+          >
             <span style={{ color: COLORS.gold }}>Coup</span> Online
           </span>
           <span style={roomChip}>Sala {roomId}</span>
@@ -100,13 +104,14 @@ export default function RoomPage() {
               onClick={() =>
                 setInteractionMode((m) => (m === "buttons" ? "hand" : "buttons"))
               }
+              className="game-btn"
               style={toggleBtn}
               title="Alternar entre barra de botões (A) e cartas na mão (B)"
             >
               Modo {interactionMode === "buttons" ? "A · Botões" : "B · Cartas"} ⇄
             </button>
           )}
-          <button onClick={() => router.push("/")} style={leaveBtn}>
+          <button onClick={() => router.push("/")} className="game-btn" style={leaveBtn}>
             Sair
           </button>
         </div>
@@ -129,7 +134,9 @@ export default function RoomPage() {
           }}
         >
           <div style={lobbyCard}>
-            <h2 style={{ margin: "0 0 4px", fontSize: 22 }}>Sala de espera</h2>
+            <h2 style={{ margin: "0 0 4px", fontFamily: CINZEL, fontSize: 24, fontWeight: 800 }}>
+              Sala de espera
+            </h2>
             <p style={{ color: COLORS.dim, fontSize: 14, marginTop: 0 }}>
               Compartilhe o link para os amigos entrarem:
             </p>
@@ -171,11 +178,8 @@ export default function RoomPage() {
               <button
                 onClick={startGame}
                 disabled={players.length < 2}
-                style={{
-                  ...startBtn,
-                  opacity: players.length < 2 ? 0.5 : 1,
-                  cursor: players.length < 2 ? "not-allowed" : "pointer",
-                }}
+                className="game-btn"
+                style={startBtn}
               >
                 Iniciar jogo
               </button>
@@ -211,27 +215,22 @@ const roomChip: CSSProperties = {
   borderRadius: 999,
   whiteSpace: "nowrap",
 };
-const toggleBtn: CSSProperties = {
+// Cor base via --c; o gradiente/sombra/press vêm da classe .game-btn.
+const toggleBtn = {
   padding: "7px 12px",
   fontSize: 13,
-  fontWeight: 600,
   color: COLORS.text,
-  background: COLORS.neutral,
-  border: "none",
   borderRadius: 8,
-  cursor: "pointer",
   whiteSpace: "nowrap",
-};
-const leaveBtn: CSSProperties = {
+  "--c": COLORS.neutral,
+} as CSSProperties;
+const leaveBtn = {
   padding: "7px 12px",
   fontSize: 13,
-  fontWeight: 600,
-  color: COLORS.dim,
-  background: "transparent",
-  border: `1px solid ${COLORS.neutral}`,
+  color: COLORS.text,
   borderRadius: 8,
-  cursor: "pointer",
-};
+  "--c": "#3a3550",
+} as CSSProperties;
 const lobbyCard: CSSProperties = {
   width: "100%",
   maxWidth: 440,
@@ -261,14 +260,12 @@ const playerItem: CSSProperties = {
   background: "rgba(255,255,255,0.04)",
   borderRadius: 8,
 };
-const startBtn: CSSProperties = {
+const startBtn = {
   width: "100%",
   marginTop: 20,
   padding: "12px 16px",
   fontSize: 15,
-  fontWeight: 700,
   color: "#1a1a2e",
-  background: COLORS.gold,
-  border: "none",
   borderRadius: 10,
-};
+  "--c": COLORS.gold,
+} as CSSProperties;

@@ -7,6 +7,8 @@ import { getSocket } from "@/src/lib/socket";
 import type { CreateRoomAck } from "@/src/types/socket";
 import { COLORS } from "@/src/components/game/helpers";
 
+const CINZEL = "var(--font-cinzel), Georgia, serif";
+
 export default function Home() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -57,7 +59,15 @@ export default function Home() {
           boxShadow: "0 18px 50px rgba(0,0,0,0.5)",
         }}
       >
-        <h1 style={{ margin: 0, fontSize: 34, fontWeight: 800, letterSpacing: 0.5 }}>
+        <h1
+          style={{
+            margin: 0,
+            fontFamily: CINZEL,
+            fontSize: 42,
+            fontWeight: 900,
+            letterSpacing: 1,
+          }}
+        >
           <span style={{ color: COLORS.gold }}>Coup</span>{" "}
           <span style={{ color: COLORS.text }}>Online</span>
         </h1>
@@ -75,7 +85,7 @@ export default function Home() {
           />
         </label>
 
-        <button onClick={handleCreate} style={primaryBtn}>
+        <button onClick={handleCreate} className="game-btn" style={primaryBtn}>
           Criar sala
         </button>
 
@@ -95,7 +105,7 @@ export default function Home() {
           />
         </label>
 
-        <button onClick={handleJoin} style={secondaryBtn}>
+        <button onClick={handleJoin} className="game-btn" style={secondaryBtn}>
           Entrar na sala
         </button>
 
@@ -132,21 +142,11 @@ const baseBtn: CSSProperties = {
   width: "100%",
   padding: "12px 16px",
   fontSize: 15,
-  fontWeight: 700,
   borderRadius: 10,
-  border: "none",
-  cursor: "pointer",
 };
-const primaryBtn: CSSProperties = {
-  ...baseBtn,
-  color: "#1a1a2e",
-  background: COLORS.gold,
-};
-const secondaryBtn: CSSProperties = {
-  ...baseBtn,
-  color: COLORS.text,
-  background: COLORS.neutral,
-};
+// Cor base do botão via --c (a classe .game-btn cuida do gradiente/sombra/press).
+const primaryBtn = { ...baseBtn, color: "#1a1a2e", "--c": COLORS.gold } as CSSProperties;
+const secondaryBtn = { ...baseBtn, color: COLORS.text, "--c": COLORS.neutral } as CSSProperties;
 const divider: CSSProperties = {
   display: "flex",
   alignItems: "center",

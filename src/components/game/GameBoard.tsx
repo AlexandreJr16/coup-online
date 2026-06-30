@@ -238,7 +238,9 @@ export default function GameBoard({
 
         {view.phase === "fim_de_jogo" && (
           <div style={{ ...panel, textAlign: "center" }}>
-            <h2 style={{ color: COLORS.gold }}>🏆 Vencedor: {name(view.winnerId)}</h2>
+            <h2 style={{ color: COLORS.gold, fontFamily: CINZEL, letterSpacing: 0.5 }}>
+              🏆 Vencedor: {name(view.winnerId)}
+            </h2>
           </div>
         )}
 
