@@ -38,6 +38,16 @@ export const CHAR_VISUAL = Object.fromEntries(
   CARDS.map((c) => [c.id, { color: c.cor, icon: c.icone }]),
 ) as Record<Character, { color: string; icon: string }>;
 
+// Quem pode reagir (bloquear/contestar/passar) na janela atual: todo jogador vivo
+// exceto quem fez a jogada julgada (ator na ação; bloqueador no bloqueio). Espelha
+// reactorIds da engine — a engine continua sendo quem valida de fato.
+export function reactorIds(view: GameView): string[] {
+  const p = view.pending;
+  if (!p) return [];
+  const excluded = view.phase === "janela_contestar_bloqueio" ? p.block?.blockerId : p.actorId;
+  return view.players.filter((x) => !x.eliminated && x.id !== excluded).map((x) => x.id);
+}
+
 // Tema de arte ativo → pasta em public/art/<tema>/. Fica numa constante para o
 // futuro seletor/teste A/B (ROADMAP Fase 8) trocar o estilo sem tocar nos componentes.
 export const ART_THEME = "imperio";

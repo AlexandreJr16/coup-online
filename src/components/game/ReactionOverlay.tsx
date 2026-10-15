@@ -7,7 +7,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import type { Character, GameView } from "@/src/types/game";
-import { ACTION_META, CHAR_LABEL, COLORS, legalBlockChars } from "./helpers";
+import { ACTION_META, CHAR_LABEL, COLORS, legalBlockChars, reactorIds } from "./helpers";
 
 export default function ReactionOverlay({
   view,
@@ -15,15 +15,21 @@ export default function ReactionOverlay({
   secondsLeft,
   onBlock,
   onChallenge,
+  onPass,
 }: {
   view: GameView;
   myId: string;
   secondsLeft: number;
   onBlock: (character: Character) => void;
   onChallenge: () => void;
+  onPass: () => void;
 }) {
   const pending = view.pending;
   if (!pending) return null;
+
+  const reactors = reactorIds(view);
+  const iCanReact = reactors.includes(myId);
+  const iPassed = pending.passedIds.includes(myId);
 
   const total = view.timer?.seconds ?? (secondsLeft || 1);
   const pct = Math.max(0, Math.min(100, (secondsLeft / total) * 100));
@@ -37,7 +43,7 @@ export default function ReactionOverlay({
   if (view.phase === "janela_contestar_bloqueio" && pending.block) {
     const b = pending.block;
     headline = `🛡️ ${name(b.blockerId)} bloqueou alegando ${CHAR_LABEL[b.character]}`;
-    if (b.blockerId !== myId) {
+    if (iCanReact && !iPassed) {
       buttons.push(
         <Btn key="ch" color={COLORS.red} on={onChallenge}>Contestar bloqueio</Btn>,
       );
@@ -46,7 +52,7 @@ export default function ReactionOverlay({
     headline = `${name(pending.actorId)} usou ${ACTION_META[pending.action].label}${
       pending.targetId ? ` em ${name(pending.targetId)}` : ""
     }`;
-    if (pending.actorId !== myId) {
+    if (iCanReact && !iPassed) {
       if (pending.claimedCharacter !== null) {
         buttons.push(
           <Btn key="ch" color={COLORS.red} on={onChallenge}>Contestar</Btn>,
@@ -60,6 +66,12 @@ export default function ReactionOverlay({
         );
       }
     }
+  }
+  // "Passar": libera a mesa antes do timer. Final — depois não dá mais pra reagir.
+  if (iCanReact && !iPassed) {
+    buttons.push(
+      <Btn key="pass" color="#3a3f55" on={onPass}>Passar</Btn>,
+    );
   }
 
   return (
@@ -109,7 +121,19 @@ export default function ReactionOverlay({
             {buttons}
           </div>
         ) : (
-          <p style={{ color: COLORS.dim }}>Aguardando reações…</p>
+          <p style={{ color: COLORS.dim }}>
+            {iPassed ? "✔ Você passou. Aguardando os outros…" : "Aguardando reações…"}
+          </p>
+        )}
+
+        {/* Quem já passou — dá pra ver quanto falta pra janela fechar */}
+        {reactors.length > 0 && (
+          <div style={{ marginTop: 12, fontSize: 12, color: COLORS.dim }}>
+            Passaram {pending.passedIds.length}/{reactors.length}
+            {pending.passedIds.length > 0 && (
+              <> · {pending.passedIds.map((id) => `✔ ${name(id)}`).join("  ")}</>
+            )}
+          </div>
         )}
       </div>
     </div>

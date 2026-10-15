@@ -19,7 +19,7 @@ import {
   leaveRoom,
   type ServerRoom,
 } from "./src/server/rooms";
-import type { GameEvent } from "./src/types/game";
+import type { GameEvent, GameState } from "./src/types/game";
 import type {
   ClientToServerEvents,
   GameActionAck,
@@ -50,11 +50,17 @@ app.prepare().then(() => {
     SocketData
   >(httpServer);
 
+  // Tempo que falta da fase atual, segundo o relógio do servidor (vai na view).
+  function timerRemainingMs(room: ServerRoom): number | undefined {
+    return room.timerEndsAt === null ? undefined : Math.max(0, room.timerEndsAt - Date.now());
+  }
+
   // Envia a cada jogador SÓ a sua view (servidor filtra as cartas alheias).
   function broadcastState(room: ServerRoom): void {
     if (!room.game) return;
+    const remaining = timerRemainingMs(room);
     for (const p of room.game.players) {
-      io.to(p.id).emit("game_state", viewForPlayer(room.game, p.id));
+      io.to(p.id).emit("game_state", viewForPlayer(room.game, p.id, remaining));
     }
   }
 
@@ -63,25 +69,37 @@ app.prepare().then(() => {
       clearTimeout(room.timer);
       room.timer = null;
     }
+    room.timerSeq = null;
+    room.timerEndsAt = null;
   }
 
-  // A engine não conta tempo: o servidor arma o timeout da janela atual e, ao
-  // estourar, injeta { type: "timeout" }. clearTimer antes de rearmar mata o
-  // timer obsoleto quando uma reação muda o estado antes do prazo.
+  // A engine não conta tempo: o servidor arma o timeout da fase atual e, ao
+  // estourar, injeta { type: "timeout" }. O timer só é REARMADO quando uma
+  // fase/janela nova abre (phaseSeq mudou): um "Passar" que não fecha a janela
+  // deixa o relógio correndo, em vez de reiniciá-lo.
   function rearmTimer(room: ServerRoom): void {
-    clearTimer(room);
     if (!room.game) return;
     const timer = currentTimer(room.game);
-    if (!timer) return;
+    if (!timer) return clearTimer(room);
+    if (room.timer && room.timerSeq === room.game.phaseSeq) return; // mesma janela
+    clearTimer(room); // mata o timer obsoleto da janela anterior
+    room.timerSeq = room.game.phaseSeq;
+    room.timerEndsAt = Date.now() + timer.seconds * 1000;
     room.timer = setTimeout(() => {
       room.timer = null;
       if (!room.game) return;
       const result = applyEvent(room.game, { type: "timeout" });
-      if (result.error) return; // janela já fechou: ignora
-      room.game = result.state;
-      broadcastState(room);
-      rearmTimer(room);
+      if (result.error) return; // fase já mudou: ignora
+      commit(room, result.state);
     }, timer.seconds * 1000);
+  }
+
+  // Persiste o novo estado, atualiza o relógio e propaga a view a cada jogador.
+  // Rearmar ANTES de transmitir: a view precisa do tempo restante da fase nova.
+  function commit(room: ServerRoom, state: GameState): void {
+    room.game = state;
+    rearmTimer(room);
+    broadcastState(room);
   }
 
   io.on("connection", (socket) => {
@@ -98,10 +116,8 @@ app.prepare().then(() => {
       }
       const result = applyEvent(room.game, makeEvent(socket.id));
       if (result.error) return cb({ ok: false, error: result.error });
-      room.game = result.state;
       cb({ ok: true });
-      broadcastState(room);
-      rearmTimer(room);
+      commit(room, result.state);
     }
 
     // Gera um roomId novo sem armazenar a sala (criação acontece no join).
@@ -126,7 +142,9 @@ app.prepare().then(() => {
       // Avisa todos na sala (inclusive quem entrou) a lista atualizada.
       io.to(id).emit("room:players", room.players);
       // Entrou (ou voltou) com partida em andamento: manda o estado atual.
-      if (room.game) socket.emit("game_state", viewForPlayer(room.game, socket.id));
+      if (room.game) {
+        socket.emit("game_state", viewForPlayer(room.game, socket.id, timerRemainingMs(room)));
+      }
     });
 
     // ── Jogo ────────────────────────────────────────────────────────────────
@@ -141,8 +159,9 @@ app.prepare().then(() => {
         return cb({ ok: false, error: "Mínimo de 2 jogadores." });
       }
       if (room.game) return cb({ ok: false, error: "Partida já iniciada." });
+      let game: GameState;
       try {
-        room.game = createGame(
+        game = createGame(
           room.players.map((p) => ({ id: p.id, name: p.name })),
           config ?? {},
         );
@@ -153,8 +172,7 @@ app.prepare().then(() => {
         });
       }
       cb({ ok: true });
-      broadcastState(room);
-      rearmTimer(room);
+      commit(room, game);
     });
 
     socket.on("game_action", ({ action, targetId }, cb) =>
@@ -165,6 +183,9 @@ app.prepare().then(() => {
     );
     socket.on("game_challenge", (cb) =>
       handleGameEvent(cb, (id) => ({ type: "challenge", playerId: id })),
+    );
+    socket.on("game_pass", (cb) =>
+      handleGameEvent(cb, (id) => ({ type: "pass", playerId: id })),
     );
     socket.on("game_reveal", ({ cardIndex }, cb) =>
       handleGameEvent(cb, (id) => ({ type: "reveal", playerId: id, cardIndex })),

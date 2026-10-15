@@ -66,6 +66,8 @@ export interface GameConfig {
   globalReactionTime: number; // GLOBAL_REACTION_TIME (3–60, padrão 5)
   targetReactionTime: number; // TARGET_REACTION_TIME (5–120, padrão 15)
   challengeBlockTime: number; // CHALLENGE_BLOCK_TIME (3–60, padrão 5)
+  turnTime: number; // TURN_TIME: declarar a ação do turno (15–180, padrão 45)
+  choiceTime: number; // CHOICE_TIME: revelar carta / escolher troca (10–120, padrão 30)
 }
 
 // Bloqueio declarado durante uma janela de reação.
@@ -86,6 +88,9 @@ export interface PendingAction {
   // for desmascarada numa contestação; NÃO devolvidas em bloqueio bem-sucedido.
   paidCoins: number;
   block: BlockClaim | null;
+  // Quem já "passou" na janela atual (abre zerada a cada janela). Passar é final:
+  // quem passou não bloqueia nem contesta mais naquela janela.
+  passedIds: string[];
 }
 
 // Efeitos aplicados pela resolução, em fila. `lose_influence` e `exchange` podem
@@ -107,6 +112,10 @@ export interface ExchangePool {
 
 export interface GameState {
   phase: Phase;
+  // Sobe a cada vez que uma fase/janela NOVA abre (mesmo repetindo o nome da fase).
+  // O servidor usa para rearmar o timer só quando a janela muda — um "Passar" que
+  // não fecha a janela não pode reiniciar o relógio.
+  phaseSeq: number;
   players: PlayerState[];
   order: string[]; // ordem de turno (ids)
   currentPlayerIndex: number; // índice em `order` do jogador da vez
@@ -125,7 +134,8 @@ export type GameEvent =
   | { type: "action"; playerId: string; action: ActionType; targetId?: string }
   | { type: "block"; playerId: string; character: Character }
   | { type: "challenge"; playerId: string }
-  | { type: "timeout" }
+  | { type: "pass"; playerId: string } // "deixo passar": não bloqueio nem contesto
+  | { type: "timeout" } // janela/turno estourou (servidor); aplica a jogada segura
   | { type: "reveal"; playerId: string; cardIndex: number }
   | { type: "exchange_choose"; playerId: string; keep: Character[] };
 
@@ -161,9 +171,13 @@ export interface GameView {
     targetId: string | null;
     claimedCharacter: Character | null;
     block: BlockClaim | null;
+    passedIds: string[]; // quem já passou nesta janela (público)
   } | null;
   mustRevealPlayerId: string | null;
   exchange: { pool: Character[] } | null; // não-nulo só para o ator da troca
   winnerId: string | null;
-  timer: { phase: Phase; seconds: number } | null; // janela com timer ativo
+  // Fase com timer ativo. `seconds` = duração total (denominador da barra);
+  // `remainingMs` = quanto falta AGORA segundo o servidor (o cliente soma ao seu
+  // relógio local ao receber a view — evita deriva e não reinicia a cada evento).
+  timer: { phase: Phase; seconds: number; remainingMs: number } | null;
 }

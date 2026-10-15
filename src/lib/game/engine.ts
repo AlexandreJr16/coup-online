@@ -62,6 +62,7 @@ export function createGame(
 
   return {
     phase: "aguardando_acao",
+    phaseSeq: 0,
     players: playerStates,
     order: players.map((p) => p.id),
     currentPlayerIndex: 0,
@@ -81,7 +82,16 @@ function normalizeConfig(c: Partial<GameConfig>): GameConfig {
     globalReactionTime: clamp(c.globalReactionTime ?? 5, 3, 60),
     targetReactionTime: clamp(c.targetReactionTime ?? 15, 5, 120),
     challengeBlockTime: clamp(c.challengeBlockTime ?? 5, 3, 60),
+    turnTime: clamp(c.turnTime ?? 45, 15, 180),
+    choiceTime: clamp(c.choiceTime ?? 30, 10, 120),
   };
+}
+
+// Toda abertura de fase/janela passa por aqui: o phaseSeq novo é o sinal para o
+// servidor rearmar o timer (ver GameState.phaseSeq).
+function setPhase(s: GameState, phase: Phase): void {
+  s.phase = phase;
+  s.phaseSeq += 1;
 }
 
 // ── Entrada principal ───────────────────────────────────────────────────────
@@ -108,6 +118,8 @@ function handle(s: GameState, e: GameEvent, rng: Rng): void {
       return handleBlock(s, e);
     case "challenge":
       return handleChallenge(s, e, rng);
+    case "pass":
+      return handlePass(s, e, rng);
     case "timeout":
       return handleTimeout(s, rng);
     case "reveal":
@@ -153,17 +165,17 @@ function handleAction(
     // Globais ──────────────────────────────────────────────────────────────────
     case "ajuda_externa":
       s.pending = mkPending("ajuda_externa", actor.id, null, null, 0);
-      s.phase = "janela_reacao_global";
+      setPhase(s, "janela_reacao_global");
       return;
 
     case "taxas":
       s.pending = mkPending("taxas", actor.id, null, "duque", 0);
-      s.phase = "janela_reacao_global";
+      setPhase(s, "janela_reacao_global");
       return;
 
     case "trocar":
       s.pending = mkPending("trocar", actor.id, null, "embaixador", 0);
-      s.phase = "janela_reacao_global";
+      setPhase(s, "janela_reacao_global");
       return;
 
     // Targeted ────────────────────────────────────────────────────────────────
@@ -172,14 +184,14 @@ function handleAction(
       if (actor.coins < 3) throw new EngineError("Assassinar custa 3 moedas.");
       pay(s, actor.id, 3); // pago já na declaração (devolvido só se desmascarado)
       s.pending = mkPending("assassinar", actor.id, target.id, "assassino", 3);
-      s.phase = "janela_reacao_vitima";
+      setPhase(s, "janela_reacao_vitima");
       return;
     }
 
     case "extorquir": {
       const target = requireTarget(s, e.targetId, actor.id);
       s.pending = mkPending("extorquir", actor.id, target.id, "capitao", 0);
-      s.phase = "janela_reacao_vitima";
+      setPhase(s, "janela_reacao_vitima");
       return;
     }
   }
@@ -201,8 +213,12 @@ function handleBlock(
   if (!isLegalBlock(p, e.playerId, e.character)) {
     throw new EngineError("Bloqueio inválido para esta ação.");
   }
+  if (p.passedIds.includes(e.playerId)) {
+    throw new EngineError("Você já passou nesta janela.");
+  }
   p.block = { blockerId: e.playerId, character: e.character };
-  s.phase = "janela_contestar_bloqueio";
+  p.passedIds = []; // janela nova: a lista de quem passou zera
+  setPhase(s, "janela_contestar_bloqueio");
 }
 
 // Quem pode bloquear o quê (game-rules.md, tabela de Ações Contrárias).
@@ -233,6 +249,9 @@ function handleChallenge(
   rng: Rng,
 ): void {
   byIdAlive(s, e.playerId);
+  if (isWindowPhase(s.phase) && s.pending!.passedIds.includes(e.playerId)) {
+    throw new EngineError("Você já passou nesta janela.");
+  }
   if (s.phase === "janela_reacao_global" || s.phase === "janela_reacao_vitima") {
     return challengeAction(s, e.playerId, rng);
   }
@@ -302,8 +321,47 @@ function challengeBlock(s: GameState, challengerId: string, rng: Rng): void {
   runResolution(s, rng);
 }
 
-// ── Timeout: fecha a janela atual ───────────────────────────────────────────
-function handleTimeout(s: GameState, rng: Rng): void {
+// ── Passar ("deixo passar") ─────────────────────────────────────────────────
+// Quando todos os elegíveis passam, a janela fecha ANTES do timer, com o mesmo
+// efeito de um timeout (ação prossegue / bloqueio vale). Passar é final.
+function handlePass(
+  s: GameState,
+  e: Extract<GameEvent, { type: "pass" }>,
+  rng: Rng,
+): void {
+  if (!isWindowPhase(s.phase)) {
+    throw new EngineError("Não há janela de reação aberta.");
+  }
+  const p = s.pending!;
+  byIdAlive(s, e.playerId);
+  const reactors = reactorIds(s);
+  if (!reactors.includes(e.playerId)) {
+    throw new EngineError("Você não pode reagir a esta jogada.");
+  }
+  if (p.passedIds.includes(e.playerId)) throw new EngineError("Você já passou.");
+  p.passedIds.push(e.playerId);
+  if (reactors.every((id) => p.passedIds.includes(id))) closeWindow(s, rng);
+}
+
+function isWindowPhase(phase: Phase): boolean {
+  return (
+    phase === "janela_reacao_global" ||
+    phase === "janela_reacao_vitima" ||
+    phase === "janela_contestar_bloqueio"
+  );
+}
+
+// Quem pode reagir na janela atual: todo jogador vivo, exceto quem fez a jogada
+// que está sendo julgada (o ator na ação; o bloqueador no bloqueio).
+function reactorIds(s: GameState): string[] {
+  const p = s.pending!;
+  const excluded =
+    s.phase === "janela_contestar_bloqueio" ? p.block!.blockerId : p.actorId;
+  return s.players.filter((x) => isAlive(x) && x.id !== excluded).map((x) => x.id);
+}
+
+// Fecha a janela atual sem reação: ação prossegue / bloqueio bem-sucedido.
+function closeWindow(s: GameState, rng: Rng): void {
   if (s.phase === "janela_reacao_global" || s.phase === "janela_reacao_vitima") {
     // Ninguém reagiu / vítima aceitou → ação prossegue.
     const p = s.pending!;
@@ -312,14 +370,53 @@ function handleTimeout(s: GameState, rng: Rng): void {
     runResolution(s, rng);
     return;
   }
-  if (s.phase === "janela_contestar_bloqueio") {
-    // Ninguém contestou o bloqueio → bloqueio bem-sucedido → ação falha.
-    // Moedas pagas NÃO voltam (caso especial). Fila vazia → próximo turno.
-    s.pending = null;
-    s.resolution = [];
-    runResolution(s, rng);
-    return;
+  // janela_contestar_bloqueio: ninguém contestou o bloqueio → bloqueio
+  // bem-sucedido → ação falha. Moedas pagas NÃO voltam (caso especial). Fila
+  // vazia → próximo turno.
+  s.pending = null;
+  s.resolution = [];
+  runResolution(s, rng);
+}
+
+// ── Timeout: o servidor avisa que o tempo da fase estourou ───────────────────
+// Janela de reação: fecha como "ninguém reagiu". Fases de decisão (turno,
+// revelação, troca): joga a opção SEGURA pelo jogador ausente, para a mesa não
+// travar por AFK/desconexão.
+function handleTimeout(s: GameState, rng: Rng): void {
+  if (isWindowPhase(s.phase)) return closeWindow(s, rng);
+
+  if (s.phase === "aguardando_acao") {
+    const actor = currentPlayer(s);
+    if (actor.coins >= 10) {
+      // Golpe é obrigatório com 10+ moedas: alvo sorteado entre os oponentes vivos.
+      const targets = s.players.filter((p) => isAlive(p) && p.id !== actor.id);
+      const target = targets[Math.floor(rng() * targets.length)];
+      return handleAction(
+        s,
+        { type: "action", playerId: actor.id, action: "golpe", targetId: target.id },
+        rng,
+      );
+    }
+    return handleAction(s, { type: "action", playerId: actor.id, action: "renda" }, rng);
   }
+
+  if (s.phase === "aguardando_revelacao") {
+    const p = byId(s, s.mustRevealPlayerId!);
+    const hidden = p.cards.flatMap((c, i) => (c.revealed ? [] : [i]));
+    const cardIndex = hidden[Math.floor(rng() * hidden.length)];
+    return handleReveal(s, { type: "reveal", playerId: p.id, cardIndex }, rng);
+  }
+
+  if (s.phase === "aguardando_troca") {
+    // Troca neutra: mantém as próprias cartas (as primeiras `keepCount` do pool).
+    const ex = s.exchange!;
+    return handleExchangeChoose(
+      s,
+      { type: "exchange_choose", playerId: ex.playerId, keep: ex.pool.slice(0, ex.keepCount) },
+      rng,
+    );
+  }
+
   throw new EngineError("Nada para expirar agora.");
 }
 
@@ -416,7 +513,7 @@ function runResolution(s: GameState, rng: Rng): void {
       // 2 cartas: jogador escolhe qual virar. Pausa a fila no restante.
       s.resolution.shift();
       s.mustRevealPlayerId = p.id;
-      s.phase = "aguardando_revelacao";
+      setPhase(s, "aguardando_revelacao");
       return;
     }
 
@@ -432,7 +529,7 @@ function runResolution(s: GameState, rng: Rng): void {
         pool: [...faceDown, ...drawn],
         keepCount: faceDown.length,
       };
-      s.phase = "aguardando_troca";
+      setPhase(s, "aguardando_troca");
       return;
     }
 
@@ -470,7 +567,7 @@ function advanceTurn(s: GameState): void {
 
   const alive = s.players.filter(isAlive);
   if (alive.length <= 1) {
-    s.phase = "fim_de_jogo";
+    setPhase(s, "fim_de_jogo");
     s.winnerId = alive.length === 1 ? alive[0].id : null;
     return;
   }
@@ -483,7 +580,7 @@ function advanceTurn(s: GameState): void {
       break;
     }
   }
-  s.phase = "aguardando_acao";
+  setPhase(s, "aguardando_acao");
 }
 
 // ── Mutadores de baixo nível ────────────────────────────────────────────────
@@ -575,7 +672,7 @@ function mkPending(
   claimedCharacter: Character | null,
   paidCoins: number,
 ): PendingAction {
-  return { action, actorId, targetId, claimedCharacter, paidCoins, block: null };
+  return { action, actorId, targetId, claimedCharacter, paidCoins, block: null, passedIds: [] };
 }
 
 function clamp(n: number, min: number, max: number): number {
@@ -603,7 +700,14 @@ function multisetSubtract(sup: Character[], sub: Character[]): Character[] {
 }
 
 // ── View filtrada por jogador (regra inegociável: não vazar cartas alheias) ──
-export function viewForPlayer(s: GameState, viewerId: string): GameView {
+// `timerRemainingMs`: quanto falta do timer da fase, segundo o servidor (que é
+// quem tem o relógio). Sem ele, assume a janela cheia (ex.: testes).
+export function viewForPlayer(
+  s: GameState,
+  viewerId: string,
+  timerRemainingMs?: number,
+): GameView {
+  const timer = currentTimer(s);
   return {
     phase: s.phase,
     players: s.players.map((p) => ({
@@ -628,6 +732,7 @@ export function viewForPlayer(s: GameState, viewerId: string): GameView {
           targetId: s.pending.targetId,
           claimedCharacter: s.pending.claimedCharacter,
           block: s.pending.block,
+          passedIds: [...s.pending.passedIds],
         }
       : null,
     mustRevealPlayerId: s.mustRevealPlayerId,
@@ -636,13 +741,20 @@ export function viewForPlayer(s: GameState, viewerId: string): GameView {
         ? { pool: s.exchange.pool }
         : null,
     winnerId: s.winnerId,
-    timer: currentTimer(s),
+    timer: timer
+      ? { ...timer, remainingMs: timerRemainingMs ?? timer.seconds * 1000 }
+      : null,
   };
 }
 
 // Qual timer governa a fase atual (o servidor usa para armar o setTimeout).
 export function currentTimer(s: GameState): { phase: Phase; seconds: number } | null {
   switch (s.phase) {
+    case "aguardando_acao":
+      return { phase: s.phase, seconds: s.config.turnTime };
+    case "aguardando_revelacao":
+    case "aguardando_troca":
+      return { phase: s.phase, seconds: s.config.choiceTime };
     case "janela_reacao_global":
       return { phase: s.phase, seconds: s.config.globalReactionTime };
     case "janela_reacao_vitima":

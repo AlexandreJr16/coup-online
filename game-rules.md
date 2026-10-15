@@ -77,6 +77,24 @@ Definidos pelo criador da sala antes de iniciar o jogo:
 | `GLOBAL_REACTION_TIME`     | Ações globais (Taxas, Ajuda Externa, Trocar)      | 5s     | 3s–60s    |
 | `TARGET_REACTION_TIME`     | Ações targeted (Assassinar, Extorquir) — a vítima | 15s    | 5s–120s   |
 | `CHALLENGE_BLOCK_TIME`     | Janela de contestar um bloqueio declarado         | 5s     | 3s–60s    |
+| `TURN_TIME`                | Declarar a ação do turno                          | 45s    | 15s–180s  |
+| `CHOICE_TIME`              | Escolher a carta a revelar / escolher a Troca     | 30s    | 10s–120s  |
+
+### Passar
+Em qualquer janela de reação o jogador pode **passar** ("deixo passar": não bloqueio nem contesto).
+- Quem pode reagir: todo jogador vivo, exceto quem fez a jogada julgada (o ator na janela da ação;
+  o bloqueador na janela de contestar o bloqueio — nesta, o ator pode contestar).
+- Quando **todos** os elegíveis passam, a janela fecha na hora, como se o timer tivesse esgotado
+  (a ação prossegue; ou o bloqueio vale).
+- Passar é final: quem passou não pode mais bloquear nem contestar naquela janela.
+- Passar não reinicia nem estende o timer da janela.
+
+### Quando o tempo estoura
+- Janelas de reação: a janela fecha como "ninguém reagiu" (ver fluxos abaixo).
+- `TURN_TIME`: joga **Renda** pelo jogador. Com 10+ moedas, dá o Golpe de Estado obrigatório num
+  oponente vivo sorteado.
+- `CHOICE_TIME` na revelação: revela uma das cartas ainda ocultas, sorteada.
+- `CHOICE_TIME` na Troca: mantém as próprias cartas (troca neutra).
 
 ## Fluxo de Estados por Tipo de Ação
 

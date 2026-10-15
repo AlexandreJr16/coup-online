@@ -9,6 +9,10 @@ import type { Player, Room } from "../types/socket";
 export interface ServerRoom extends Room {
   game: GameState | null;
   timer: NodeJS.Timeout | null;
+  // Relógio da fase atual: `timerSeq` = GameState.phaseSeq para o qual o timer foi
+  // armado (só rearma quando a fase/janela muda); `timerEndsAt` = epoch ms do fim.
+  timerSeq: number | null;
+  timerEndsAt: number | null;
 }
 
 const rooms = new Map<string, ServerRoom>();
@@ -35,7 +39,7 @@ export function generateRoomId(): string {
 export function joinRoom(roomId: string, player: Player): ServerRoom {
   let room = rooms.get(roomId);
   if (!room) {
-    room = { id: roomId, players: [], game: null, timer: null };
+    room = { id: roomId, players: [], game: null, timer: null, timerSeq: null, timerEndsAt: null };
     rooms.set(roomId, room);
   }
   // Evita duplicar o mesmo socket (ex: reconexão/strict mode).

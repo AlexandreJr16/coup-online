@@ -58,6 +58,9 @@ export interface ClientToServerEvents {
     cb: (ack: GameActionAck) => void,
   ) => void;
   game_challenge: (cb: (ack: GameActionAck) => void) => void;
+  // "Deixo passar": não bloqueio nem contesto. Fecha a janela antes do timer
+  // quando todos os elegíveis passam.
+  game_pass: (cb: (ack: GameActionAck) => void) => void;
   game_reveal: (
     payload: { cardIndex: number },
     cb: (ack: GameActionAck) => void,

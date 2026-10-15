@@ -43,22 +43,25 @@ export default function GameBoard({
   const me = view.players.find((p) => p.id === myId);
   const name = (id: string | null) => view.players.find((p) => p.id === id)?.name ?? "?";
 
-  // ── Countdown client-side (não muda a engine; só anima o timer) ───────────
+  // ── Countdown: o servidor manda quanto FALTA (view.timer.remainingMs) e o cliente
+  // só anima a partir daí. Cada view nova reancora o relógio, então não há deriva
+  // nem reinício quando alguém passa/reage sem fechar a janela. ────────────────
   const pending = view.pending;
-  const windowKey = `${view.phase}|${pending?.actorId ?? ""}|${pending?.block?.blockerId ?? ""}`;
-  const total = view.timer?.seconds ?? 0;
-  const [tick, setTick] = useState<{ key: string; left: number } | null>(null);
+  const timer = view.timer;
+  const [tick, setTick] = useState<{ src: GameView["timer"]; left: number } | null>(null);
   useEffect(() => {
-    if (!total) return;
-    const start = Date.now();
-    const id = setInterval(() => {
-      const left = Math.max(0, total - (Date.now() - start) / 1000);
-      setTick({ key: windowKey, left });
-      if (left <= 0) clearInterval(id);
-    }, 250);
-    return () => clearInterval(id);
-  }, [windowKey, total]);
-  const secondsLeft = tick && tick.key === windowKey ? tick.left : total;
+    if (!timer) return;
+    const end = Date.now() + timer.remainingMs;
+    const update = () => setTick({ src: timer, left: Math.max(0, (end - Date.now()) / 1000) });
+    const raf = requestAnimationFrame(update);
+    const id = setInterval(update, 250);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearInterval(id);
+    };
+  }, [timer]);
+  const secondsLeft = timer ? (tick && tick.src === timer ? tick.left : timer.remainingMs / 1000) : 0;
+  const decisionTimer = timer && !REACTION_PHASES.has(view.phase);
 
   // ── Eventos derivados (Feed/Economia) + selo de cera ──────────────────────
   const events = useGameEvents(view);
@@ -142,6 +145,19 @@ export default function GameBoard({
           </div>
         )}
 
+        {/* Tempo do turno / revelação / troca (as janelas de reação têm barra própria) */}
+        {decisionTimer && (
+          <div
+            style={{
+              ...timerPill,
+              color: secondsLeft <= 10 ? "#fff" : COLORS.text,
+              background: secondsLeft <= 10 ? "rgba(192,57,43,0.9)" : "rgba(20,20,40,0.85)",
+            }}
+          >
+            ⏱ {Math.ceil(secondsLeft)}s
+          </div>
+        )}
+
         {/* Feed de Intrigas (overlay recolhível) */}
         <IntrigueFeed log={events.log} />
       </div>
@@ -160,6 +176,10 @@ export default function GameBoard({
             setError("");
             fireSeal("CONTESTADO!");
             socket.emit("game_challenge", ack);
+          }}
+          onPass={() => {
+            setError("");
+            socket.emit("game_pass", ack);
           }}
         />
       )}
@@ -325,6 +345,17 @@ const turnBanner: CSSProperties = {
   borderRadius: 999,
   boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
   whiteSpace: "nowrap",
+};
+const timerPill: CSSProperties = {
+  position: "absolute",
+  top: 12,
+  left: 12,
+  zIndex: 5,
+  padding: "6px 12px",
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: 999,
+  fontVariantNumeric: "tabular-nums",
+  boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
 };
 const bottomBar: CSSProperties = {
   flex: "none",
