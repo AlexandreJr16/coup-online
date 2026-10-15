@@ -8,7 +8,7 @@ import type {
   GameView,
   PublicPlayer,
 } from "@/src/types/game";
-import { CARDS, CARD_BY_ID } from "@/src/lib/game/cards";
+import { CARDS, CARD_BY_ID, type Expressao } from "@/src/lib/game/cards";
 
 // Fonte de títulos/marca (carregada em app/layout.tsx via next/font). Única definição.
 export const CINZEL = "var(--font-cinzel), Georgia, serif";
@@ -37,6 +37,18 @@ export const CHAR_LABEL = Object.fromEntries(
 export const CHAR_VISUAL = Object.fromEntries(
   CARDS.map((c) => [c.id, { color: c.cor, icon: c.icone }]),
 ) as Record<Character, { color: string; icon: string }>;
+
+// Tema de arte ativo → pasta em public/art/<tema>/. Fica numa constante para o
+// futuro seletor/teste A/B (ROADMAP Fase 8) trocar o estilo sem tocar nos componentes.
+export const ART_THEME = "imperio";
+
+// URL do retrato (ou null → a carta usa o emoji). A miniatura (size "sm") tem
+// arquivo próprio `.sm.png` para manter pixels inteiros; ver tools/art/.
+export function artUrl(character: Character, expr: Expressao, size: "sm" | "lg"): string | null {
+  const arte = CARD_BY_ID[character].arte;
+  if (!arte?.includes(expr)) return null;
+  return `/art/${ART_THEME}/${character}/${expr}${size === "sm" ? ".sm" : ""}.png`;
+}
 
 export type ActionCategory = "coin" | "aggressive" | "coup" | "neutral";
 

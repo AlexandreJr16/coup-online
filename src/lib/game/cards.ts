@@ -6,11 +6,16 @@
 
 import type { ActionType, Character } from "../../types/game";
 
+// Expressões do retrato pixel art (docs/DIRECAO_CRIATIVA.md). Arquivos em
+// public/art/<tema>/<id>/<expressao>.png (+ .sm.png para a miniatura).
+export type Expressao = "neutro" | "blefe" | "atingido" | "eliminado";
+
 export interface CardDef {
   id: Character;
   nome: string;
   cor: string; // cor base (DESIGN.md "Cartas — Visual")
   icone: string;
+  arte?: readonly Expressao[]; // expressões com imagem disponível; sem isso a carta usa o emoji
   acao: ActionType | null; // ação de turno concedida (Condessa não tem)
   bloqueia: readonly ActionType[]; // ações que este personagem pode bloquear
   dica: string; // hint curto exibido no HandView
@@ -32,9 +37,10 @@ export const CARDS = [
   },
   {
     id: "assassino",
-    nome: "Assassino",
+    nome: "Capoeira",
     cor: "#1a1a1a",
     icone: "🗡️",
+    arte: ["neutro", "blefe", "atingido", "eliminado"],
     acao: "assassinar",
     bloqueia: [],
     dica: "Assassinar",
