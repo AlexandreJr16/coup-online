@@ -12,6 +12,7 @@ import type { GameLogEntry } from "./useGameEvents";
 const ICON: Record<GameLogEntry["kind"], string> = {
   action: "⚔️",
   block: "🛡️",
+  challenge: "❗",
   reveal: "🗡️",
   eliminate: "☠️",
   winner: "🏆",

@@ -69,8 +69,14 @@ export default function GameBoard({
   const events = useGameEvents(view);
   const [seal, setSeal] = useState<SealData | null>(null);
   const sealCounter = useRef(0);
-  const fireSeal = (title: string, subtitle?: string) =>
-    setSeal({ key: ++sealCounter.current, title, subtitle });
+  useEffect(() => {
+    if (!events.challenge) return; // contestação de QUALQUER jogador → todos veem o selo
+    setSeal({
+      key: ++sealCounter.current,
+      title: "CONTESTADO!",
+      subtitle: `${events.challenge.title} · ${events.challenge.verdict}`,
+    });
+  }, [events.challenge]);
   useEffect(() => {
     if (!events.block) return; // bloqueio de qualquer jogador → estampa "BLOQUEIO"
     setSeal({
@@ -179,7 +185,6 @@ export default function GameBoard({
           }}
           onChallenge={() => {
             setError("");
-            fireSeal("CONTESTADO!");
             socket.emit("game_challenge", ack);
           }}
           onPass={() => {
@@ -264,6 +269,19 @@ export default function GameBoard({
             <h2 style={{ color: COLORS.gold, fontFamily: CINZEL, letterSpacing: 0.5 }}>
               🏆 Vencedor: {name(view.winnerId)}
             </h2>
+            {/* Revanche: o vencedor abre a próxima (game-rules.md) */}
+            {me && (
+              <button
+                onClick={() => {
+                  setError("");
+                  socket.emit("game_rematch", ack);
+                }}
+                className="game-btn"
+                style={{ padding: "10px 20px", fontSize: 15, color: "#1a1a2e", "--c": COLORS.gold } as CSSProperties}
+              >
+                Jogar de novo
+              </button>
+            )}
           </div>
         )}
 

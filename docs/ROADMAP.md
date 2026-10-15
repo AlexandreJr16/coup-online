@@ -65,7 +65,7 @@ v0 tinha 32; o spike mostrou que faltavam marrons médios (pele ia para laranja)
 - [x] Script `tools/art/postprocess` (fundo → grade → paleta → PNG) e `tools/art/generate.ts`
 - [x] Mostrar o Capoeira dentro de `Card.tsx` (com fallback para emoji) + galeria `/dev/cartas`
 - [x] Relatório em `docs/SPIKE_ARTE.md`
-- [ ] **Aprovação do Alexandre do look** (abrir `/dev/cartas`). Expressões ainda sutis: ver "Para a Fase 3" no relatório
+- [x] **Look aprovado pelo Alexandre.** Expressões ainda sutis: ver "Para a Fase 3" no relatório
 
 **DoD:** pelo menos um caminho gera imagens em tempo aceitável (alvo: minutos, não horas, por imagem); o Capoeira aparece na carta com a paleta mestra; o Alexandre aprova (ou rejeita) o look; o gerador e a resolução ficam decididos.
 **Se nenhum caminho local funcionar:** o plano continua com geração online e o resto do roadmap não muda.
@@ -112,21 +112,17 @@ v0 tinha 32; o spike mostrou que faltavam marrons médios (pele ia para laranja)
 
 **DoD:** faixas tocam em loop gapless; licença/termos do gerador registrados em `docs/AUDIO.md`; dois temas alternam sem mexer em código de jogo.
 
-## Trilha paralela F — Fluidez (TDD) 🤖
-Pode rodar antes ou junto de qualquer fase acima. Ordem sugerida: F1 → F2 → F3 → F4 → F5 → F6.
+## Trilha paralela F — Fluidez (TDD) ✅ concluída
+Todas feitas e validadas com testes de engine, testes do store de salas e E2E com clientes Socket.IO reais.
 
-- [ ] **F1 — "Passar":** evento `game_pass` + botão. A janela fecha quando todos os elegíveis passam.
-  **DoD:** testes de engine para passe parcial, total e jogador eliminado; o fluxo normal sem passe continua igual.
-- [ ] **F2 — Timeouts de ação/revelação/troca:** autoplay seguro (Renda, carta aleatória, troca neutra).
-  **DoD:** testes por fase; partida com jogador AFK termina sem travar.
-- [ ] **F3 — Deadline absoluto:** o servidor envia o instante final; o cliente deriva o countdown.
-  **DoD:** o relógio não reinicia a cada `game_state`; barra do `ReactionOverlay` coerente entre clientes.
-- [ ] **F4 — Reconexão:** token de sessão (sem login). Quem volta recupera o lugar.
-  **DoD:** recarregar a aba no meio do jogo mantém o jogador e a mão; token não é adivinhável; sem cartas alheias na view.
-- [ ] **F5 — Revanche e config:** "vencedor começa", e UI para os 3 timers.
-  **DoD:** nova partida na mesma sala; valores respeitam os limites do `game-rules.md`.
-- [ ] **F6 — Selo "CONTESTADO!" global:** todos veem o selo, não só quem clicou.
-  **DoD:** duas abas mostram o selo no mesmo momento, sem novo canal além de `game_state` (ou com evento justificado).
+- [x] **F1 — "Passar":** evento `game_pass` + botão. A janela fecha quando todos os elegíveis passam; quem passou não reage mais; passar não reinicia o timer.
+- [x] **F2 — Timeouts de turno/revelação/troca:** `TURN_TIME` (45s) e `CHOICE_TIME` (30s). Estourou: Renda (ou Golpe obrigatório), carta sorteada, troca neutra.
+- [x] **F3 — Relógio do servidor:** o timer só rearma quando a fase/janela muda (`phaseSeq`); a view traz `remainingMs`, sem deriva no cliente.
+- [x] **F4 — Reconexão:** `playerId` estável + token secreto (sessionStorage por aba). F5 retoma o assento e a mão; sem token, reivindica assento ausente pelo nome. Ausente da vez joga em 5s; lobby remove quem caiu em 20s; sala sem ninguém pausa e some em 10 min. Limite de 6 jogadores e validação do payload.
+- [x] **F5 — Revanche e config:** "Jogar de novo" (vencedor começa, mesmos timers) e tela de tempos no lobby (host), montada a partir de `src/lib/game/config.ts`.
+- [x] **F6 — Selo "CONTESTADO!" global:** a engine registra a última contestação (pública) e todos veem selo e feed ao mesmo tempo.
+
+Pendências conhecidas (fora da trilha): indicar ausentes também na mesa (hoje só no banner e no lobby); rate limit de eventos; deploy com WebSocket.
 
 ## Riscos
 | Risco | Mitigação |
@@ -138,4 +134,4 @@ Pode rodar antes ou junto de qualquer fase acima. Ordem sugerida: F1 → F2 → 
 | Deploy com WebSocket (Vercel não serve) | Escolher Fly.io, Railway, Render ou VPS antes de divulgar |
 
 ## Ordem recomendada
-Fase 0 → F1 e F2 → Fase 1 → Fase 2 (em paralelo com F3–F4) → Fase 3 → Fase 4 → Fase 5 → Fase 6 → Fase 7 → F5/F6 → Fase 8.
+Feitas: Fase 0, Fase 2 (spike) e toda a trilha F. Próximas: Fase 3 → Fase 4 → Fase 5 → Fase 6 → Fase 7 → Fase 8. (A Fase 1, bíblia criativa, vai sendo fechada junto com cada personagem.)

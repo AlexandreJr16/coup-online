@@ -303,6 +303,30 @@ app.prepare().then(() => {
       commit(room, game);
     });
 
+    // Revanche: nova partida com os mesmos jogadores (só quem está online) e os
+    // mesmos timers; o vencedor abre. Qualquer jogador da partida pode pedir.
+    socket.on("game_rematch", (cb) => {
+      const { roomId, playerId } = socket.data;
+      const room = roomId ? getRoom(roomId) : undefined;
+      const prev = room?.game;
+      if (!room || !prev || !playerId) return cb({ ok: false, error: "Partida não encontrada." });
+      if (prev.phase !== "fim_de_jogo") return cb({ ok: false, error: "A partida ainda não terminou." });
+      if (!prev.players.some((p) => p.id === playerId)) {
+        return cb({ ok: false, error: "Só quem jogou pode pedir revanche." });
+      }
+      for (const p of room.players.filter((x) => !x.connected)) removePlayer(room.id, p.id);
+      if (room.players.length < 2) return cb({ ok: false, error: "Mínimo de 2 jogadores." });
+      const game = createGame(
+        room.players.map((p) => ({ id: p.id, name: p.name })),
+        prev.config,
+        undefined,
+        { firstPlayerId: prev.winnerId ?? undefined, matchNumber: prev.matchNumber + 1 },
+      );
+      cb({ ok: true });
+      broadcastPlayers(room);
+      commit(room, game);
+    });
+
     socket.on("game_action", ({ action, targetId }, cb) =>
       handleGameEvent(cb, (id) => ({ type: "action", playerId: id, action, targetId })),
     );

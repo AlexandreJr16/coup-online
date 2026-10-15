@@ -5,9 +5,10 @@ import { type CSSProperties, useEffect, useState } from "react";
 
 import GameBoard from "@/src/components/game/GameBoard";
 import { avatarColor, CINZEL, COLORS } from "@/src/components/game/helpers";
+import TimerSettings, { DEFAULT_TIMERS } from "@/src/components/game/TimerSettings";
 import { clearToken, readToken, saveToken } from "@/src/lib/session";
 import { getSocket } from "@/src/lib/socket";
-import type { GameView } from "@/src/types/game";
+import type { GameConfig, GameView } from "@/src/types/game";
 import type { JoinRoomAck, Player } from "@/src/types/socket";
 
 export default function RoomPage() {
@@ -26,6 +27,7 @@ export default function RoomPage() {
   const [view, setView] = useState<GameView | null>(null);
   const [myId, setMyId] = useState("");
   const [error, setError] = useState("");
+  const [timers, setTimers] = useState<GameConfig>(DEFAULT_TIMERS); // só o host usa
 
   // Só existe no cliente; o <code> usa suppressHydrationWarning (SSR renderiza vazio).
   const shareUrl =
@@ -78,7 +80,7 @@ export default function RoomPage() {
 
   function startGame() {
     setError("");
-    getSocket().emit("game_start", {}, (ack) => {
+    getSocket().emit("game_start", { config: timers }, (ack) => {
       if (!ack.ok) setError(ack.error);
     });
   }
@@ -133,6 +135,7 @@ export default function RoomPage() {
         // Partida em andamento: o tabuleiro ocupa todo o espaço restante.
         <div style={{ flex: 1, minHeight: 0 }}>
           <GameBoard
+            key={view.matchNumber} // revanche = tabuleiro novo (feed e animações zeram)
             view={view}
             myId={myId}
             interactionMode={interactionMode}
@@ -193,14 +196,17 @@ export default function RoomPage() {
             </ul>
 
             {isHost ? (
-              <button
-                onClick={startGame}
-                disabled={players.length < 2}
-                className="game-btn"
-                style={startBtn}
-              >
-                Iniciar jogo
-              </button>
+              <>
+                <TimerSettings value={timers} onChange={setTimers} />
+                <button
+                  onClick={startGame}
+                  disabled={players.length < 2}
+                  className="game-btn"
+                  style={startBtn}
+                >
+                  Iniciar jogo
+                </button>
+              </>
             ) : (
               <p style={{ color: COLORS.dim, marginTop: 20 }}>Aguardando o host iniciar…</p>
             )}

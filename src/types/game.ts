@@ -103,6 +103,17 @@ export type Effect =
   | { kind: "replace_card"; playerId: string; character: Character }
   | { kind: "exchange"; playerId: string };
 
+// Última contestação resolvida. Pública: todos veem quem contestou quem e se o
+// acusado tinha a carta (no jogo físico a carta é mostrada na mesa).
+export interface LastChallenge {
+  n: number; // contador crescente; o cliente dispara o selo quando muda
+  challengerId: string;
+  accusedId: string; // quem fez a ação (kind "action") ou o bloqueio (kind "block")
+  claimed: Character; // personagem alegado
+  accusedHadCard: boolean; // true = estava falando a verdade
+  kind: "action" | "block";
+}
+
 // Cartas em jogo durante uma Troca (Embaixador). Privadas ao ator.
 export interface ExchangePool {
   playerId: string;
@@ -116,6 +127,8 @@ export interface GameState {
   // O servidor usa para rearmar o timer só quando a janela muda — um "Passar" que
   // não fecha a janela não pode reiniciar o relógio.
   phaseSeq: number;
+  matchNumber: number; // nº da partida na sala (sobe a cada revanche)
+  lastChallenge: LastChallenge | null; // última contestação (pública)
   players: PlayerState[];
   order: string[]; // ordem de turno (ids)
   currentPlayerIndex: number; // índice em `order` do jogador da vez
@@ -160,6 +173,8 @@ export interface PublicPlayer {
 
 export interface GameView {
   phase: Phase;
+  matchNumber: number;
+  lastChallenge: LastChallenge | null;
   players: PublicPlayer[];
   currentPlayerId: string | null;
   deckCount: number; // tamanho do baralho, sem revelar as cartas

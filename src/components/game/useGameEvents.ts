@@ -9,7 +9,7 @@ import { ACTION_META, CHAR_LABEL } from "./helpers";
 
 export interface GameLogEntry {
   id: number;
-  kind: "action" | "block" | "reveal" | "eliminate" | "winner";
+  kind: "action" | "block" | "challenge" | "reveal" | "eliminate" | "winner";
   text: string;
 }
 
@@ -19,9 +19,17 @@ export interface SealEvent {
   character: Character;
 }
 
+// Contestação resolvida (vem do view.lastChallenge, igual para TODOS os jogadores).
+export interface ChallengeEvent {
+  id: number;
+  title: string; // ex.: "Bia contestou Ana"
+  verdict: string; // ex.: "Era blefe!" / "Tinha a carta"
+}
+
 export interface GameEvents {
   log: GameLogEntry[];
   block: SealEvent | null; // último bloqueio observado (dispara o selo de cera)
+  challenge: ChallengeEvent | null; // última contestação (dispara o selo "CONTESTADO!")
   coinDeltas: Record<string, number>; // playerId -> variação de moedas na última transição
   deltaKey: number; // muda a cada transição com deltas (re-dispara a animação)
 }
@@ -47,6 +55,7 @@ export function useGameEvents(view: GameView | null): GameEvents {
   const idRef = useRef(0);
   const [log, setLog] = useState<GameLogEntry[]>([]);
   const [block, setBlock] = useState<SealEvent | null>(null);
+  const [challenge, setChallenge] = useState<ChallengeEvent | null>(null);
   const [coinDeltas, setCoinDeltas] = useState<Record<string, number>>({});
   const [deltaKey, setDeltaKey] = useState(0);
 
@@ -71,6 +80,16 @@ export function useGameEvents(view: GameView | null): GameEvents {
       const b = view.pending.block;
       push("block", `${nameOf(view, b.blockerId)} bloqueou alegando ${CHAR_LABEL[b.character]}`);
       setBlock({ id: ++idRef.current, blockerId: b.blockerId, character: b.character });
+    }
+    // 2b. Contestação resolvida (n novo em lastChallenge = todo mundo vê o mesmo)
+    const lc = view.lastChallenge;
+    if (lc && lc.n !== (prev.lastChallenge?.n ?? 0)) {
+      const who = `${nameOf(view, lc.challengerId)} contestou ${nameOf(view, lc.accusedId)}`;
+      const verdict = lc.accusedHadCard
+        ? `tinha ${CHAR_LABEL[lc.claimed]}`
+        : `era blefe (sem ${CHAR_LABEL[lc.claimed]})`;
+      push("challenge", `${who}: ${verdict}`);
+      setChallenge({ id: ++idRef.current, title: who, verdict: verdict[0].toUpperCase() + verdict.slice(1) });
     }
     // 3. Cartas reveladas (perda de influência) e eliminação
     for (const cur of view.players) {
@@ -102,5 +121,5 @@ export function useGameEvents(view: GameView | null): GameEvents {
     }
   }, [view]);
 
-  return { log, block, coinDeltas, deltaKey };
+  return { log, block, challenge, coinDeltas, deltaKey };
 }

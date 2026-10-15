@@ -12,6 +12,7 @@
 // 2 cartas e a Troca PAUSAM a fila pedindo input — é o que permite encadear o
 // "perigo duplo do Assassino" sem casos especiais ad-hoc.
 
+import { normalizeConfig } from "./config";
 import { createDeck, shuffle, shuffleInPlace, type Rng } from "./deck";
 import type {
   Character,
@@ -32,10 +33,13 @@ const TREASURY_TOTAL = 50; // total de moedas do jogo (Coup base)
 class EngineError extends Error {}
 
 // ── Setup: transição `partida_iniciada` do diagrama ─────────────────────────
+// `opts.firstPlayerId`: quem abre a partida ("vencedor começa" na revanche; um id
+// desconhecido cai no primeiro). `opts.matchNumber`: nº da partida na sala (revanche).
 export function createGame(
   players: ReadonlyArray<{ id: string; name: string }>,
   configInput: Partial<GameConfig> = {},
   rng: Rng = Math.random,
+  opts: { firstPlayerId?: string; matchNumber?: number } = {},
 ): GameState {
   if (players.length < 2 || players.length > 6) {
     throw new EngineError("Coup requer de 2 a 6 jogadores.");
@@ -60,12 +64,15 @@ export function createGame(
     };
   });
 
+  const order = players.map((p) => p.id);
   return {
     phase: "aguardando_acao",
     phaseSeq: 0,
+    matchNumber: opts.matchNumber ?? 1,
+    lastChallenge: null,
     players: playerStates,
-    order: players.map((p) => p.id),
-    currentPlayerIndex: 0,
+    order,
+    currentPlayerIndex: Math.max(0, order.indexOf(opts.firstPlayerId ?? "")),
     deck,
     treasury: TREASURY_TOTAL - playerStates.length * 2,
     config: normalizeConfig(configInput),
@@ -74,16 +81,6 @@ export function createGame(
     mustRevealPlayerId: null,
     exchange: null,
     winnerId: null,
-  };
-}
-
-function normalizeConfig(c: Partial<GameConfig>): GameConfig {
-  return {
-    globalReactionTime: clamp(c.globalReactionTime ?? 5, 3, 60),
-    targetReactionTime: clamp(c.targetReactionTime ?? 15, 5, 120),
-    challengeBlockTime: clamp(c.challengeBlockTime ?? 5, 3, 60),
-    turnTime: clamp(c.turnTime ?? 45, 15, 180),
-    choiceTime: clamp(c.choiceTime ?? 30, 10, 120),
   };
 }
 
@@ -272,6 +269,7 @@ function challengeAction(s: GameState, challengerId: string, rng: Rng): void {
   const actor = byId(s, p.actorId);
   const claimed = p.claimedCharacter;
   const effects: Effect[] = [];
+  recordChallenge(s, challengerId, actor.id, claimed, hasFaceDown(actor, claimed), "action");
 
   if (hasFaceDown(actor, claimed)) {
     // Contestado TEM a carta: contestante perde 1; ator troca a carta provada e
@@ -300,6 +298,14 @@ function challengeBlock(s: GameState, challengerId: string, rng: Rng): void {
   }
   const blocker = byId(s, block.blockerId);
   const effects: Effect[] = [];
+  recordChallenge(
+    s,
+    challengerId,
+    blocker.id,
+    block.character,
+    hasFaceDown(blocker, block.character),
+    "block",
+  );
 
   if (hasFaceDown(blocker, block.character)) {
     // Bloqueio legítimo: contestante perde 1; bloqueador troca a carta. A ação
@@ -376,6 +382,27 @@ function closeWindow(s: GameState, rng: Rng): void {
   s.pending = null;
   s.resolution = [];
   runResolution(s, rng);
+}
+
+// Registro PÚBLICO da última contestação (o resultado de uma contestação é
+// público no jogo). Permite a todos verem o selo/feed no mesmo instante, em vez de
+// só quem clicou. `n` sobe a cada contestação — o cliente reage à mudança de n.
+function recordChallenge(
+  s: GameState,
+  challengerId: string,
+  accusedId: string,
+  claimed: Character,
+  accusedHadCard: boolean,
+  kind: "action" | "block",
+): void {
+  s.lastChallenge = {
+    n: (s.lastChallenge?.n ?? 0) + 1,
+    challengerId,
+    accusedId,
+    claimed,
+    accusedHadCard,
+    kind,
+  };
 }
 
 // ── Timeout: o servidor avisa que o tempo da fase estourou ───────────────────
@@ -675,10 +702,6 @@ function mkPending(
   return { action, actorId, targetId, claimedCharacter, paidCoins, block: null, passedIds: [] };
 }
 
-function clamp(n: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, n));
-}
-
 function isSubMultiset(sub: Character[], sup: Character[]): boolean {
   const counts = new Map<Character, number>();
   for (const c of sup) counts.set(c, (counts.get(c) ?? 0) + 1);
@@ -710,6 +733,8 @@ export function viewForPlayer(
   const timer = currentTimer(s);
   return {
     phase: s.phase,
+    matchNumber: s.matchNumber,
+    lastChallenge: s.lastChallenge ? { ...s.lastChallenge } : null,
     players: s.players.map((p) => ({
       id: p.id,
       name: p.name,
