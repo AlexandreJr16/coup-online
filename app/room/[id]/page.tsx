@@ -4,12 +4,10 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { type CSSProperties, useEffect, useState } from "react";
 
 import GameBoard from "@/src/components/game/GameBoard";
-import { avatarColor, COLORS } from "@/src/components/game/helpers";
+import { avatarColor, CINZEL, COLORS } from "@/src/components/game/helpers";
 import { getSocket } from "@/src/lib/socket";
 import type { GameView } from "@/src/types/game";
 import type { JoinRoomAck, Player } from "@/src/types/socket";
-
-const CINZEL = "var(--font-cinzel), Georgia, serif";
 
 export default function RoomPage() {
   const router = useRouter();

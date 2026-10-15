@@ -6,9 +6,8 @@
 
 import { type CSSProperties, useState } from "react";
 
+import { CINZEL } from "./helpers";
 import type { GameLogEntry } from "./useGameEvents";
-
-const CINZEL = "var(--font-cinzel), Georgia, serif";
 
 const ICON: Record<GameLogEntry["kind"], string> = {
   action: "⚔️",

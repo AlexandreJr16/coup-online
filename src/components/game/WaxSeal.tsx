@@ -6,6 +6,8 @@
 
 import type { CSSProperties } from "react";
 
+import { CINZEL } from "./helpers";
+
 export interface SealData {
   key: number;
   title: string;
@@ -24,8 +26,6 @@ export default function WaxSeal({ seal }: { seal: SealData | null }) {
     </div>
   );
 }
-
-const CINZEL = "var(--font-cinzel), Georgia, serif";
 
 const wrap: CSSProperties = {
   position: "absolute",

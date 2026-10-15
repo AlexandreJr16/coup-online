@@ -17,10 +17,8 @@ import IntrigueFeed from "./IntrigueFeed";
 import ReactionOverlay from "./ReactionOverlay";
 import Table from "./Table";
 import WaxSeal, { type SealData } from "./WaxSeal";
-import { ACTION_META, CHAR_LABEL, COLORS } from "./helpers";
+import { ACTION_META, CHAR_LABEL, CINZEL, COLORS } from "./helpers";
 import { useGameEvents } from "./useGameEvents";
-
-const CINZEL = "var(--font-cinzel), Georgia, serif";
 
 const REACTION_PHASES = new Set<GameView["phase"]>([
   "janela_reacao_global",

@@ -24,15 +24,19 @@ O SERVIDOR é a única fonte da verdade do estado do jogo.
 - Sem clean architecture / camadas formais: separação mínima funcional
   (lógica de jogo em lib/, transporte em server.ts, UI em components/).
   Não criar abstrações antes de precisar delas.
-- Sem testes automatizados por enquanto: validação manual via duas abas.
-  TDD entra quando implementar a engine de regras do jogo.
+- Testes: a engine (`src/lib/game/engine.ts`) tem testes com `node:test`
+  (`npm test`). Mudança de regra = TDD (teste falhando primeiro). UI e
+  transporte seguem com validação manual via duas abas.
 
 ## Convenções de código
 - TypeScript estrito, sem `any` salvo justificativa em comentário.
 - Componentes React pequenos e focados; lógica de jogo fica fora de
-  componentes, em funções puras testáveis (ex: `lib/game/rules.ts`).
-- Nomes de eventos do Socket.IO em snake_case (ex: `player_join`,
-  `action_taxar`, `challenge_resolved`).
+  componentes, em funções puras testáveis (ex: `src/lib/game/engine.ts`).
+- Nomes de eventos do Socket.IO em snake_case (ex: `game_action`,
+  `game_challenge`). Os eventos de lobby existentes usam o prefixo `room:`
+  (`room:create`, `room:join`, `room:players`); manter por compatibilidade.
+- Constantes de UI compartilhadas (paleta `COLORS`, fonte `CINZEL`) ficam em
+  `src/components/game/helpers.ts`. Não redeclarar por arquivo.
 
 ## O que NÃO fazer sem perguntar
 - Não adicionar autenticação/login — o jogo é "entra pelo link, escolhe nome".
@@ -44,3 +48,10 @@ O SERVIDOR é a única fonte da verdade do estado do jogo.
 ## Regras do jogo
 Para regras completas, mecânicas e timers, veja `game-rules.md`.
 Toda lógica de jogo implementada deve ser fiel a esse documento.
+
+## Direção do projeto
+Tema Brasil Império (arte pixel art, áudio, efeitos estilo Balatro) e trilha
+de fluidez (passar, timeouts, reconexão). Plano executável com critérios de
+pronto por fase em `docs/ROADMAP.md`; visão criativa em
+`docs/DIRECAO_CRIATIVA.md`; áudio em `docs/AUDIO.md`. Tag `v1` = jogo antes
+dessa direção.

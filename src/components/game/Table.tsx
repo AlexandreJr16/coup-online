@@ -5,10 +5,8 @@
 
 import type { PublicPlayer } from "@/src/types/game";
 import { useCountUp } from "./CoinFx";
-import { COLORS, seatLayout } from "./helpers";
+import { CINZEL, COLORS, seatLayout } from "./helpers";
 import Seat from "./Seat";
-
-const CINZEL = "var(--font-cinzel), Georgia, serif";
 
 export default function Table({
   players,

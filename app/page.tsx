@@ -1,15 +1,23 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, Suspense, useState } from "react";
 
 import { getSocket } from "@/src/lib/socket";
 import type { CreateRoomAck } from "@/src/types/socket";
-import { COLORS } from "@/src/components/game/helpers";
+import { CINZEL, COLORS } from "@/src/components/game/helpers";
 
-const CINZEL = "var(--font-cinzel), Georgia, serif";
+// Next 16 exige <Suspense> em volta de quem usa useSearchParams na página
+// pré-renderizada ("/"); sem isso o `next build` (e o `npm start`) falha.
+export default function HomePage() {
+  return (
+    <Suspense fallback={null}>
+      <Home />
+    </Suspense>
+  );
+}
 
-export default function Home() {
+function Home() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [name, setName] = useState("");

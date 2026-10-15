@@ -10,6 +10,9 @@ import type {
 } from "@/src/types/game";
 import { CARDS, CARD_BY_ID } from "@/src/lib/game/cards";
 
+// Fonte de títulos/marca (carregada em app/layout.tsx via next/font). Única definição.
+export const CINZEL = "var(--font-cinzel), Georgia, serif";
+
 // Paleta (DESIGN.md "Tipografia e Cores"). Inline styles, sem lib de UI.
 export const COLORS = {
   bg: "#1a1a2e", // fundo

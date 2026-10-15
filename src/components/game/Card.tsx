@@ -11,7 +11,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import type { Character } from "@/src/types/game";
-import { CHAR_LABEL, CHAR_VISUAL, COLORS } from "./helpers";
+import { CHAR_LABEL, CHAR_VISUAL, CINZEL, COLORS } from "./helpers";
 
 type Size = "sm" | "lg";
 interface Dim {
@@ -25,8 +25,6 @@ const DIMS: Record<Size, Dim> = {
   sm: { w: 40, h: 56, icon: 22, label: 0, radius: 6 },
   lg: { w: 88, h: 124, icon: 34, label: 13, radius: 10 },
 };
-
-const CINZEL = "var(--font-cinzel), Georgia, serif";
 
 export default function Card({
   character,

@@ -113,7 +113,7 @@ body {
   animation: seal-stamp 1.6s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
 }
 
-/* ── Economia viva: +N/−N subindo no avatar e moeda voando (gamificação) ─────── */
+/* ── Economia viva: +N/−N subindo no avatar (gamificação) ─────── */
 @keyframes coin-rise {
   0% {
     transform: translate(-50%, 0) scale(0.8);
@@ -129,21 +129,4 @@ body {
 }
 .coin-rise {
   animation: coin-rise 1.1s ease-out forwards;
-}
-
-@keyframes coin-fly {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.5);
-  }
-  15% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0.85;
-    transform: translate(var(--dx, 0), var(--dy, 0)) scale(1);
-  }
-}
-.coin-fly {
-  animation: coin-fly 0.7s ease-in forwards;
 }

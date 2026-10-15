@@ -79,7 +79,8 @@ Objetivo: feedback de auto-consciência, não punição.
 Fundo: cor sólida escura (tom de feltro/mesa de jogo) — futuramente
 substituível por cenário de castelo.
 Mesa: círculo/elipse com textura sutil, tom mais claro que o fundo.
-Fonte: sem serifa, legível, peso médio. Nada de fontes decorativas.
+Fonte: corpo em sans legível (Geist, peso médio). Cinzel (serifada
+gravada) só em títulos, marca, nomes de carta e selo — nunca em texto corrido.
 Paleta base:
 - Fundo: #1a1a2e ou similar (azul-escuro/preto)
 - Mesa: #2d5a27 (verde feltro) ou variação neutra
@@ -98,7 +99,7 @@ Futuro: upload de imagem ou seleção de personagem do Coup.
 
 | Fase do jogo              | O que aparece na tela                              |
 |---------------------------|----------------------------------------------------|
-| aguardando_jogadores      | Lobby: lista de jogadores + link compartilhável    |
+| (sem partida iniciada)    | Lobby da sala: jogadores + link; host usa game_start |
 | aguardando_acao (seu turno)| ActionBar ou HandView ativos                      |
 | aguardando_acao (outro)   | Controles desabilitados, indicador no avatar deles |
 | janela_reacao_*           | Overlay com botões Bloquear/Contestar + timer      |
@@ -110,14 +111,16 @@ Futuro: upload de imagem ou seleção de personagem do Coup.
 - Não usar animações pesadas que atrasam a percepção de turno
 - Não esconder o timer — sempre visível durante janelas de reação
 - Não poluir a mesa com informação redundante
-- Não implementar avatares com imagem agora — placeholder de iniciais é suficiente
+- Avatares com imagem: hoje só iniciais; pixel art de avatar entra na Fase 7
+  do `docs/ROADMAP.md`
 - Não escolher biblioteca de componentes UI genérica (MUI, Chakra etc) —
   o visual tem que parecer um jogo, não um dashboard
 
-  ## Cartas — Visual
+## Cartas — Visual
 
 Cada personagem tem identidade visual própria via cor + ícone + nome.
-Sem imagem externa por enquanto — CSS/SVG puro.
+Estado atual: CSS puro + emoji. A arte em pixel art entra na Fase 3 do
+`docs/ROADMAP.md`, com o emoji mantido como fallback quando faltar imagem.
 
 | Personagem  | Cor base  | Hex       | Ícone |
 |-------------|-----------|-----------|-------|
@@ -132,3 +135,13 @@ Carta revelada (perdida): dessaturada, opacidade 50%, ícone ❌.
 Carta no HandView:
 - Que você TEM: cor cheia, borda brilhante
 - Que você pode BLEFAR: cor dessaturada + ícone 🎭 no canto
+
+## Direção futura (Brasil Império)
+
+Os personagens, a paleta pixel art de 32 cores, o estilo (Balatro + Undertale +
+Stardew) e as regras de efeito/áudio estão em `docs/DIRECAO_CRIATIVA.md`,
+`docs/AUDIO.md` e `docs/ROADMAP.md`. Este arquivo descreve o estado atual da UI;
+quando uma fase do roadmap for entregue, atualizar aqui.
+
+Regra que continua valendo: efeito nunca bloqueia input nem atrasa a percepção
+do turno.
