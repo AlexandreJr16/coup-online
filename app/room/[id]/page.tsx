@@ -5,6 +5,7 @@ import { type CSSProperties, useEffect, useState } from "react";
 
 import GameBoard from "@/src/components/game/GameBoard";
 import { avatarColor, CINZEL, COLORS } from "@/src/components/game/helpers";
+import { clearToken, readToken, saveToken } from "@/src/lib/session";
 import { getSocket } from "@/src/lib/socket";
 import type { GameView } from "@/src/types/game";
 import type { JoinRoomAck, Player } from "@/src/types/socket";
@@ -49,10 +50,16 @@ export default function RoomPage() {
     socket.on("game_state", onState);
 
     function join() {
-      setMyId(socket.id ?? "");
-      socket.emit("room:join", { roomId, name }, (ack: JoinRoomAck) => {
-        if (!ack.ok) setError(ack.error);
-        else setPlayers(ack.players);
+      // Reenvia o token a cada (re)conexão: o servidor devolve o MESMO assento.
+      socket.emit("room:join", { roomId, name, token: readToken(roomId) }, (ack: JoinRoomAck) => {
+        if (!ack.ok) {
+          setError(ack.error);
+          return;
+        }
+        setError("");
+        setPlayers(ack.players);
+        setMyId(ack.you.id);
+        saveToken(roomId, ack.you.token);
       });
     }
 
@@ -74,6 +81,13 @@ export default function RoomPage() {
     getSocket().emit("game_start", {}, (ack) => {
       if (!ack.ok) setError(ack.error);
     });
+  }
+
+  // Sair de propósito: libera o assento (no lobby) e esquece a sessão desta sala.
+  function leave() {
+    getSocket().emit("room:leave");
+    clearToken(roomId);
+    router.push("/");
   }
 
   return (
@@ -109,7 +123,7 @@ export default function RoomPage() {
               Modo {interactionMode === "buttons" ? "A · Botões" : "B · Cartas"} ⇄
             </button>
           )}
-          <button onClick={() => router.push("/")} className="game-btn" style={leaveBtn}>
+          <button onClick={leave} className="game-btn" style={leaveBtn}>
             Sair
           </button>
         </div>
@@ -118,7 +132,12 @@ export default function RoomPage() {
       {view ? (
         // Partida em andamento: o tabuleiro ocupa todo o espaço restante.
         <div style={{ flex: 1, minHeight: 0 }}>
-          <GameBoard view={view} myId={myId} interactionMode={interactionMode} />
+          <GameBoard
+            view={view}
+            myId={myId}
+            interactionMode={interactionMode}
+            absentIds={players.filter((p) => !p.connected).map((p) => p.id)}
+          />
         </div>
       ) : (
         // Lobby: card centralizado com link, jogadores e início.
@@ -159,9 +178,10 @@ export default function RoomPage() {
                       flex: "none",
                     }}
                   />
-                  <span style={{ fontWeight: p.id === myId ? 700 : 500 }}>
+                  <span style={{ fontWeight: p.id === myId ? 700 : 500, opacity: p.connected ? 1 : 0.5 }}>
                     {p.name}
                     {p.id === myId ? " (você)" : ""}
+                    {!p.connected ? " · reconectando…" : ""}
                   </span>
                   {players[0]?.id === p.id && (
                     <span style={{ marginLeft: "auto", fontSize: 12, color: COLORS.gold }}>

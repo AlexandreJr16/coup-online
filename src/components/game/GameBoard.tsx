@@ -30,10 +30,12 @@ export default function GameBoard({
   view,
   myId,
   interactionMode,
+  absentIds = [],
 }: {
   view: GameView;
   myId: string;
   interactionMode: "buttons" | "hand";
+  absentIds?: string[]; // jogadores desconectados (a vez deles passa sozinha)
 }) {
   const socket = getSocket();
   const [error, setError] = useState("");
@@ -132,6 +134,9 @@ export default function GameBoard({
             <b style={{ fontFamily: CINZEL, letterSpacing: 0.5 }}>
               {name(view.currentPlayerId)}
             </b>
+            {view.currentPlayerId && absentIds.includes(view.currentPlayerId) && (
+              <span style={{ color: COLORS.dim }}> · sem conexão, joga sozinho em instantes</span>
+            )}
           </div>
         )}
 

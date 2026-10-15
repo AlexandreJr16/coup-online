@@ -8,8 +8,9 @@
 import type { ActionType, Character, GameConfig, GameView } from "./game";
 
 export interface Player {
-  id: string; // socket.id
+  id: string; // id ESTÁVEL do jogador (não é o socket.id; sobrevive à reconexão)
   name: string;
+  connected: boolean; // false = ausente (caiu/fechou a aba); o assento continua dele
 }
 
 export interface Room {
@@ -22,8 +23,11 @@ export interface CreateRoomAck {
   roomId: string;
 }
 
+// `you` = identidade do jogador nesta sala. O `token` é SECRETO (guardado só no
+// cliente dele, em sessionStorage) e permite voltar ao mesmo assento depois de F5
+// ou queda de rede. O `id` é público (aparece nas views).
 export type JoinRoomAck =
-  | { ok: true; players: Player[] }
+  | { ok: true; players: Player[]; you: { id: string; token: string } }
   | { ok: false; error: string };
 
 // Ack genérico dos eventos de jogo: erro de regra volta privado a quem agiu.
@@ -40,9 +44,11 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
   "room:create": (cb: (ack: CreateRoomAck) => void) => void;
   "room:join": (
-    payload: { roomId: string; name: string },
+    payload: { roomId: string; name: string; token?: string },
     cb: (ack: JoinRoomAck) => void,
   ) => void;
+  // Saída voluntária (botão Sair): no lobby libera o assento na hora.
+  "room:leave": () => void;
 
   // Jogo (host inicia; demais reagem). playerId é o socket.id, posto no servidor.
   game_start: (

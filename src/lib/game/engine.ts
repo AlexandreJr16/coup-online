@@ -747,6 +747,21 @@ export function viewForPlayer(
   };
 }
 
+// Quem a mesa está esperando nas fases de decisão (null nas janelas de reação e no
+// fim). O servidor usa para encurtar o timer de quem está desconectado.
+export function decisionPlayerId(s: GameState): string | null {
+  switch (s.phase) {
+    case "aguardando_acao":
+      return s.order[s.currentPlayerIndex] ?? null;
+    case "aguardando_revelacao":
+      return s.mustRevealPlayerId;
+    case "aguardando_troca":
+      return s.exchange?.playerId ?? null;
+    default:
+      return null;
+  }
+}
+
 // Qual timer governa a fase atual (o servidor usa para armar o setTimeout).
 export function currentTimer(s: GameState): { phase: Phase; seconds: number } | null {
   switch (s.phase) {

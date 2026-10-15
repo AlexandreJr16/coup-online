@@ -5,7 +5,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { applyEvent, createGame, currentTimer, viewForPlayer } from "./engine";
+import {
+  applyEvent,
+  createGame,
+  currentTimer,
+  decisionPlayerId,
+  viewForPlayer,
+} from "./engine";
 import type { Rng } from "./deck";
 import type { Character, GameEvent, GameState } from "../../types/game";
 
@@ -231,6 +237,22 @@ test("timeout em fim_de_jogo é inválido", () => {
   const s = newGame(2);
   s.phase = "fim_de_jogo";
   fails(s, { type: "timeout" });
+});
+
+// ── F4: de quem a mesa está esperando ────────────────────────────────────────
+test("decisionPlayerId: turno, revelação e troca; null nas janelas de reação", () => {
+  let s = newGame(3);
+  assert.equal(decisionPlayerId(s), "p1"); // turno
+  s = run(s, { type: "action", playerId: "p1", action: "taxas" });
+  assert.equal(decisionPlayerId(s), null); // janela de reação
+  s = run(s, { type: "pass", playerId: "p2" }, { type: "pass", playerId: "p3" });
+  assert.equal(decisionPlayerId(s), "p2");
+  setCoins(s, "p2", 7);
+  s = run(s, { type: "action", playerId: "p2", action: "golpe", targetId: "p3" });
+  assert.equal(s.phase, "aguardando_revelacao");
+  assert.equal(decisionPlayerId(s), "p3"); // quem deve revelar
+  s.phase = "fim_de_jogo";
+  assert.equal(decisionPlayerId(s), null);
 });
 
 // ── F3: view traz o tempo restante vindo do servidor ─────────────────────────
