@@ -50,7 +50,7 @@ Cuidado: **evitar "capitão-do-mato"** como personagem (violência da escravidã
 ## Pipeline de arte (IA + pós-processo)
 1. **Prompt-base versionado** por personagem (JSON em `tools/art/prompts/`): bloco de estilo fixo + bloco do personagem + expressão.
 2. **Consistência:** mesmo seed/LoRA ou imagem de referência por personagem. Gerar em lote e curar à mão.
-3. **Pós-processo em script** (`tools/art/`): remover fundo → reduzir com nearest-neighbor (retrato ~64×96) → quantizar para a **paleta mestra** (~32 cores) → PNG + manifest → `public/art/`. Renderizar com `image-rendering: pixelated` e escala inteira.
+3. **Pós-processo em script** (`tools/art/`): remover fundo → reduzir por blocos inteiros (`--grid 8`) → quantizar (CIELAB) para a **paleta mestra** (36 cores) → PNG → `public/art/<tema>/`. Retrato 88×124 e miniatura 40×56, renderizados com `image-rendering: pixelated` em escala 1:1. Composição em **busto**.
 4. **Curadoria humana obrigatória**: cada retrato é aprovado antes de entrar. Retoque no Aseprite se precisar.
 5. **Fallback:** sem imagem, `Card.tsx` continua com emoji. Migração gradual, nada quebra.
 
@@ -59,7 +59,8 @@ Pendente (spike da Fase 2): gerador local (ComfyUI com SDXL/Flux + LoRA de pixel
 ## Pontos em aberto
 - ~~Coronel vs Tropeiro~~ → **Coronel** (decidido: já aponta pro coronelismo). Faltam fechar os outros 4.
 - GPU/orçamento → gerador de imagem e de música.
-- ~~Resolução e paleta~~ → decididos no `docs/ROADMAP.md` (retrato 44×62, miniatura 20×28, paleta de 32 cores). O spike da Fase 2 confirma.
+- ~~Resolução e paleta~~ → decididos no spike da Fase 2 (retrato 88×124, miniatura 40×56, paleta de 36 cores). Ver `docs/SPIKE_ARTE.md`.
+- ~~Gerador de imagem~~ → stable-diffusion.cpp (Vulkan) + SDXL + pixel-art-xl, local na RX 6600. Gerador de música continua em aberto (Fase 8).
 - Capoeira mantido como assassino, tratado com dignidade (malandro carismático, ginga, navalha), sem estereótipo.
 - Libs novas (PixiJS, framer-motion): **aceitas em princípio**. Ainda assim avisar qual e por quê antes de instalar.
 - Atualizar o `DESIGN.md`: a nova direção contradiz "sem imagem externa", "sem avatar com imagem" e "sem fonte decorativa".

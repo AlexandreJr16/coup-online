@@ -17,15 +17,16 @@ Legenda: 🤖 autônomo · 👤 precisa do Alexandre · 🤝 misto (Claude execu
 | Época | Brasil Império (1822–1889) |
 | Personagens | Barão do Café, **Capoeira**, Coronel da Guarda Nacional, Regatão, Benzedeira (ids internos inalterados) |
 | Capoeira | Tratado com dignidade: malandro carismático, ginga, calça branca, lenço colorido, navalha. Nada de estereótipo de "bandido genérico" |
-| Paleta | Mestra de 32 cores (abaixo). Ajustável no spike |
-| Resolução | Padrão: retrato nativo **44×62** (carta lg 88×124 = ×2; retina ×4) e miniatura **20×28** (carta sm 40×56 = ×2). O spike compara com 88×124 nativo |
+| Paleta | Mestra **v1, 36 cores** (abaixo; fonte única em `tools/art/palette.json`). Decidido no spike |
+| Resolução | **Retrato 88×124 nativo** (carta lg em 1:1) e miniatura **40×56** (carta sm). 44×62 foi descartado: o rosto ficou ilegível (ver `docs/SPIKE_ARTE.md`) |
 | Temas | Arte organizada por tema (`public/art/<tema>/...`) para permitir trocar o estilo e fazer teste A/B depois |
 | Música | Trilha **procedural por código** como placeholder já na Fase 5. Faixas por IA substituem depois (Fase 8) |
-| Gerador de imagem | Definido pelo teste de viabilidade (Fase 2). RX 6600, 8 GB VRAM |
+| Gerador de imagem | **stable-diffusion.cpp (Vulkan) + SDXL base + LoRA pixel-art-xl**, local na RX 6600 (~80 s por imagem). Decidido no spike |
 
-### Paleta mestra v0 (32 cores)
+### Paleta mestra v1 (36 cores)
+v0 tinha 32; o spike mostrou que faltavam marrons médios (pele ia para laranja), então entraram 4.
 - Tinta/neutros: `#14101a #2b2236 #4a3d5c #7c6f8a #bdb0a6 #f6ecd6`
-- Pele/madeira: `#3a2218 #5e3a26 #8a5535 #b87a48 #dba26c #efc89a`
+- Pele/madeira: `#3a2218 #4e2f20 #5e3a26 #734630 #8a5535 #a0643d #b87a48 #cd9358 #dba26c #efc89a`
 - Vermelhos: `#5c1620 #9a2a2a #d0453a #f08a5d`
 - Dourados: `#8a5a14 #d9a028 #f7d56a`
 - Verdes: `#1f3a2a #2f6b45 #6aa84f #b5d86a`
@@ -36,10 +37,7 @@ Legenda: 🤖 autônomo · 👤 precisa do Alexandre · 🤝 misto (Claude execu
 ## Ambiente de GPU (diagnóstico feito)
 - GPU: **Navi 23 (RX 6600)**, ~8,5 GB de VRAM.
 - Instalado: `mesa` e `vulkan-radeon`. **Sem ROCm/HIP.** Python do sistema: 3.14 (provavelmente novo demais para PyTorch/ROCm; usar venv com Python mais antigo).
-- Caminhos a testar na Fase 2, nesta ordem:
-  1. **stable-diffusion.cpp com backend Vulkan.** Usa o `vulkan-radeon` que já existe, sem ROCm. Menos dependências.
-  2. **ComfyUI + PyTorch ROCm** (provável override `HSA_OVERRIDE_GFX_VERSION=10.3.0` por a 6600 não ser oficial).
-  3. **Gerador online/API** como plano B.
+- **Resultado do spike: o caminho 1 funcionou** (stable-diffusion.cpp + Vulkan, sem ROCm). ComfyUI/ROCm e geradores online não foram necessários. Detalhes e setup: `docs/SPIKE_ARTE.md` e `tools/art/README.md`.
 
 ## Fases
 
@@ -61,12 +59,13 @@ Legenda: 🤖 autônomo · 👤 precisa do Alexandre · 🤝 misto (Claude execu
 **DoD:** os 5 personagens têm ficha completa e o Alexandre aprovou o texto; tokens aplicados sem mudar o visual atual; reduced-motion desliga as animações existentes.
 
 ### Fase 2 — Teste de viabilidade de geração (spike) 🤝
-- [ ] Rodar stable-diffusion.cpp (Vulkan) na RX 6600 e gerar 1 imagem de teste
-- [ ] Se falhar, tentar ComfyUI + ROCm; se falhar, plano B online
-- [ ] Gerar o **Capoeira** com 4 expressões, nos 2 tamanhos candidatos
-- [ ] Script `tools/art/postprocess` (remover fundo → reduzir nearest-neighbor → quantizar na paleta → PNG)
-- [ ] Mostrar o Capoeira dentro de `Card.tsx` (com fallback para emoji)
-- [ ] Relatório curto em `docs/SPIKE_ARTE.md`: o que funcionou, tempo por imagem, consistência, tamanho escolhido
+- [x] Rodar stable-diffusion.cpp (Vulkan) na RX 6600 e gerar 1 imagem de teste
+- [x] Se falhar, tentar ComfyUI + ROCm; se falhar, plano B online (não foi necessário)
+- [x] Gerar o **Capoeira** com 4 expressões, nos 2 tamanhos candidatos
+- [x] Script `tools/art/postprocess` (fundo → grade → paleta → PNG) e `tools/art/generate.ts`
+- [x] Mostrar o Capoeira dentro de `Card.tsx` (com fallback para emoji) + galeria `/dev/cartas`
+- [x] Relatório em `docs/SPIKE_ARTE.md`
+- [ ] **Aprovação do Alexandre do look** (abrir `/dev/cartas`). Expressões ainda sutis: ver "Para a Fase 3" no relatório
 
 **DoD:** pelo menos um caminho gera imagens em tempo aceitável (alvo: minutos, não horas, por imagem); o Capoeira aparece na carta com a paleta mestra; o Alexandre aprova (ou rejeita) o look; o gerador e a resolução ficam decididos.
 **Se nenhum caminho local funcionar:** o plano continua com geração online e o resto do roadmap não muda.

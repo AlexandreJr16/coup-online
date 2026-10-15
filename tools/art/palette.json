@@ -1,0 +1,13 @@
+{
+  "_comment": "Paleta mestra v1 (36 cores). Fonte única; espelha docs/ROADMAP.md. v1: +4 marrons/peles médios (a v0 empurrava a pele para laranja/vermelho).",
+  "colors": [
+    "#14101a", "#2b2236", "#4a3d5c", "#7c6f8a", "#bdb0a6", "#f6ecd6",
+    "#3a2218", "#4e2f20", "#5e3a26", "#734630", "#8a5535", "#a0643d", "#b87a48", "#cd9358", "#dba26c", "#efc89a",
+    "#5c1620", "#9a2a2a", "#d0453a", "#f08a5d",
+    "#8a5a14", "#d9a028", "#f7d56a",
+    "#1f3a2a", "#2f6b45", "#6aa84f", "#b5d86a",
+    "#1a2a4a", "#2f5d9a", "#4aa3c7", "#a8dce0",
+    "#3b1f52", "#7b3f8f", "#c58ad0",
+    "#e8743b", "#fffaf0"
+  ]
+}

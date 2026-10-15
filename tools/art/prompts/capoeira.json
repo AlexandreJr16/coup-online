@@ -1,0 +1,34 @@
+{
+  "id": "capoeira",
+  "card": "assassino",
+  "nome": "Capoeira",
+  "versao": 2,
+  "notas": "Malandro carismático do Rio imperial (~1850): ginga, camisa branca, lenço vermelho, navalha. Dignidade, não estereótipo de bandido genérico. Sem 'capitão-do-mato'. v2: busto (rosto legível em 88x124), fundo branco liso (o modelo ignora magenta), lenço explícito (v1 virou colar de ouro).",
+  "estilo": "pixel art, 16-bit video game character portrait, bust portrait, head and shoulders and chest only, face large and clearly readable, limited color palette, clean dark outline, warm tropical colors, soft cel shading, plain solid white background, no shadow, no floor, no text, no frame",
+  "personagem": "Afro-Brazilian capoeirista man from 19th century Rio de Janeiro, charismatic malandro, white linen shirt with rolled sleeves open at the collar, red cloth bandana scarf knotted around his neck, straw hat tilted to one side, thin mustache",
+  "expressoes": {
+    "neutro": "confident calm smirk, looking at the viewer",
+    "blefe": "(sly side-eye:1.4), (looking sideways:1.3), (raised eyebrow:1.3), (mischievous grin:1.3), (finger on his lips:1.4)",
+    "atingido": "(wincing in pain:1.5), (one eye shut:1.4), (gritted teeth:1.4), (grimace:1.3), (hand on chest:1.3)",
+    "eliminado": "(eyes closed:1.5), (head tilted down:1.4), (dazed:1.3), (sad defeated face:1.3), (hat tilted over his face:1.2)"
+  },
+  "negativo": "photo, realistic, 3d render, blurry, text, watermark, frame, border, caricature, offensive stereotype, gradient background, colored background, shadow, floor, full body, legs, necklace, beads, jewelry, gold chain, multiple people",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 704,
+    "altura": 1024,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 1850
+  },
+  "pos": {
+    "tamanho": "88x124",
+    "tamanho_miniatura": "40x56",
+    "kernel": "lanczos3",
+    "tol": 70
+  }
+}
