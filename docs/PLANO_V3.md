@@ -43,6 +43,7 @@ colinha "?", faixa de status no cabeçalho, aviso dos últimos 5s, espectador, l
 10. **Coisas, não números.** Moeda é pilha de fichas; tempo é anel em volta de quem deve jogar.
 11. **A interface escala com a tela.** Testar em 1280×720, 1600×900, 1920×1080 e 2560×1440.
 12. **Revisão visual antes do código.** UI nova passa por mockup aprovado (Fase 0).
+13. **Imagem antes de número e de texto.** Onde hoje há um número ou uma frase, o jogo mostra uma pixel art própria (fichas, baralho, cofre, expressões). O número fica só como apoio para leitura exata. A imagem **nunca é a mesma repetida N vezes**: tem variantes. Ver B3 e a lista de candidatas na Fase 0.
 
 > **Tensão a resolver (de propósito):** em 15/10 o Alexandre disse que **não gosta de banners de texto** ("Vez de X", "Aguardando reações…"). Em 16/10 pediu mais informação de rodada, e eu entreguei justamente um banner de texto no cabeçalho, que ele achou "estranho". A saída da v3 é **mostrar na mesa** (anel no assento, balão da jogada, legenda curta no centro) e **tirar o texto do cabeçalho**. Ver Fase B.
 
@@ -67,7 +68,19 @@ colinha "?", faixa de status no cabeçalho, aviso dos últimos 5s, espectador, l
 | Texto de status | (A) remover do cabeçalho e usar só assento + balão, (B) A + legenda curta no centro da mesa | **B** (o centro vazio ganha função) |
 
 **Lista de arte necessária** (levantada aqui para a Fase A não travar):
-logo + favicon; ícone de **contestar** (hoje cai em emoji); moeda (1, pilha de 5, pilha de 10); troféu; ícones dos prêmios (Carrasco, Ricaço, Mentiroso do ano, Maior desconfiado, Olho de lince); olho (espectador); "?"; som ligado/desligado; sair; moldura e botão pixel (9-slice); textura de madeira para o dock.
+logo + favicon; ícone de **contestar** (hoje cai em emoji); **fichas** (sprite por quantidade, com variantes: ver B3); troféu; ícones dos prêmios (Carrasco, Ricaço, Mentiroso do ano, Maior desconfiado, Olho de lince); olho (espectador); "?"; som ligado/desligado; sair; moldura e botão pixel (9-slice); textura de madeira para o dock.
+**Onde mais usar imagens (candidatas; só entram se aprovadas no mockup, para o escopo não crescer):**
+
+| Hoje | Vira |
+|---|---|
+| Baralho da Corte com número ("Corte · 21") | Sprite por faixa de cartas restantes (cheio, médio, pouco, última carta) |
+| Erário com número | Montes e, acima deles, um baú ou cofre que enche por faixas |
+| Retrato fixo | Retrato que **reage**: neutro, atingido, eliminado, vencedor (hoje só o Capoeira tem 4 expressões nas cartas; os 12 avatares têm 1) |
+| Texto "Assassinar → Anny" | Balão com o **ícone da ação** (os 10 ícones já existem) + retrato |
+| Dígitos do relógio | Dígitos em sprite pixel sobre o anel |
+| Marcador de vez | Medalhão em sprite |
+| Prêmios com emoji | Ícones pixel (já na lista acima) |
+
 Como gerar: o pipeline local (`tools/art/`, SDXL + LoRA, ~80 s por imagem) serve para logo e retratos. **Para ícones pequenos de UI, desenhar por script ou à mão** costuma sair mais consistente que IA. Decidir caso a caso e registrar em `tools/art/README.md`.
 
 **Pronto quando:** existe uma escolha registrada para cada linha da tabela e mockups aprovados para as 5 telas.
@@ -118,7 +131,22 @@ Como gerar: o pipeline local (`tools/art/`, SDXL + LoRA, ~80 s por imagem) serve
 - **Balão da jogada** sobre o assento de quem agiu ("Assassinar → Anny"), por alguns segundos, em pixel art.
 - **Quem a mesa espera** ganha marca no assento (já existe o ✔ de quem passou; falta a marca de quem ainda precisa reagir).
 
-**B3. Moedas como fichas.** Pilhas de fichas ao lado de cada assento (altura proporcional, com o número pequeno), e o Erário como pilha no centro. As animações de `CoinFlights` passam a pousar nas pilhas. Arte: moeda, pilha de 5 e de 10.
+**B3. Fichas como imagens (um sprite por quantidade, com variantes).**
+Cada quantidade de fichas tem a **sua própria pixel art**: 1 ficha, 2 fichas, 3 fichas… Não é um número e **não é a mesma ficha copiada N vezes**.
+
+- **Quantidades:** sprite próprio para **1 a 10 fichas**. De **11 em diante**, "montes" maiores (faixas 11–15, 16–25, 26+). O Erário usa os montes (e, se aprovado, o baú que enche).
+- **Variedade (o que evita o "ctrl+c ctrl+v"):** **3 variantes por quantidade** (A, B, C): pilha arrumada, pilha torta, fichas espalhadas, uma de lado, faces diferentes à vista. A variante sai de um **hash determinístico de (id do jogador, quantidade)**: o mesmo jogador com 4 fichas sempre vê a mesma pilha (sem piscar), e jogadores diferentes têm pilhas diferentes lado a lado. Alternativa a testar no mockup: trocar de variante a cada mudança de quantidade.
+- **Número pequeno** em fonte pixel ao lado, só para leitura exata. A informação principal é o sprite.
+- **0 fichas:** decidir no mockup (sem sprite, ou uma ficha apagada).
+- **Como gerar:** script `tools/art/fichas.ts`, **procedural, com seed fixa e a paleta mestra** (`tools/art/palette.json`). Ele combina faces de ficha e layouts de pilha com variações em pixels inteiros (deslocamento, inclinação por posições pré-desenhadas, face ou verso) e gera todas as combinações. O Alexandre e o Claude **curam as 3 melhores por quantidade** (como na curadoria de retratos com `--seeds`) e retocam à mão se precisar. **Não usar IA de imagem (SDXL) aqui**: objetos pequenos e repetidos saem inconsistentes.
+- **Interativas** (assumi que "iterativas" era isso; se era outra coisa, ajustar na Fase 0):
+  - **Ganhar:** a ficha voa (`CoinFlights`) e a pilha troca para o sprite da nova quantidade com um "pop" de 2 quadros.
+  - **Perder ou ser roubado:** as fichas de cima saem e voam para quem recebeu (Extorquir) ou para o Erário (Assassinar, Golpe).
+  - **Exílio:** a pilha desmorona para o Erário.
+  - **Passar o mouse:** mostra o número exato e, quando a ação em foco custa fichas, as fichas **fantasma** que sairiam (já previsto no `docs/DESIGN_MESA_V2.md`).
+  - **10 ou mais:** a pilha ganha um aviso pixel de Golpe obrigatório.
+- **Volume de arte:** 10 quantidades × 3 variantes = **30 sprites**, mais montes (3 faixas × 2 variantes = **6**), mais as animações de pop e de tombar (2 a 4 quadros). Tamanhos (`sm` e `lg`) definidos na Fase 0, seguindo a convenção `<nome>.png` + `<nome>.sm.png`.
+- **Arquivos:** `public/art/imperio/fichas/<n>/<variante>.png` e `public/art/imperio/fichas/monte/<faixa>/<variante>.png`. Função pura `chipSprite(count, playerId)` em `helpers.ts` (devolve o caminho do arquivo), **com teste unitário**: determinismo, toda quantidade de 0 até o máximo cai num arquivo que existe, e as variantes se distribuem entre jogadores.
 
 **B4. Centro da mesa.** Baralho da Corte e Erário perto do centro. A **legenda curta** (uma linha, fonte pixel) diz o que a mesa espera ("Aguardando você e Caio: contestar ou passar") e carrega o aviso dos 5s. Reaproveitar `deriveRoundStatus` e `timeoutWarning` (`src/components/game/status.ts`), que **continuam como estão e já têm teste**; só muda onde são exibidas.
 
@@ -131,6 +159,7 @@ Como gerar: o pipeline local (`tools/art/`, SDXL + LoRA, ~80 s por imagem) serve
 **Pronto quando**
 - **Teste dos 3 segundos** com alguém que não viu a mesa: responde "de quem é a vez?" e "o que aconteceu agora?" corretamente, em 1920×1080 e em 1280×720.
 - Nenhum elemento de informação fica a mais de ~1/3 da largura de distância do assento de quem age.
+- **Fichas:** cada quantidade de 1 a 10 mostra um sprite próprio, e dois jogadores com a mesma quantidade **não** mostram pilhas idênticas na maioria das vezes; os 36 arquivos existem e `chipSprite` tem teste verde.
 - `layoutIssues` do E2E (assentos fora da tela, sobrepostos, dock cortado) limpo em 1280×720, 1600×900, 1920×1080 e 2560×1440 com 2 a 6 jogadores.
 - Testes unitários de `status.ts` seguem verdes (a lógica não mudou).
 
@@ -239,7 +268,7 @@ Como gerar: o pipeline local (`tools/art/`, SDXL + LoRA, ~80 s por imagem) serve
 |---|---|---|---|---|
 | 1 | **0** Mockups e decisões | P | nada | Sem isto, não começar |
 | 2 | **A** Kit de UI | G | 0 (+ arte de ícones) | Destrava todas |
-| 3 | **B** Hierarquia da mesa | G | A | Maior ganho |
+| 3 | **B** Hierarquia da mesa | G | A (+ arte das fichas) | Maior ganho; as fichas são a maior parte da arte nova |
 | 4 | **C** Dock imersivo | M | A, B1 (escala) | |
 | 5 | **D** Fim de partida | M | A (+ arte de prêmios) | Usa F1 se já existir |
 | 6 | **E** Colinha | P | A | Só apresentação |
@@ -268,6 +297,7 @@ P = poucas horas, M = uma sessão, G = mais de uma sessão.
 | Fonte pixel sem acento ou ilegível em tamanho pequeno | Testar com texto real em pt-BR na Fase 0; manter sans para texto longo se preciso |
 | Ícones gerados por IA saem inconsistentes | Para UI pequena, desenhar por script/à mão e padronizar na paleta mestra |
 | Refazer layout quebra os testes de layout | Rodar `layoutIssues` nas 4 resoluções ao fim das Fases B e C |
+| Volume de arte das fichas (36+ sprites) e parecer cópia | Gerador procedural com seed e variação em pixels inteiros; curar 3 por quantidade; hash por jogador |
 | Retenção é subjetiva | Fase F7: medir revanches por sala antes e depois |
 
 ## Backlog pós-v3 (ideias que NÃO entram agora)
