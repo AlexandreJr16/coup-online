@@ -173,6 +173,17 @@ em [`tools/art/README.md`](./tools/art/README.md).
 
 Antes de qualquer uso além de estudo, confira as licenças dos modelos usados.
 
+## Licença e contribuições
+
+O **código** é open source sob a licença [MIT](./LICENSE): pode usar, copiar e modificar.
+Contribuições são bem-vindas (issues e pull requests no
+[repositório](https://github.com/AlexandreJr16/coup-online)).
+
+A licença MIT cobre o código. As **imagens** em `public/art` foram geradas com modelos de IA
+(famílias OpenRAIL, com restrições de uso próprias, veja [`docs/SPIKE_ARTE.md`](./docs/SPIKE_ARTE.md))
+e **não estão cobertas pela MIT**; confira os termos dos modelos antes de reutilizá-las.
+Coup é um jogo de terceiros: este é um projeto não oficial de fãs, sem fins lucrativos.
+
 ## Documentação do projeto
 
 | Documento | Conteúdo |

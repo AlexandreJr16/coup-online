@@ -544,6 +544,57 @@ test("menu: o leque dos 5 personagens carrega e o painel tem fundo próprio (nã
   noErrors(p);
 });
 
+test("home: link do GitHub aponta para o repositório, abre em outra aba e não cobre o painel", async () => {
+  for (const size of [{ w: 1280, h: 720 }, { w: 375, h: 667 }]) {
+    const p = await open("/", size);
+    await p.waitFor(`!!document.querySelector('[data-testid="github-link"]')`, "ícone do GitHub");
+    const link = await p.eval<{ href: string; target: string; rel: string; label: string }>(`(() => {
+      const a = document.querySelector('[data-testid="github-link"]');
+      return { href: a.href, target: a.target, rel: a.rel, label: a.getAttribute('aria-label') || '' };
+    })()`);
+    assert.equal(link.href, "https://github.com/AlexandreJr16/coup-online");
+    assert.equal(link.target, "_blank");
+    assert.match(link.rel, /noopener/);
+    assert.match(link.rel, /noreferrer/);
+    assert.match(link.label, /GitHub/);
+    // Visível e sem encostar no painel de entrada (nem em celular).
+    const geo = await p.eval<{ a: number[]; b: number[]; vw: number; visible: boolean; hit: boolean }>(`(() => {
+      const a = document.querySelector('[data-testid="github-link"]').getBoundingClientRect();
+      const b = document.querySelector('.panel-salon').getBoundingClientRect();
+      const visible = a.width > 0 && a.left >= 0 && a.right <= innerWidth;
+      const hit = !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+      return { a: [a.left, a.top, a.right, a.bottom], b: [b.left, b.top, b.right, b.bottom], vw: innerWidth, visible, hit };
+    })()`);
+    assert.ok(geo.visible && !geo.hit, `ícone invisível ou sobre o painel em ${size.w}x${size.h}: ${JSON.stringify(geo)}`);
+    // Em tela baixa o conteúdo não pode ser cortado: o início aparece e a página rola até o link.
+    const scroll = await p.eval<{ panelTop: number; overflowY: string; canScroll: boolean }>(`(() => {
+      const m = document.querySelector('main');
+      return {
+        panelTop: document.querySelector('.panel-salon').getBoundingClientRect().top,
+        overflowY: getComputedStyle(m).overflowY,
+        canScroll: m.scrollHeight > m.clientHeight,
+      };
+    })()`);
+    assert.ok(scroll.panelTop >= 0, `topo da home cortado em ${size.w}x${size.h}: ${JSON.stringify(scroll)}`);
+    if (scroll.canScroll) assert.notEqual(scroll.overflowY, "hidden", `conteúdo sem scroll em ${size.w}x${size.h}`);
+    // Desktop 1280x720 (notebook comum): tudo cabe, sem barra de rolagem na home.
+    if (size.w >= 1280) assert.equal(scroll.canScroll, false, `home com scroll em ${size.w}x${size.h}`);
+    // Rola até o link (em celular ele fica abaixo da dobra) e confere que nada o cobre.
+    const topIsLink = await p.eval<{ ok: boolean; bottom: number; vh: number }>(`(() => {
+      const a = document.querySelector('[data-testid="github-link"]');
+      a.scrollIntoView({ block: 'center' });
+      const r = a.getBoundingClientRect();
+      return {
+        ok: a.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)),
+        bottom: r.bottom,
+        vh: innerHeight,
+      };
+    })()`);
+    assert.equal(topIsLink.ok, true, `algo cobre o link do GitHub em ${size.w}x${size.h}: ${JSON.stringify(topIsLink)}`);
+    noErrors(p);
+  }
+});
+
 // ── Páginas de revisão não podem quebrar ─────────────────────────────────────
 for (const path of ["/dev/cartas", "/dev/mesa", "/dev/mesa?fase=reacao&n=6", "/dev/mesa?fase=revelar&n=3", "/dev/mesa?fase=troca&n=2", "/dev/mesa?fase=fim&n=4", "/dev/mesa?fase=contestar&n=4"]) {
   test(`página de revisão ${path} renderiza sem erros`, async () => {

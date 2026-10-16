@@ -6,6 +6,7 @@ import { type CSSProperties, Suspense, useState } from "react";
 import { getSocket } from "@/src/lib/socket";
 import type { CreateRoomAck } from "@/src/types/socket";
 import { ALL_CHARACTERS, artUrl, CINZEL, COLORS } from "@/src/components/game/helpers";
+import { GithubLink } from "@/src/components/game/GithubLink";
 import { SalonBg } from "@/src/components/game/TableBackdrop";
 
 // Next 16 exige <Suspense> em volta de quem usa useSearchParams na página
@@ -52,14 +53,19 @@ function Home() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
+        // "safe center": se o conteúdo for maior que a tela (celular), alinha ao topo em vez
+        // de cortar o início; o main rola (o fundo fica num wrapper fixo e não rola junto).
+        justifyContent: "safe center",
+        padding: "14px 24px",
         position: "relative",
-        overflow: "hidden",
+        overflowX: "hidden",
+        overflowY: "auto",
         background: COLORS.bg,
       }}
     >
-      <SalonBg />
+      <div aria-hidden style={{ position: "fixed", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+        <SalonBg />
+      </div>
       <div className="panel-salon" style={{ position: "relative", width: "100%", maxWidth: 400, padding: 28 }}>
         {/* Os cinco personagens em leque, como numa mão de cartas */}
         <div data-testid="home-fan" style={{ display: "flex", justifyContent: "center", marginBottom: 14, height: 112 }}>
@@ -141,6 +147,9 @@ function Home() {
             {error}
           </p>
         )}
+      </div>
+      <div style={{ position: "relative", marginTop: 10 }}>
+        <GithubLink />
       </div>
     </main>
   );

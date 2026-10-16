@@ -69,6 +69,75 @@ body {
   color: #888;
 }
 
+/* ── Botão redondo de canto (link do GitHub, "?" da colinha) ─────────────────── */
+.corner-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(240, 165, 0, 0.55);
+  background: rgba(20, 17, 34, 0.72);
+  color: #f0a500;
+  font-family: var(--font-cinzel), Georgia, serif;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  transition: transform 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+.corner-btn:hover {
+  background: rgba(240, 165, 0, 0.18);
+  color: #ffd866;
+  transform: translateY(-1px);
+}
+.corner-btn:focus-visible {
+  outline: 2px solid #ffd866;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .corner-btn,
+  .repo-link {
+    transition: none;
+  }
+  .corner-btn:hover,
+  .repo-link:hover {
+    transform: none;
+  }
+}
+
+/* Link do repositório (home): pílula discreta abaixo do painel. */
+.repo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 165, 0, 0.4);
+  background: rgba(20, 17, 34, 0.72);
+  color: #d9c58a;
+  font-family: var(--font-cinzel), Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  transition: transform 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+.repo-link:hover {
+  background: rgba(240, 165, 0, 0.18);
+  color: #ffd866;
+  transform: translateY(-1px);
+}
+.repo-link:focus-visible {
+  outline: 2px solid #ffd866;
+  outline-offset: 2px;
+}
+
 /* ── Pulso do avatar no turno do jogador ativo (P3) ──────────────────────────── */
 @keyframes turn-pulse {
   0% {
