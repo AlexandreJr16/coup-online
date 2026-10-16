@@ -154,6 +154,8 @@ Todas feitas e validadas com testes de engine, testes do store de salas e E2E co
 
 Pendências conhecidas (fora da trilha): indicar ausentes também na mesa (hoje só no banner e no lobby); rate limit de eventos; deploy com WebSocket.
 
+Backlog do primeiro playtest com amigos (colinha das cartas, info de rodada, spectador, verificações de troca/embaralhamento): ver `docs/PROXIMAS_VERSOES.md`.
+
 ## Riscos
 | Risco | Mitigação |
 |---|---|
