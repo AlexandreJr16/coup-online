@@ -1,0 +1,41 @@
+{
+  "id": "icones",
+  "card": null,
+  "nome": "Ícones de ação",
+  "versao": 1,
+  "notas": "Ícones dos selos de ação (docs/DESIGN_MESA_V2.md). Objeto único centrado, fundo branco liso. Postprocess: --grid 8 --size 64x64 e depois reduzir/usar em 32x32 ou 64x64 nos selos.",
+  "estilo": "pixel art icon, 16-bit video game item, single object centered, thick dark outline, limited color palette, warm colors, plain solid white background, no shadow, no text, no frame",
+  "personagem": "Brazilian Empire 1860s theme",
+  "expressoes": {
+    "renda": "a single shiny gold coin with a small crown stamped on it",
+    "ajuda_externa": "a small cloth bag tied with string, two gold coins spilling out",
+    "golpe": "an old bronze cannon firing with white smoke and a spark",
+    "taxas": "an open ledger book with a feather quill and a stack of gold coins",
+    "assassinar": "a folded straight razor knife, silver blade, one red drop of blood",
+    "extorquir": "a fat leather coin purse tied with rope being pulled sideways, gold coins falling out",
+    "trocar": "two playing cards swapping places with two curved arrows",
+    "contestar": "a pointing index finger with a big red exclamation mark",
+    "bloquear": "a round wooden shield with a gold rim and a metal boss",
+    "passar": "a folded white lace hand fan",
+    "mascara": "an ornate carnival half-mask in gold and purple with feathers",
+    "cadeado": "a closed iron padlock with a small chain"
+  },
+  "negativo": "photo, realistic, 3d render, blurry, text, letters, numbers, watermark, frame, border, multiple objects, hands, people, faces, gradient background, shadow, floor",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 512,
+    "altura": 512,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 1900
+  },
+  "pos": {
+    "tamanho": "64x64",
+    "kernel": "nearest",
+    "tol": 70
+  }
+}
