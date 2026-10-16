@@ -1,142 +1,213 @@
-# Coup Online
+<div align="center">
 
-Réplica **não-oficial** e **experimental** do jogo de blefe **Coup**, jogável no
-navegador com amigos (2–6 jogadores por sala, em tempo real).
+# 👑 Coup Online
 
-> ⚠️ **Este é, antes de tudo, um projeto de aprendizado.**
-> O objetivo principal foi **explorar como construir software com auxílio de IA**
-> (planejamento, implementação e revisão assistidos por um agente de código) —
-> usando uma **réplica de teste do Coup** como caso prático. Não é um produto
-> final nem tem fins comerciais.
+**Blefe, dedução e traição no Brasil Império.**
+Um jogo de cartas online para 2 a 6 jogadores — sem cadastro, é só abrir o link e jogar.
 
-## Aviso legal
+![Menu do jogo](docs/img/menu.png)
 
-Coup é um jogo de Rikki Tahta (La Mame Games / Funbox no Brasil). Este repositório
-é um **fan project sem afiliação oficial**, com tema e nomes adaptados, feito para
-estudo. Não se destina a uso comercial. Se você curtiu o jogo, compre a versão
-oficial. 🙂
+`Next.js 16` · `React 19` · `TypeScript` · `Socket.IO` · `Tailwind v4` · pixel art feita por IA
+
+</div>
+
+---
 
 ## O que é
 
-- Versão online do Coup para jogar via link de sala — entra, escolhe um nome, joga.
-- Toda a lógica de regras roda no **servidor** (fonte única da verdade).
-- Cada partida é uma sala isolada via Socket.IO.
+**Coup** é um jogo de blefe: cada jogador tem duas cartas de personagem viradas para baixo e
+pode **alegar ser quem quiser** para usar o poder daquela carta. Mentir é permitido… até
+alguém te **contestar**. Quem perde todas as cartas está fora; o último de pé vence.
 
-## Stack
+Esta é uma versão online **não-oficial**, ambientada no **Brasil Império (1822–1889)**, com
+arte pixel art, animações de baralho, efeitos sonoros e partidas em tempo real com os amigos.
 
-- **Next.js 16** (App Router) + **React 19** + **TypeScript**
-- **Socket.IO** (servidor customizado em `server.ts`) para tempo real
-- **Tailwind v4** + estilos inline (sem biblioteca de componentes — o visual tem
-  que parecer um jogo, não um dashboard)
-- **next/font** (Geist para corpo, **Cinzel** para o tema de corte renascentista)
+> ⚠️ **É um projeto de aprendizado.** Nasceu para explorar como construir software com
+> auxílio de IA (planejamento, implementação, testes e arte), usando uma réplica do Coup
+> como caso prático. Veja o [aviso legal](#aviso-legal) e a seção
+> [Sobre o desenvolvimento assistido por IA](#sobre-o-desenvolvimento-assistido-por-ia).
 
-## Regra arquitetural inegociável
+## Veja o jogo
 
-O **servidor é a única fonte da verdade** do estado do jogo:
+<table>
+<tr>
+<td width="50%"><img src="docs/img/mesa.png" alt="Mesa de jogo com uma carta declarada no centro"><br><sub><b>A jogada acontece na mesa:</b> a carta alegada fica virada no centro, com o tempo restante. Quem pode reagir vê os selos <i>Contestar</i> e <i>Passar</i>.</sub></td>
+<td width="50%"><img src="docs/img/mesa-6-jogadores.png" alt="Mesa com 6 jogadores"><br><sub><b>De 2 a 6 jogadores</b> numa mesa de veludo, cada um com seu retrato de convidado do baile.</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/img/lobby.png" alt="Sala de espera"><br><sub><b>Sala de espera:</b> compartilhe o link, ajuste os tempos da partida e o host inicia.</sub></td>
+<td width="50%"><img src="docs/img/vitoria.png" alt="Tela de vitória com prêmios"><br><sub><b>Fim de partida:</b> prêmios como <i>Mentiroso do ano</i> e <i>Olho de lince</i>, e revanche em um clique.</sub></td>
+</tr>
+</table>
 
-- Regras (jogadas válidas, revelar carta, resolver contestação/blefe, eliminar
-  jogador) rodam **só no servidor**.
-- O cliente **nunca** recebe as cartas ocultas dos outros jogadores — nem
-  escondidas no JSON. O servidor envia uma *view filtrada* por socket
-  (`viewForPlayer`).
-- Indicadores client-side (ex.: "blefe", Feed de Intrigas, animação de moeda) são
-  **derivados apenas do que a view já expõe** — nada novo trafega pelo socket.
+## Os personagens
 
-Decisões conscientes: estado **em memória** (sem banco — reiniciar o servidor
-perde a partida, e tudo bem), **sem autenticação** (jogador = socket.id + nome),
-separação mínima funcional (lógica em `lib/`, transporte em `server.ts`, UI em
-`components/`).
+As cinco cartas do Coup foram adaptadas para o Brasil Império. As regras são as mesmas do
+manual; só o tema muda (os ids internos continuam `duque`, `assassino`, `capitao`,
+`embaixador` e `condessa`).
+
+![Os cinco personagens](docs/img/personagens.png)
+
+| Personagem | No Coup original | Ação | Bloqueia |
+|---|---|---|---|
+| **Barão do Café** | Duque | **Taxas:** +3 moedas do Erário | Ajuda Externa |
+| **Capoeira** | Assassino | **Assassinar:** paga 3, o alvo perde uma influência | — |
+| **Coronel** (da Guarda Nacional) | Capitão | **Extorquir:** toma 2 moedas de um jogador | Extorsão |
+| **Regatão** (comerciante fluvial) | Embaixador | **Trocar:** compra 2 cartas da Corte e troca | Extorsão |
+| **Benzedeira** | Condessa | — | Assassinato ("corpo fechado") |
+
+As moedas do **Erário** são os réis do Império. Além dos poderes, todos podem jogar **Renda**
+(+1), **Ajuda Externa** (+2, bloqueável pelo Barão) ou, com 7 moedas, o **Golpe de Estado**
+(o alvo perde uma influência, sem defesa). Com 10 ou mais moedas, o Golpe é obrigatório.
+
+## Como jogar
+
+1. **Na sua vez**, escolha uma ação: use um selo básico (Renda, Ajuda Externa, Golpe) ou
+   **clique na carta** do personagem para usar o poder dela (também dá para **arrastar** a
+   carta até o oponente-alvo). Você **pode blefar**: as cinco cartas ficam sempre na mão e
+   as que você *não* tem aparecem com uma máscara 🎭.
+2. **Os outros reagem:** podem **bloquear** (alegando outro personagem), **contestar**
+   (apostando que é mentira) ou **passar**.
+3. **Contestação:** quem foi contestado revela a carta. Se tinha, o contestador perde uma
+   influência; se mentiu, quem perde é o mentiroso.
+4. **Vence** o último jogador com influência.
+
+Dicas de ritmo: **`Espaço`** passa, **`C`** contesta, **`B`** bloqueia, e há um interruptor de
+**passar automático** para não precisar clicar em jogadas que não te afetam. Se alguém some, o
+tempo da vez acaba e o jogo segue sozinho.
+
+As regras completas (timers, "Perigo Duplo do Assassino", casos especiais) estão em
+[`game-rules.md`](./game-rules.md).
+
+## Recursos
+
+- 🎭 **Tema Brasil Império** com arte pixel art, paleta fixa de 38 cores e retratos de 12 convidados.
+- 🃏 **Mesa viva:** distribuição do baralho, moedas voando entre o Erário e os jogadores,
+  carta que vira na contestação (e a mesa treme quando é blefe), inclinação 3D e brilho
+  *foil* nas cartas que são suas.
+- 🔊 **Áudio sintetizado** no navegador (sem arquivos de som) com botão de mudo.
+- ⏱️ **Fluidez:** botão *Passar*, timeouts em todas as fases, relógio controlado pelo servidor,
+  **reconexão** sem login (F5 no meio da partida mantém seu lugar e sua mão) e **revanche**.
+- 🏆 **Estatísticas e prêmios** ao fim de cada partida.
+- 🔒 **Sem trapaça por construção:** o servidor é a única fonte da verdade e o navegador
+  **nunca** recebe as cartas dos outros — nem escondidas no JSON.
+- 🧪 **Testado em três níveis:** unitário, integração com servidor real e E2E no Chrome.
 
 ## Como rodar
 
 ```bash
 npm install
-npm run dev          # sobe o servidor (Socket.IO + Next) em http://localhost:3000
+npm run dev          # http://localhost:3000
 ```
 
-Abra `http://localhost:3000`, **crie uma sala** numa aba e **entre com o código**
-em outra aba (ou compartilhe o link com amigos). Com 2+ jogadores, o host inicia.
+Abra `http://localhost:3000`, digite um nome e **crie uma sala**. Mande o link para os amigos
+(ou abra uma segunda aba e entre com o código). Com 2+ jogadores, o host inicia.
+
+Para jogar com amigos fora da sua rede, o servidor precisa estar acessível a eles (um host com
+suporte a **WebSocket**; hospedagens só de funções serverless, como a Vercel, **não** servem
+por causa do Socket.IO). Em produção:
+
+```bash
+npm run build
+npm start            # NODE_ENV=production, porta via PORT (padrão 3000)
+```
 
 ### Scripts
 
-| Comando         | O que faz                                              |
-|-----------------|--------------------------------------------------------|
-| `npm run dev`   | Servidor de desenvolvimento (`tsx server.ts`)          |
-| `npm run build` | Build de produção do Next                              |
-| `npm start`     | Sobe em modo produção                                  |
-| `npm run lint`  | ESLint                                                  |
-| `npm test`      | Testes da engine de regras (`src/lib/game/engine.test.ts`) |
+| Comando | O que faz |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento (Next + Socket.IO via `tsx server.ts`) |
+| `npm run build` / `npm start` | Build de produção e servidor de produção |
+| `npm run lint` | ESLint |
+| `npm test` | Testes unitários e de integração |
+| `npm run test:e2e` | Faz o build e roda os testes no Chrome real |
+| `npx tsx tools/readme-shots.ts` | Regenera as imagens deste README (precisa de build) |
 
-## Estrutura
-
-```
-app/                      # rotas (menu, sala) + layout + estilos globais
-server.ts                 # servidor Socket.IO (transporte)
-src/
-  lib/game/
-    engine.ts             # engine de regras (fonte da verdade)  ← testada
-    engine.test.ts        # testes da engine (TDD)
-    deck.ts               # Baralho da Corte (25 cartas)
-    cards.ts              # catálogo de cartas (nome/cor/ícone/ação/bloqueios)
-  lib/socket.ts           # cliente Socket.IO
-  server/rooms.ts         # salas em memória
-  types/                  # tipos de domínio e de socket
-  components/game/        # UI (mesa, cartas, modos A/B, gamificação)
-```
-
-## UI / UX
-
-- **Mesa estilo poker** (top-down): você sempre embaixo-centro; avatares com
-  iniciais e cor determinística; avatar do turno **pulsa**.
-- **Cartas em pixel art** (Brasil Império) com fallback em emoji: dados de cada
-  personagem vêm de `cards.ts` (regra: nenhum dado de carta hard-coded em componente).
-- **Cartas dos oponentes estilo UNO**: versos visíveis; ao perder influência, a
-  carta faz **flip 3D** e fica face-up dessaturada.
-- **Dock fixo** embaixo: ações básicas (esq.), sua mão em leque (centro; clicar numa
-  carta usa o poder dela) e reações (dir.). Detalhes em `docs/DESIGN_MESA_V2.md`.
-- **Janela de reação** com timer regressivo (bloquear/contestar/passar).
-- **Gamificação visual** (tudo derivado do estado, client-side):
-  - **Feed de Intrigas** — log em pergaminho de quem declarou/bloqueou/perdeu o quê.
-  - **Selo de cera** — estampa dramática em bloqueios e contestações.
-  - **Economia viva** — count-up de moedas, "+N/−N" no avatar, Tesouro Central.
+Páginas de revisão visual (só para desenvolvimento): `/dev/mesa`, `/dev/selos`, `/dev/cartas`
+e `/dev/audio`.
 
 ## Testes
-Política completa no `CLAUDE.md`: tudo é testado em três níveis, e bug corrigido ganha teste de regressão.
 
-| Comando | O que roda | Tempo |
-|---|---|---|
-| `npm test` | **Unitário + integração**: engine, salas, helpers e derivação de eventos da UI; e o servidor Socket.IO real em memória (sala, reconexão, timers, Passar, revanche, contestação pública, privacidade das cartas) | ~15 s |
-| `npm run test:e2e` | **Navegador real**: faz o build de produção, sobe o servidor e abre o Chrome. Cada aba é um jogador; **clica com mouse real** (falha se algo cobrir o botão), joga rodadas pela interface, dá F5 no meio, confere o layout com 2 a 6 jogadores e reprova qualquer `console.error`/exceção | ~100 s |
+Tudo é testado em três níveis (política completa em [`CLAUDE.md`](./CLAUDE.md)):
 
-Requisitos do E2E: Google Chrome (`CHROME=/caminho` se não for `google-chrome-stable`). Os testes usam portas livres e **nunca** mexem na 3000.
+| Nível | O que cobre |
+|---|---|
+| **Unitário** (`node:test`) | Engine de regras, salas, helpers, derivação de eventos da UI, prêmios, receitas de áudio |
+| **Integração** | Servidor Socket.IO real em memória: sala, reconexão, timers, Passar, revanche, contestação pública e o **filtro de cartas por socket** |
+| **E2E no navegador** | Chrome headless contra o build de produção; cada aba é um jogador, com **cliques de mouse reais**, F5 no meio da partida, layout de 2 a 6 jogadores, e reprova qualquer `console.error` ou exceção |
 
-## Regras do jogo
+Requisito do E2E: Google Chrome (`CHROME=/caminho/do/chrome` se não for `google-chrome-stable`).
+Os testes usam portas livres e nunca a 3000.
 
-As regras completas (ações, bloqueios, contestações, timers, casos especiais como
-o "Perigo Duplo do Assassino") estão em [`game-rules.md`](./game-rules.md). A engine
-implementada é fiel a esse documento.
+## Arquitetura
+
+```
+app/                      # rotas (menu, sala, páginas /dev) + estilos globais
+server.ts                 # sobe HTTP + Next + Socket.IO
+src/
+  server/                 # socket.ts (eventos, timers, reconexão) e rooms.ts (salas em memória)
+  lib/game/               # engine.ts (regras — fonte da verdade), cards.ts, deck.ts, awards.ts
+  lib/audio/              # efeitos e trilha sintetizados (Web Audio)
+  components/game/        # mesa, cartas, mão, selos, animações, feed de Intrigas
+  types/                  # tipos de domínio e de socket
+tests/e2e/                # testes no navegador
+tools/art/                # pipeline de geração e pós-processamento de pixel art
+```
+
+Decisões conscientes: estado **em memória** (reiniciar o servidor perde a partida — e tudo bem
+para 2 a 6 amigos), **sem login** (o jogador é um nome + um `playerId` e um token guardados na
+sessão do navegador, o que permite reconectar), e lógica de jogo em funções puras testáveis.
+Contexto completo em [`AGENTS.md`](./AGENTS.md).
+
+## A arte
+
+Os retratos, versos, cenário e ícones foram **gerados localmente com IA** (Stable Diffusion XL +
+LoRA de pixel art, rodando em uma RX 6600 via Vulkan) e depois **pós-processados em script**:
+redução por blocos, remoção de fundo e quantização para uma paleta mestra de 38 cores, para tudo
+parecer da mesma mão. Cada imagem foi escolhida à mão entre várias sementes. O passo a passo está
+em [`tools/art/README.md`](./tools/art/README.md).
+
+![Convidados do baile](docs/img/convidados.png)
+
+*Os 12 convidados do baile, sorteados para cada jogador (o mesmo retrato no lobby e na mesa).*
+
+Antes de qualquer uso além de estudo, confira as licenças dos modelos usados.
+
+## Documentação do projeto
+
+| Documento | Conteúdo |
+|---|---|
+| [`game-rules.md`](./game-rules.md) | Regras do jogo, timers e fluxos de estado (a engine é fiel a ele) |
+| [`docs/DIRECAO_CRIATIVA.md`](./docs/DIRECAO_CRIATIVA.md) | Universo, personagens, estilo e paleta |
+| [`docs/DESIGN_MESA_V2.md`](./docs/DESIGN_MESA_V2.md) | Desenho da mesa v2 (dock, selos, jogada na mesa) |
+| [`docs/AUDIO.md`](./docs/AUDIO.md) | Efeitos e trilha |
+| [`docs/ROADMAP.md`](./docs/ROADMAP.md) | O que foi feito e o que vem a seguir |
+| [`AGENTS.md`](./AGENTS.md) / [`CLAUDE.md`](./CLAUDE.md) | Contexto, regras do projeto e política de testes |
+
+## Status e próximos passos
+
+Versão **v2**: jogo completo e jogável de ponta a ponta. Ainda há cantos não acabados:
+
+- Escolha do retrato no lobby e balões de fala dos personagens.
+- Ícones de *Contestar* e *Trocar* em pixel art (hoje há emoji no lugar).
+- Os sons foram medidos por teste automático, mas ainda não ouvidos e ajustados por ouvido humano.
+- Indicador de "ausente" no assento, limite de taxa de eventos e versão para celular.
+
+Mais em [`docs/ROADMAP.md`](./docs/ROADMAP.md).
 
 ## Sobre o desenvolvimento assistido por IA
 
-O código foi construído em conjunto com um agente de IA (**Claude Code**), seguindo
-um fluxo deliberado:
+O código foi construído em conjunto com um agente de IA (**Claude Code**), num fluxo deliberado:
 
-1. **Plano antes de implementar** — cada entrega começa por um plano aprovado.
-2. **Implementação incremental** com **commits por componente** (histórico legível).
-3. **Verificação** a cada passo: `tsc`, `lint`, testes da engine, smoke test.
-4. **Limites claros de escopo** documentados em [`AGENTS.md`](./AGENTS.md) (ex.: a
-   UI não toca na engine; servidor é a fonte da verdade).
+1. **Plano antes de implementar:** cada entrega começa por um plano aprovado.
+2. **Implementação incremental** com commits por entrega (histórico legível).
+3. **Verificação a cada passo:** `tsc`, `eslint`, testes nos três níveis e, na interface, testes
+   que abrem o jogo de verdade no navegador.
+4. **Limites claros de escopo** em [`AGENTS.md`](./AGENTS.md): o servidor é a fonte da verdade, a
+   UI não toca na engine e nada de dependência nova sem avisar.
 
-Documentos de apoio que guiaram o trabalho:
-- [`AGENTS.md`](./AGENTS.md) — contexto, stack e regras inegociáveis do projeto.
-- [`DESIGN.md`](./DESIGN.md) — direção de UI/UX e identidade visual das cartas.
-- [`game-rules.md`](./game-rules.md) — regras do Coup (base da engine).
+## Aviso legal
 
-## Status e limitações
-
-Protótipo de estudo — funcional, mas com cantos não acabados de propósito:
-
-- Sem banco de dados: partidas vivem em memória (reinício = partida perdida).
-- Sem login/autenticação.
-- Testes automatizados cobrem a **engine**; a UI é validada manualmente (duas abas).
-- Foco em aprendizado, não em escala ou produção.
+**Coup** é um jogo de Rikki Tahta (La Mame Games; Funbox Jogos no Brasil). Este repositório é um
+**fan project sem afiliação oficial**, com tema e nomes adaptados, feito para estudo e **sem fins
+comerciais**. Se você curtiu o jogo, compre a versão oficial. 🙂
