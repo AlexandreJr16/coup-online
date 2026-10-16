@@ -8,6 +8,7 @@ import { avatarColor, CINZEL, COLORS } from "@/src/components/game/helpers";
 import TableBackdrop from "@/src/components/game/TableBackdrop";
 import TimerSettings, { DEFAULT_TIMERS } from "@/src/components/game/TimerSettings";
 import { clearToken, readCrt, readToken, saveCrt, saveToken, subscribeCrt } from "@/src/lib/session";
+import { usePrefs } from "@/src/lib/audio/usePrefs";
 import { getSocket } from "@/src/lib/socket";
 import type { GameConfig, GameView } from "@/src/types/game";
 import type { JoinRoomAck, Player } from "@/src/types/socket";
@@ -24,6 +25,7 @@ export default function RoomPage() {
   const [error, setError] = useState("");
   // useSyncExternalStore: o servidor renderiza "off" e o cliente troca depois da hidratação,
   // sem erro #418 (ler localStorage direto no useState divergia do HTML do servidor).
+  const [audio, setAudio] = usePrefs();
   const crt = useSyncExternalStore(subscribeCrt, readCrt, () => false);
   // Aplica o filtro no <html>: o CSS faz o resto (scanlines que não capturam cliques).
   useEffect(() => {
@@ -118,6 +120,16 @@ export default function RoomPage() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => setAudio({ muted: !audio.muted })}
+            className="game-btn"
+            style={toggleBtn}
+            data-testid="mute-toggle"
+            aria-pressed={audio.muted}
+            title={audio.muted ? "Ligar o som" : "Silenciar"}
+          >
+            {audio.muted ? "🔇" : "🔊"}
+          </button>
           <button
             onClick={() => saveCrt(!crt)}
             className="game-btn"

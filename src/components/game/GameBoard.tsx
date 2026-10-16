@@ -34,6 +34,7 @@ import {
   reactionOptions,
   requiredCharacter,
 } from "./helpers";
+import { useGameAudio } from "./useGameAudio";
 import { useGameEvents } from "./useGameEvents";
 
 const REACTION_PHASES = new Set<GameView["phase"]>([
@@ -83,6 +84,11 @@ export default function GameBoard({
 
   // ── Eventos derivados (Feed/Economia) + selo de cera ──────────────────────
   const events = useGameEvents(view);
+  const dealIn =
+    view.phase === "aguardando_acao" &&
+    view.deckCount === 25 - 2 * view.players.length &&
+    view.players.every((p) => p.coins === 2 && p.cards.every((c) => !c.revealed));
+  useGameAudio({ view, myId, events, secondsLeft, error, dealIn });
   const [seal, setSeal] = useState<SealData | null>(null);
   const sealCounter = useRef(0);
   const [shaking, setShaking] = useState(false);
@@ -357,7 +363,7 @@ export default function GameBoard({
           selectableTargetIds={targetIds}
           onSelectTarget={selectTarget}
           dimOthers={view.phase === "aguardando_acao"}
-          dealIn={view.phase === "aguardando_acao" && view.deckCount === 25 - 2 * view.players.length && view.players.every((p) => p.coins === 2 && p.cards.every((c) => !c.revealed))}
+          dealIn={dealIn}
           urgentIds={urgentIds}
           passedIds={view.pending?.passedIds ?? []}
         />

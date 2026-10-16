@@ -381,6 +381,37 @@ test("CRT: liga/desliga sem bloquear nenhum clique e persiste ao recarregar", as
   noErrors(a);
 });
 
+// ── Áudio (Fase 5) ───────────────────────────────────────────────────────────
+test("áudio: cada efeito e a trilha renderizam offline sem silêncio, sem estourar e curtos", async () => {
+  const p = await open("/dev/audio");
+  await p.waitFor(`document.querySelectorAll('[data-sfx][data-peak]').length >= 14`, "medições concluídas", 20000);
+  const linhas = await p.eval<Array<{ n: string; peak: number; rms: number; s: number; f: string }>>(
+    `[...document.querySelectorAll('[data-sfx][data-peak]')].map(e => ({ n: e.getAttribute('data-sfx'), peak: +e.getAttribute('data-peak'), rms: +e.getAttribute('data-rms'), s: +e.getAttribute('data-seconds'), f: e.getAttribute('data-finite') }))`,
+  );
+  for (const l of linhas) {
+    assert.equal(l.f, "true", `${l.n}: amostra não finita`);
+    assert.ok(l.peak > 0.01, `${l.n}: mudo demais (pico ${l.peak})`);
+    assert.ok(l.peak < 0.9, `${l.n}: perto de estourar (pico ${l.peak})`);
+    assert.ok(l.rms > 0.001, `${l.n}: rms ${l.rms}`);
+    assert.ok(l.s < 6, `${l.n}: longo demais`);
+  }
+  noErrors(p);
+});
+
+test("áudio: o contexto nasce no primeiro gesto e o botão de mudo persiste", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a] = ps;
+  await a.click('[data-zone="basicas"] .seal', "Renda"); // 1º gesto: desbloqueia o áudio
+  await a.waitFor(`document.documentElement.dataset.audio === "running" || document.documentElement.dataset.audio === "pending"`, "áudio desbloqueado");
+  assert.equal(await a.eval<string>(`document.querySelector('[data-testid="mute-toggle"]').getAttribute('aria-pressed')`), "false");
+  await a.click('[data-testid="mute-toggle"]');
+  await a.waitFor(`document.querySelector('[data-testid="mute-toggle"]').getAttribute('aria-pressed') === "true"`, "mudo ligado");
+  await a.reload();
+  await a.waitFor(`document.querySelector('[data-testid="mute-toggle"]')?.getAttribute('aria-pressed') === "true"`, "mudo persistiu");
+  await a.click('[data-testid="mute-toggle"]');
+  noErrors(a);
+});
+
 // ── Fim de partida (4.8) ─────────────────────────────────────────────────────
 test("tela de vitória: vencedor, prêmios corretos e botão de revanche (página de revisão)", async () => {
   const p = await open("/dev/mesa?fase=fim&n=4");
