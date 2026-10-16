@@ -18,12 +18,6 @@ export default function RoomPage() {
   const searchParams = useSearchParams();
   const roomId = (params.id ?? "").toUpperCase();
   const name = searchParams.get("name") ?? "";
-  // Modo de interação A/B. Semeado pelo ?mode=hand|buttons; depois alternável
-  // pelo botão na tela (troca só a prop do GameBoard — DESIGN.md).
-  const [interactionMode, setInteractionMode] = useState<"buttons" | "hand">(
-    searchParams.get("mode") === "hand" ? "hand" : "buttons",
-  );
-
   const [players, setPlayers] = useState<Player[]>([]);
   const [view, setView] = useState<GameView | null>(null);
   const [myId, setMyId] = useState("");
@@ -102,7 +96,7 @@ export default function RoomPage() {
         background: COLORS.bg,
       }}
     >
-      {/* Barra superior slim: identidade, sala, toggle A/B, sair */}
+      {/* Barra superior slim: identidade, sala e sair */}
       <header style={topBar}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <span
@@ -114,18 +108,6 @@ export default function RoomPage() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {view && (
-            <button
-              onClick={() =>
-                setInteractionMode((m) => (m === "buttons" ? "hand" : "buttons"))
-              }
-              className="game-btn"
-              style={toggleBtn}
-              title="Alternar entre barra de botões (A) e cartas na mão (B)"
-            >
-              Modo {interactionMode === "buttons" ? "A · Botões" : "B · Cartas"} ⇄
-            </button>
-          )}
           <button onClick={leave} className="game-btn" style={leaveBtn}>
             Sair
           </button>
@@ -139,7 +121,6 @@ export default function RoomPage() {
             key={view.matchNumber} // revanche = tabuleiro novo (feed e animações zeram)
             view={view}
             myId={myId}
-            interactionMode={interactionMode}
             absentIds={players.filter((p) => !p.connected).map((p) => p.id)}
           />
         </TableBackdrop>
@@ -241,14 +222,6 @@ const roomChip: CSSProperties = {
   whiteSpace: "nowrap",
 };
 // Cor base via --c; o gradiente/sombra/press vêm da classe .game-btn.
-const toggleBtn = {
-  padding: "7px 12px",
-  fontSize: 13,
-  color: COLORS.text,
-  borderRadius: 8,
-  whiteSpace: "nowrap",
-  "--c": COLORS.neutral,
-} as CSSProperties;
 const leaveBtn = {
   padding: "7px 12px",
   fontSize: 13,

@@ -130,3 +130,51 @@ body {
 .coin-rise {
   animation: coin-rise 1.1s ease-out forwards;
 }
+
+/* ── Mesa v2: marcas de estado (sem texto) ────────────────────────────────────
+   alvo possível = mira vermelha pulsando; urgente = a mesa espera esta pessoa. */
+@keyframes target-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px #c0392b, 0 0 0 7px rgba(192, 57, 43, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 0 4px #ff5a47, 0 0 0 13px rgba(192, 57, 43, 0);
+  }
+}
+.target-pulse {
+  animation: target-pulse 1s ease-in-out infinite;
+}
+@keyframes urgent-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px #d9a028, 0 0 0 7px rgba(217, 160, 40, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 0 4px #f7d56a, 0 0 0 13px rgba(217, 160, 40, 0);
+  }
+}
+.urgent-pulse {
+  animation: urgent-pulse 1.1s ease-in-out infinite;
+}
+
+/* Carta da mão: levanta no hover (a transform inline usa estas variáveis). */
+.hand-card {
+  transition: transform 140ms ease;
+}
+.hand-card.can-act:hover {
+  --lift: -16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .target-pulse,
+  .urgent-pulse,
+  .turn-pulse,
+  .seal-stamp,
+  .coin-rise {
+    animation: none;
+  }
+  .hand-card {
+    transition: none;
+  }
+}

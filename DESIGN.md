@@ -24,47 +24,15 @@ mesmo padrão do poker online.
 
 Indicador de turno: borda luminosa no avatar de quem está jogando.
 
-## Modos de Interação (A/B — modularizados)
+## Interação (Mesa v2 — só modo mão)
+O modo de botões (A) foi removido. Detalhes e plano em `docs/DESIGN_MESA_V2.md`.
 
-O componente `GameBoard` recebe `interactionMode: 'buttons' | 'hand'`
-e renderiza `ActionBar` ou `HandView`. Trocar é mudar uma prop.
-Futuramente vira opção configurável na sala.
+**Dock fixo embaixo, três zonas que nunca mudam de lugar:**
+- **Esquerda — ações básicas** (Renda, Ajuda Externa, Golpe de Estado): botões fixos; apagam fora da sua vez ou sem moedas.
+- **Centro — a mão:** as 5 cartas em leque (por causa do blefe). As que você TEM em cor cheia com borda dourada; as outras dessaturadas com 🎭. **Clicar numa carta usa o poder dela**; poderes com alvo "armam" a carta (ela levanta) e os alvos possíveis ganham mira pulsando — clique no assento (Esc cancela). Na hora de revelar ou trocar, o centro mostra só as cartas que importam, pulsando.
+- **Direita — reações:** Contestar / Bloquear / Passar. Sempre ali; vazia quando não há o que reagir.
 
-### Modo A — ActionBar (Botões)
-
-Barra de ações na parte inferior da tela, visível só no seu turno.
-
-Categorias de botão por cor:
-
-**Dourado/Âmbar** — ações de moeda (renda, ajuda externa, taxas):
-- Botão principal abre sub-ações: +1 / +2 / +3 moedas
-- Sub-botão de +3 (Taxas) aparece com indicador sutil de blefe
-  se você não tiver Duque na mão (visível só pra você)
-
-**Vermelho escuro** — ações agressivas (Assassinar, Extorquir):
-- Ao clicar, abre seletor de alvo (highlight nos avatares dos outros jogadores)
-- Indicador de blefe se não tiver o personagem correspondente
-
-**Preto/Cinza escuro** — Golpe de Estado:
-- Só aparece ativo quando você tem ≥7 moedas
-- Obrigatório (único botão ativo) quando ≥10 moedas
-
-**Neutro** — Trocar (Embaixador): botão separado
-
-Botões de reação (bloquear/contestar) aparecem como overlay
-durante a janela de reação, com timer visual regressivo.
-
-### Modo B — HandView (Cartas)
-
-Suas cartas aparecem em destaque na parte inferior, como uma
-mão segurando cartas (estilo Pokémon TCG).
-
-- Cartas que você TEM: visíveis, cores vivas
-- Cartas que você NÃO TEM mas pode blefar: escurecidas/dessaturadas
-- Clicar numa carta: zoom + aparecem as ações disponíveis daquele
-  personagem como botões ao redor da carta
-- Indicador de blefe: a carta escurecida tem um ícone sutil
-  (ex: máscara) quando você está prestes a usá-la
+**Estado na própria mesa, sem banners de texto:** brilho no assento da vez (os outros escurecem de leve), mira nos alvos, ✔ em quem passou, pulso dourado em quem a mesa espera, placa da jogada no centro com a barra de tempo (informativa, não bloqueia).
 
 ## Indicador de Blefe
 
@@ -100,16 +68,16 @@ Futuro: upload de imagem ou seleção de personagem do Coup.
 | Fase do jogo              | O que aparece na tela                              |
 |---------------------------|----------------------------------------------------|
 | (sem partida iniciada)    | Lobby da sala: jogadores + link; host usa game_start |
-| aguardando_acao (seu turno)| ActionBar ou HandView ativos                      |
+| aguardando_acao (seu turno)| Ações básicas e mão ativas                          |
 | aguardando_acao (outro)   | Controles desabilitados, indicador no avatar deles |
-| janela_reacao_*           | Overlay com botões Bloquear/Contestar + timer      |
-| aguardando_revelacao      | Suas cartas em destaque, deve escolher qual revelar|
+| janela_reacao_*           | Placa da jogada no centro + bandeja de reação (dock) |
+| aguardando_revelacao      | Só suas cartas ocultas pulsando no dock; clicar revela |
 | fim_de_jogo               | Tela de vitória com nome do vencedor               |
 
 ## O que NÃO fazer
 
 - Não usar animações pesadas que atrasam a percepção de turno
-- Não esconder o timer — sempre visível durante janelas de reação
+- Não esconder o timer — sempre visível (pílula no turno/escolhas, barra na placa nas janelas)
 - Não poluir a mesa com informação redundante
 - Avatares com imagem: hoje só iniciais; pixel art de avatar entra na Fase 7
   do `docs/ROADMAP.md`

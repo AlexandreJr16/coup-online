@@ -1,6 +1,8 @@
 // Helpers puros de UI do jogo (sem React). Compartilhados por Table/Seat/
-// ActionBar/HandView/ReactionOverlay para que esses componentes não dependam
+// HandView/BasicActions/ReactionTray para que esses componentes não dependam
 // uns dos internos dos outros. Referência visual: DESIGN.md.
+
+import type { CSSProperties } from "react";
 
 import type {
   ActionType,
@@ -174,30 +176,57 @@ export function avatarColor(name: string): string {
 }
 
 // ── Layout dos assentos em volta da mesa ────────────────────────────────────
-// Índice 0 = jogador local (sempre embaixo-centro, padrão poker). Demais
-// distribuídos pelo arco. Retorna posições em % do container (centro de cada
-// assento). O Table rotaciona a lista para o local ficar no índice 0.
+// Assentos ANCORADOS nas bordas (topo / laterais / embaixo) em vez de calculados
+// numa elipse em %: assim nenhum assento é cortado em telas baixas. Índice 0 =
+// jogador local (sempre embaixo-centro); os demais seguem em sentido horário. O
+// Table rotaciona a lista para o local ficar no índice 0.
+export type SeatAnchor = "top" | "bottom" | "mid" | "midLow" | "midHigh";
 export interface SeatPos {
-  leftPct: number;
-  topPct: number;
+  x: number; // % da largura (centro do assento)
+  anchor: SeatAnchor;
 }
+
+const SEAT_LAYOUTS: Record<number, SeatPos[]> = {
+  2: [{ x: 50, anchor: "bottom" }, { x: 50, anchor: "top" }],
+  3: [{ x: 50, anchor: "bottom" }, { x: 26, anchor: "top" }, { x: 74, anchor: "top" }],
+  4: [{ x: 50, anchor: "bottom" }, { x: 9, anchor: "mid" }, { x: 50, anchor: "top" }, { x: 91, anchor: "mid" }],
+  5: [{ x: 50, anchor: "bottom" }, { x: 9, anchor: "mid" }, { x: 30, anchor: "top" }, { x: 70, anchor: "top" }, { x: 91, anchor: "mid" }],
+  6: [
+    { x: 50, anchor: "bottom" },
+    { x: 9, anchor: "midLow" },
+    { x: 9, anchor: "midHigh" },
+    { x: 50, anchor: "top" },
+    { x: 91, anchor: "midHigh" },
+    { x: 91, anchor: "midLow" },
+  ],
+};
 
 export function seatLayout(n: number): SeatPos[] {
-  const rx = 46;
-  const ry = 42;
-  return Array.from({ length: n }, (_, i) => {
-    const theta = ((90 + (i * 360) / n) * Math.PI) / 180; // 90° = base da elipse
-    return {
-      leftPct: 50 + rx * Math.cos(theta),
-      topPct: 50 + ry * Math.sin(theta),
-    };
-  });
+  return SEAT_LAYOUTS[Math.min(6, Math.max(2, n))];
 }
 
-// Contrato IDÊNTICO dos dois modos de interação (A/B). Garante que GameBoard
-// possa trocar ActionBar ↔ HandView mudando só a prop, sem conhecer internos.
-export interface InteractionModeProps {
-  view: GameView;
-  myId: string;
-  onAction: (action: ActionType, targetId?: string) => void;
+// CSS de posição de um assento (centro horizontal em `x`%, ancorado na borda).
+export function seatStyle(pos: SeatPos): CSSProperties {
+  const left = `${pos.x}%`;
+  switch (pos.anchor) {
+    case "top":
+      return { left, top: 14, transform: "translateX(-50%)" };
+    case "bottom":
+      return { left, bottom: 12, transform: "translateX(-50%)" };
+    case "midHigh":
+      return { left, top: "33%", transform: "translate(-50%, -50%)" };
+    case "midLow":
+      return { left, top: "67%", transform: "translate(-50%, -50%)" };
+    default:
+      return { left, top: "50%", transform: "translate(-50%, -50%)" };
+  }
+}
+
+// Mensagem se este jogador NÃO pode iniciar a ação agora (null = pode). Espelha as
+// regras que a engine valida; serve só para dar retorno imediato antes de ir ao servidor.
+export function actionBlockedReason(coins: number, action: ActionType): string | null {
+  if (coins >= 10 && action !== "golpe") return "Com 10+ moedas só o Golpe de Estado.";
+  const cost = ACTION_META[action].coinCost ?? 0;
+  if (coins < cost) return `Faltam moedas: ${ACTION_META[action].label} custa ${cost}.`;
+  return null;
 }

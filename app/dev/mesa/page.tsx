@@ -1,6 +1,10 @@
-// Mesa de demonstração (sem socket): partida FICTÍCIA só para revisar visual —
-// cenário, cartas, verso, assentos. Útil para as Fases 3–4 do ROADMAP.
+// Mesa de demonstração (sem socket): partida FICTÍCIA só para revisar visual.
+// Estados por query: ?fase=turno (padrão) | reacao | contestar | revelar | troca | fim
+//   ?n=2..6 muda o número de jogadores. Útil para as Fases 3–4 do ROADMAP.
 "use client";
+
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 import GameBoard from "@/src/components/game/GameBoard";
 import TableBackdrop from "@/src/components/game/TableBackdrop";
@@ -8,34 +12,95 @@ import { COLORS } from "@/src/components/game/helpers";
 import type { Character, GameView } from "@/src/types/game";
 
 const card = (character: Character | null, revealed = false) => ({ character, revealed });
+const CONFIG = { globalReactionTime: 5, targetReactionTime: 15, challengeBlockTime: 5, turnTime: 45, choiceTime: 30 };
 
-const VIEW: GameView = {
-  phase: "aguardando_acao",
-  matchNumber: 1,
-  lastChallenge: null,
-  players: [
-    { id: "p1", name: "Ana", coins: 4, eliminated: false, cards: [card("duque"), card("assassino")] },
-    { id: "p2", name: "Bia", coins: 7, eliminated: false, cards: [card(null), card(null)] },
-    { id: "p3", name: "Caio", coins: 2, eliminated: false, cards: [card("capitao", true), card(null)] },
-    { id: "p4", name: "Davi", coins: 9, eliminated: false, cards: [card(null), card(null)] },
-  ],
-  currentPlayerId: "p1",
-  deckCount: 11,
-  treasury: 28,
-  config: { globalReactionTime: 5, targetReactionTime: 15, challengeBlockTime: 5, turnTime: 45, choiceTime: 30 },
-  pending: null,
-  mustRevealPlayerId: null,
-  exchange: null,
-  winnerId: null,
-  timer: { phase: "aguardando_acao", seconds: 45, remainingMs: 32000 },
-};
+function build(fase: string, n: number): GameView {
+  const names = ["Ana", "Bia", "Caio", "Davi", "Eva", "Fábio"];
+  const players = names.slice(0, n).map((name, i) => ({
+    id: `p${i + 1}`,
+    name,
+    coins: [4, 7, 2, 9, 3, 5][i],
+    eliminated: false,
+    cards:
+      i === 0
+        ? [card("duque"), card("assassino")]
+        : i === 2
+          ? [card("capitao", true), card(null)]
+          : [card(null), card(null)],
+  }));
+  const base: GameView = {
+    phase: "aguardando_acao",
+    matchNumber: 1,
+    lastChallenge: null,
+    players,
+    currentPlayerId: "p1",
+    deckCount: 11,
+    treasury: 28,
+    config: CONFIG,
+    pending: null,
+    mustRevealPlayerId: null,
+    exchange: null,
+    winnerId: null,
+    timer: { phase: "aguardando_acao", seconds: 45, remainingMs: 32000 },
+  };
+  switch (fase) {
+    case "reacao":
+      return {
+        ...base,
+        phase: "janela_reacao_global",
+        currentPlayerId: "p2",
+        pending: { action: "taxas", actorId: "p2", targetId: null, claimedCharacter: "duque", block: null, passedIds: ["p3"] },
+        timer: { phase: "janela_reacao_global", seconds: 5, remainingMs: 3400 },
+      };
+    case "contestar":
+      return {
+        ...base,
+        phase: "janela_contestar_bloqueio",
+        currentPlayerId: "p2",
+        pending: {
+          action: "ajuda_externa", actorId: "p2", targetId: null, claimedCharacter: null,
+          block: { blockerId: "p3", character: "duque" }, passedIds: [],
+        },
+        timer: { phase: "janela_contestar_bloqueio", seconds: 5, remainingMs: 4100 },
+      };
+    case "revelar":
+      return {
+        ...base,
+        phase: "aguardando_revelacao",
+        mustRevealPlayerId: "p1",
+        timer: { phase: "aguardando_revelacao", seconds: 30, remainingMs: 21000 },
+      };
+    case "troca":
+      return {
+        ...base,
+        phase: "aguardando_troca",
+        exchange: { pool: ["duque", "assassino", "condessa", "embaixador"] },
+        timer: { phase: "aguardando_troca", seconds: 30, remainingMs: 21000 },
+      };
+    case "fim":
+      return { ...base, phase: "fim_de_jogo", winnerId: "p1", currentPlayerId: null, timer: null };
+    default:
+      return base;
+  }
+}
 
-export default function MesaDevPage() {
+function Mesa() {
+  const q = useSearchParams();
+  const view = build(q.get("fase") ?? "turno", Math.min(6, Math.max(2, Number(q.get("n") ?? 4))));
+  // Em "reacao"/"contestar" quem age é o p2; eu (p1) sou espectador/reator.
   return (
     <main style={{ height: "100vh", display: "flex", flexDirection: "column", background: COLORS.bg }}>
       <TableBackdrop>
-        <GameBoard view={VIEW} myId="p1" interactionMode="hand" />
+        <GameBoard view={view} myId="p1" />
       </TableBackdrop>
     </main>
+  );
+}
+
+export default function MesaDevPage() {
+  return (
+    <Suspense fallback={null}>
+      <Mesa />
+    </Suspense>
   );
 }

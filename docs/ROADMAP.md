@@ -84,7 +84,7 @@ v0 tinha 32; faltavam marrons médios (+4 na v1) e cobres (+2 na v2: peles terra
 ### Fase 4 — Mesa v2 (redesign da interação) 🤝
 Detalhes de design em `docs/DESIGN_MESA_V2.md`. Nasceu do playtest da Fase 3 (arte aprovada, interface não). Sem mobile (fica para v3/v4). Cada passo = um commit; **pontos de teste** marcados com 🎮.
 
-- [ ] **4.1 Layout limpo e uma zona para cada coisa** 🤖
+- [x] **4.1 Layout limpo e uma zona para cada coisa** ✅ 🤖
   Só modo mão (remove `ActionBar` e o toggle A/B); zonas fixas (topo só menus, mesa, dock fixo embaixo com mão + ações básicas); sem banners de texto ("Vez de…", "Escolha o alvo…", "Aguardando…"); alvo escolhido clicando no assento (anel/mira pulsando, Esc cancela); reação deixa de ser modal e vira bandeja junto da mão; timer vira anel; assentos nunca cortados.
   **DoD:** em 1280×720 e 1920×1080 nada se sobrepõe nem é cortado (prints em `/dev/mesa`); zero banners de texto; a partida inteira jogável por 2 abas; testes/lint/build verdes.
 - [ ] **4.2 Selos de ação** 🤝 (precisa dos ícones: `tools/art/prompts/icones.json`)

@@ -16,6 +16,9 @@ export default function Seat({
   isMe,
   selectable,
   onSelect,
+  dim = false,
+  urgent = false,
+  passed = false,
   style,
   coinDelta = 0,
   deltaKey = 0,
@@ -23,8 +26,11 @@ export default function Seat({
   player: PublicPlayer;
   isCurrent: boolean;
   isMe: boolean;
-  selectable: boolean;
+  selectable: boolean; // alvo possível da ação escolhida (mira pulsando)
   onSelect?: () => void;
+  dim?: boolean; // escurece quem não está na vez (o brilho fica só em quem joga)
+  urgent?: boolean; // a mesa espera por este jogador (revelar/trocar)
+  passed?: boolean; // já passou nesta janela de reação (✔)
   style?: CSSProperties;
   coinDelta?: number; // variação de moedas na última transição (Economia viva)
   deltaKey?: number; // re-dispara a animação do "+N/−N"
@@ -37,7 +43,6 @@ export default function Seat({
       onClick={selectable ? onSelect : undefined}
       style={{
         position: "absolute",
-        transform: "translate(-50%, -50%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -46,15 +51,25 @@ export default function Seat({
         color: COLORS.text,
         fontSize: 13,
         cursor: selectable ? "pointer" : "default",
-        opacity: eliminated ? 0.4 : 1,
+        opacity: eliminated ? 0.4 : dim ? 0.72 : 1,
+        transition: "opacity 220ms ease",
         ...style,
       }}
     >
       {/* Avatar — pulsa no turno (classe turn-pulse); anel vermelho quando é alvo */}
       <div
-        className={isCurrent && !eliminated ? "turn-pulse" : undefined}
+        className={
+          isCurrent && !eliminated
+            ? "turn-pulse"
+            : selectable
+              ? "target-pulse"
+              : urgent
+                ? "urgent-pulse"
+                : undefined
+        }
         style={
           {
+            position: "relative",
             width: 56,
             height: 56,
             borderRadius: "50%",
@@ -78,6 +93,10 @@ export default function Seat({
         }
       >
         {avatarInitials(name)}
+        {selectable && <span style={{ ...badge, top: -8, right: -8 }}>🎯</span>}
+        {passed && !eliminated && (
+          <span style={{ ...badge, bottom: -4, right: -6, background: "#2f6b45" }}>✔</span>
+        )}
       </div>
 
       <div style={{ fontWeight: isMe ? 700 : 500, textAlign: "center" }}>
@@ -106,3 +125,20 @@ export default function Seat({
     </div>
   );
 }
+
+// Selo pequeno preso ao avatar (mira de alvo, ✔ de quem passou).
+const badge: CSSProperties = {
+  position: "absolute",
+  width: 22,
+  height: 22,
+  borderRadius: "50%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 12,
+  lineHeight: 1,
+  background: "#8b1a1a",
+  border: "2px solid #14101a",
+  color: "#fff",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.5)",
+};

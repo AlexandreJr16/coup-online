@@ -88,14 +88,13 @@ src/
 
 - **Mesa estilo poker** (top-down): você sempre embaixo-centro; avatares com
   iniciais e cor determinística; avatar do turno **pulsa**.
-- **Cartas em CSS puro** (sem imagem): cor + ícone por personagem, vinda de
-  `cards.ts` (regra: nenhum dado de carta hard-coded em componente).
+- **Cartas em pixel art** (Brasil Império) com fallback em emoji: dados de cada
+  personagem vêm de `cards.ts` (regra: nenhum dado de carta hard-coded em componente).
 - **Cartas dos oponentes estilo UNO**: versos visíveis; ao perder influência, a
   carta faz **flip 3D** e fica face-up dessaturada.
-- **Dois modos de interação (A/B)**, alternáveis por um botão na tela:
-  - **A — ActionBar**: barra de botões por categoria de ação.
-  - **B — HandView**: suas cartas em leque (estilo Pokémon TCG).
-- **Janela de reação** com timer regressivo (bloquear/contestar).
+- **Dock fixo** embaixo: ações básicas (esq.), sua mão em leque (centro; clicar numa
+  carta usa o poder dela) e reações (dir.). Detalhes em `docs/DESIGN_MESA_V2.md`.
+- **Janela de reação** com timer regressivo (bloquear/contestar/passar).
 - **Gamificação visual** (tudo derivado do estado, client-side):
   - **Feed de Intrigas** — log em pergaminho de quem declarou/bloqueou/perdeu o quê.
   - **Selo de cera** — estampa dramática em bloqueios e contestações.

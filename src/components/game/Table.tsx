@@ -5,7 +5,7 @@
 
 import type { PublicPlayer } from "@/src/types/game";
 import { useCountUp } from "./CoinFx";
-import { CINZEL, COLORS, seatLayout } from "./helpers";
+import { CINZEL, COLORS, seatLayout, seatStyle } from "./helpers";
 import Seat from "./Seat";
 
 export default function Table({
@@ -17,6 +17,9 @@ export default function Table({
   deltaKey = 0,
   selectableTargetIds = [],
   onSelectTarget,
+  dimOthers = false,
+  urgentIds = [],
+  passedIds = [],
 }: {
   players: PublicPlayer[];
   currentPlayerId: string | null;
@@ -26,6 +29,9 @@ export default function Table({
   deltaKey?: number;
   selectableTargetIds?: string[];
   onSelectTarget?: (id: string) => void;
+  dimOthers?: boolean; // turno de alguém: escurece os demais assentos
+  urgentIds?: string[]; // jogadores que a mesa está esperando
+  passedIds?: string[]; // quem já passou na janela de reação
 }) {
   // Rotaciona para o local virar índice 0 (assento de baixo).
   const meIndex = Math.max(0, players.findIndex((p) => p.id === myId));
@@ -45,23 +51,20 @@ export default function Table({
         overflow: "hidden",
       }}
     >
-      {/* Arena: região interna com margem para os assentos não encostarem nas
-          bordas (assentos são posicionados em % desta caixa, não da tela toda). */}
-      <div style={{ position: "absolute", inset: "9% 5%" }}>
-        {/* Feltro central */}
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
-            transform: "translate(-50%, -50%)",
-            width: "84%",
-            height: "82%",
-            borderRadius: "50%",
-            background: `radial-gradient(ellipse at center, ${COLORS.felt}, ${COLORS.feltEdge})`,
-            boxShadow: "inset 0 0 40px rgba(0,0,0,0.5), 0 0 0 8px #14130f",
-          }}
-        />
+      {/* Feltro central (os assentos ficam ancorados nas bordas, fora dele) */}
+      <div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "62%",
+          height: "58%",
+          borderRadius: "50%",
+          background: `radial-gradient(ellipse at center, ${COLORS.felt}, ${COLORS.feltEdge})`,
+          boxShadow: "inset 0 0 40px rgba(0,0,0,0.5), 0 0 0 8px #14130f",
+        }}
+      />
 
         {/* Tesouro Central no centro do feltro (Economia viva) */}
         {typeof treasury === "number" && (
@@ -69,7 +72,7 @@ export default function Table({
             style={{
               position: "absolute",
               left: "50%",
-              top: "50%",
+              top: "60%",
               transform: "translate(-50%, -50%)",
               display: "flex",
               alignItems: "center",
@@ -99,10 +102,12 @@ export default function Table({
             deltaKey={deltaKey}
             selectable={selectableTargetIds.includes(p.id)}
             onSelect={onSelectTarget ? () => onSelectTarget(p.id) : undefined}
-            style={{ left: `${layout[i].leftPct}%`, top: `${layout[i].topPct}%` }}
+            dim={dimOthers && p.id !== currentPlayerId}
+            urgent={urgentIds.includes(p.id)}
+            passed={passedIds.includes(p.id)}
+            style={seatStyle(layout[i])}
           />
         ))}
-      </div>
     </div>
   );
 }
