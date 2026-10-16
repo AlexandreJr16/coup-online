@@ -232,10 +232,21 @@ export class Page {
     }
   }
 
+  /** Tecla de verdade (keyDown+keyUp). Aceita "Escape", " " (Espaço) ou uma letra. */
   async key(key: string): Promise<void> {
-    for (const type of ["keyDown", "keyUp"]) {
-      await this.cdp.send("Input.dispatchKeyEvent", { type, key, code: key, windowsVirtualKeyCode: key === "Escape" ? 27 : 0 });
-    }
+    const special: Record<string, { code: string; vk: number; text?: string }> = {
+      Escape: { code: "Escape", vk: 27 },
+      " ": { code: "Space", vk: 32, text: " " },
+    };
+    const sp = special[key];
+    const base = {
+      key,
+      code: sp?.code ?? `Key${key.toUpperCase()}`,
+      windowsVirtualKeyCode: sp?.vk ?? key.toUpperCase().charCodeAt(0),
+    };
+    const text = sp ? sp.text : key;
+    await this.cdp.send("Input.dispatchKeyEvent", { type: text ? "keyDown" : "rawKeyDown", ...base, ...(text ? { text } : {}) });
+    await this.cdp.send("Input.dispatchKeyEvent", { type: "keyUp", ...base });
   }
 
   async screenshot(): Promise<Buffer> {

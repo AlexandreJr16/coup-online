@@ -190,6 +190,36 @@ test("página /dev/selos: 5 estados × 4 selos, ícones e fallback de emoji sem 
   noErrors(p);
 });
 
+// ── Rapidez (4.7) ────────────────────────────────────────────────────────────
+test("atalhos: Espaço passa e C contesta (teclado real, sem clicar)", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await a.click('[data-zone="centro"] [title="Barão do Café"]'); // Taxas
+  await b.waitFor(`document.querySelectorAll('[data-zone="reacoes"] .seal').length === 2`, "bandeja da Bia");
+  // os selos mostram a tecla de atalho
+  assert.match(await b.eval<string>(`document.querySelector('[data-zone="reacoes"]').innerText`), /Espaço/);
+  await b.key(" ");
+  await waitCoins(a, "Ana", 5); // a Taxas resolveu porque a Bia passou pelo teclado
+
+  await b.click('[data-zone="centro"] [title="Barão do Café"]'); // vez da Bia: Taxas
+  await a.waitFor(`document.querySelectorAll('[data-zone="reacoes"] .seal').length === 2`, "bandeja da Ana");
+  await a.key("c"); // Ana contesta pelo teclado
+  await a.waitFor(`document.body.innerText.includes("CONTESTADO!")`, "selo de contestação");
+  await b.waitFor(`document.body.innerText.includes("CONTESTADO!")`, "selo para todos");
+  noErrors(a, b);
+});
+
+test("passar automático: com o interruptor ligado a jogada alheia resolve sem a pessoa agir", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await b.click('[data-testid="autopass"]'); // liga o interruptor da Bia
+  await b.waitFor(`document.querySelector('[data-testid="autopass"] input').checked`, "interruptor ligado");
+  await a.click('[data-zone="centro"] [title="Barão do Café"]'); // Taxas
+  await waitCoins(a, "Ana", 5); // resolveu sozinho: a Bia não clicou em nada
+  assert.ok(!(await b.text()).includes("CONTESTADO!"));
+  noErrors(a, b);
+});
+
 // ── F5 e blefe ───────────────────────────────────────────────────────────────
 const mao = (p: Page) =>
   p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-zone="centro"] [title]')].map(e => e.getAttribute('title') + ((e.innerText.includes('🎭') || !!e.querySelector('img[src*="mascara"]')) ? ':blefe' : ':minha')))`);

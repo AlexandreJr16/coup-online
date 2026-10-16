@@ -340,7 +340,7 @@ function handlePass(
   }
   const p = s.pending!;
   byIdAlive(s, e.playerId);
-  const reactors = reactorIds(s);
+  const reactors = pendingReactorIds(s);
   if (!reactors.includes(e.playerId)) {
     throw new EngineError("Você não pode reagir a esta jogada.");
   }
@@ -359,11 +359,26 @@ function isWindowPhase(phase: Phase): boolean {
 
 // Quem pode reagir na janela atual: todo jogador vivo, exceto quem fez a jogada
 // que está sendo julgada (o ator na ação; o bloqueador no bloqueio).
-function reactorIds(s: GameState): string[] {
+export function pendingReactorIds(s: GameState): string[] {
   const p = s.pending!;
   const excluded =
     s.phase === "janela_contestar_bloqueio" ? p.block!.blockerId : p.actorId;
   return s.players.filter((x) => isAlive(x) && x.id !== excluded).map((x) => x.id);
+}
+
+// "Passar automático": quem deve passar sozinho agora. Só jogadores que ligaram a opção,
+// podem reagir e NÃO são parte envolvida: o alvo da ação (ele quer decidir) e, na janela
+// de contestar um bloqueio, o ator (foi a ação dele que travou).
+export function autoPassTargets(s: GameState, enabled: ReadonlySet<string>): string[] {
+  if (!isWindowPhase(s.phase) || !s.pending) return [];
+  const p = s.pending;
+  return pendingReactorIds(s).filter(
+    (id) =>
+      enabled.has(id) &&
+      !p.passedIds.includes(id) &&
+      id !== p.targetId &&
+      !(s.phase === "janela_contestar_bloqueio" && id === p.actorId),
+  );
 }
 
 // Fecha a janela atual sem reação: ação prossegue / bloqueio bem-sucedido.

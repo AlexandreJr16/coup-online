@@ -7,9 +7,11 @@
 
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 
+import { readAutoPass, saveAutoPass } from "@/src/lib/session";
 import { getSocket } from "@/src/lib/socket";
 import type { ActionType, Character, GameView } from "@/src/types/game";
 import type { GameActionAck } from "@/src/types/socket";
+import AutoPassToggle from "./AutoPassToggle";
 import BasicActions from "./BasicActions";
 import Card from "./Card";
 import ClaimPlate from "./ClaimPlate";
@@ -25,6 +27,7 @@ import {
   CHARACTER_ACTION,
   CINZEL,
   COLORS,
+  reactionOptions,
   requiredCharacter,
 } from "./helpers";
 import { useGameEvents } from "./useGameEvents";
@@ -95,6 +98,44 @@ export default function GameBoard({
       subtitle: CHAR_LABEL[events.block.character],
     });
   }, [events.block]);
+
+  // ── Passar automático: o servidor guarda; aqui só o interruptor (reenviado ao montar) ──
+  const [autoPass, setAutoPass] = useState(readAutoPass);
+  useEffect(() => {
+    socket.emit("game_autopass", { enabled: autoPass }, () => {});
+  }, [socket, autoPass]);
+  const toggleAutoPass = (enabled: boolean) => {
+    setAutoPass(enabled);
+    saveAutoPass(enabled);
+  };
+
+  // ── Atalhos de teclado nas janelas de reação: Espaço passa, C contesta, B bloqueia ──
+  const reaction = reactionOptions(view, myId);
+  useEffect(() => {
+    if (!reaction.canReact || reaction.passed) return;
+    const done = (a: GameActionAck) => setError(a.ok ? "" : a.error);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      const act =
+        e.code === "Space" || k === " "
+          ? () => socket.emit("game_pass", done)
+          : k === "c" && reaction.canChallenge
+            ? () => socket.emit("game_challenge", done)
+            : k === "b" && reaction.blocks.length > 0
+              ? () => socket.emit("game_block", { character: reaction.blocks[0] }, done)
+              : null;
+      if (!act) return;
+      e.preventDefault();
+      (document.activeElement as HTMLElement | null)?.blur(); // Espaço não reativa o botão focado
+      setError("");
+      act();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // `blocks` entra como string estável (a lista é recriada a cada render).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reaction.canReact, reaction.passed, reaction.canChallenge, reaction.blocks.join(","), socket]);
 
   // Mensagens de erro somem sozinhas; Esc cancela a escolha de alvo.
   useEffect(() => {
@@ -300,7 +341,7 @@ export default function GameBoard({
         <div data-zone="centro" style={{ display: "flex", justifyContent: "center", minWidth: 380 }}>
           {center}
         </div>
-        <div data-zone="reacoes" style={{ justifySelf: "start" }}>
+        <div data-zone="reacoes" style={{ justifySelf: "start", display: "flex", flexDirection: "column", gap: 12 }}>
           <ReactionTray
             view={view}
             myId={myId}
@@ -317,6 +358,7 @@ export default function GameBoard({
               socket.emit("game_pass", ack);
             }}
           />
+          <AutoPassToggle enabled={autoPass} onChange={toggleAutoPass} />
         </div>
       </div>
     </div>

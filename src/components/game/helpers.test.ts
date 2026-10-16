@@ -20,6 +20,7 @@ import {
   isBluff,
   legalBlockChars,
   myFaceDownChars,
+  reactionOptions,
   reactorIds,
   requiredCharacter,
   seatLayout,
@@ -195,4 +196,50 @@ test("guarda: todo ícone declarado em ICONS_AVAILABLE existe em public/art (nos
       assert.ok(existsSync(join(process.cwd(), "public", url)), `faltando arquivo: ${url}`);
     }
   }
+});
+
+// ── O que posso fazer na janela (bandeja + atalhos) ──────────────────────────
+test("reactionOptions: sem janela nada; ator não reage; alvo bloqueia; quem passou não age", () => {
+  const players = [player("p1"), player("p2"), player("p3")];
+  assert.equal(reactionOptions(makeView({ players }), "p2").canReact, false);
+
+  const acao = (action: "assassinar" | "taxas" | "ajuda_externa", extra = {}) =>
+    makeView({
+      phase: action === "assassinar" ? "janela_reacao_vitima" : "janela_reacao_global",
+      players,
+      pending: {
+        action, actorId: "p1", targetId: action === "assassinar" ? "p2" : null,
+        claimedCharacter: action === "ajuda_externa" ? null : action === "taxas" ? "duque" : "assassino",
+        block: null, passedIds: [], ...extra,
+      },
+    });
+
+  assert.equal(reactionOptions(acao("taxas"), "p1").canReact, false); // ator
+  const taxas = reactionOptions(acao("taxas"), "p2");
+  assert.deepEqual([taxas.canReact, taxas.canChallenge, taxas.blocks], [true, true, []]);
+
+  const assassinato = reactionOptions(acao("assassinar"), "p2"); // alvo
+  assert.deepEqual(assassinato.blocks, ["condessa"]);
+  assert.deepEqual(reactionOptions(acao("assassinar"), "p3").blocks, []); // não é o alvo
+
+  const ajuda = reactionOptions(acao("ajuda_externa"), "p3");
+  assert.equal(ajuda.canChallenge, false); // Ajuda Externa não alega personagem
+  assert.deepEqual(ajuda.blocks, ["duque"]);
+
+  assert.equal(reactionOptions(acao("taxas", { passedIds: ["p2"] }), "p2").passed, true);
+});
+
+test("reactionOptions: na janela do bloqueio só dá para contestar (e o ator pode)", () => {
+  const players = [player("p1"), player("p2"), player("p3")];
+  const v = makeView({
+    phase: "janela_contestar_bloqueio",
+    players,
+    pending: {
+      action: "ajuda_externa", actorId: "p1", targetId: null, claimedCharacter: null,
+      block: { blockerId: "p2", character: "duque" }, passedIds: [],
+    },
+  });
+  const ator = reactionOptions(v, "p1");
+  assert.deepEqual([ator.canReact, ator.canChallenge, ator.blocks], [true, true, []]);
+  assert.equal(reactionOptions(v, "p2").canReact, false); // o bloqueador não contesta o próprio bloqueio
 });

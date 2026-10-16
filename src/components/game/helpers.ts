@@ -45,6 +45,32 @@ export const CHAR_VISUAL = Object.fromEntries(
   CARDS.map((c) => [c.id, { color: c.cor, icon: c.icone }]),
 ) as Record<Character, { color: string; icon: string }>;
 
+// O que ESTE jogador pode fazer na janela de reação atual (usado pela bandeja e pelos
+// atalhos de teclado, para os dois sempre concordarem).
+export interface ReactionOptions {
+  canReact: boolean; // há janela aberta e eu posso reagir nela
+  passed: boolean; // já passei (é final)
+  canChallenge: boolean;
+  blocks: Character[]; // personagens com que posso bloquear
+}
+
+export function reactionOptions(view: GameView, myId: string): ReactionOptions {
+  const p = view.pending;
+  const inWindow =
+    p !== null &&
+    (view.phase === "janela_reacao_global" ||
+      view.phase === "janela_reacao_vitima" ||
+      view.phase === "janela_contestar_bloqueio");
+  if (!inWindow || !p) return { canReact: false, passed: false, canChallenge: false, blocks: [] };
+  const canReact = reactorIds(view).includes(myId);
+  return {
+    canReact,
+    passed: p.passedIds.includes(myId),
+    canChallenge: canReact && (view.phase === "janela_contestar_bloqueio" || p.claimedCharacter !== null),
+    blocks: canReact && view.phase !== "janela_contestar_bloqueio" ? legalBlockChars(p.action, p.targetId, myId) : [],
+  };
+}
+
 // ── Ícones dos selos de ação (public/art/<tema>/icones/) ─────────────────────
 export type IconName =
   | "renda" | "ajuda_externa" | "golpe" | "taxas" | "assassinar" | "extorquir"

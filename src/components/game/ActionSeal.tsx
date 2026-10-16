@@ -22,6 +22,7 @@ export default function ActionSeal({
   onClick,
   width = 208,
   title,
+  hotkey,
 }: {
   icon: IconName;
   emoji: string; // fallback quando o ícone não existe ou falha ao carregar
@@ -33,6 +34,7 @@ export default function ActionSeal({
   onClick?: () => void;
   width?: number;
   title?: string;
+  hotkey?: string; // tecla de atalho mostrada no canto (ex.: "Espaço", "C")
 }) {
   const locked = state === "locked";
   const disabled = state === "off" || locked;
@@ -51,6 +53,7 @@ export default function ActionSeal({
         {label}
       </span>
       {sub !== undefined && <b style={{ fontVariantNumeric: "tabular-nums", opacity: locked ? 0.7 : 1 }}>{sub}</b>}
+      {hotkey && !disabled && <kbd className="seal-key">{hotkey}</kbd>}
       {bluff && !disabled && (
         <span style={{ position: "absolute", top: -9, right: -7 }} aria-label="blefe" title="você não tem esta carta (blefe)">
           <Pic name="mascara" emoji="🎭" size={16} />

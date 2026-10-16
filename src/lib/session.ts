@@ -28,3 +28,20 @@ export function clearToken(roomId: string): void {
     /* idem */
   }
 }
+
+// Preferência do "passar automático" (por aba, como o token): só espelha o que o servidor guarda.
+export function readAutoPass(): boolean {
+  try {
+    return sessionStorage.getItem("coup:autopass") === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function saveAutoPass(enabled: boolean): void {
+  try {
+    sessionStorage.setItem("coup:autopass", enabled ? "1" : "0");
+  } catch {
+    /* sem storage: a preferência vale só até recarregar */
+  }
+}
