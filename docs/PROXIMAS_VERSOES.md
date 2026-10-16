@@ -51,3 +51,6 @@ Print: mão com 4 cartas (Capoeira, Regatão, Regatão, Capoeira) — é uma **T
   serviço de teste separado no Render apontando para a branch.
 - Espectador: a promoção (revanche, início, vaga no lobby) está coberta na integração; o E2E de
   navegador cobre a mesa em modo leitura e o lobby cheio, não a promoção.
+
+## Depois do playtest e da revisão visual
+O feedback visual do Alexandre (cara de IA, header, colinha, mesa, barra de baixo, tela final e "mais uma partida") virou o plano em **`docs/PLANO_V3.md`**.
