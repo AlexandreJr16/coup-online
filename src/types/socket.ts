@@ -18,6 +18,10 @@ export interface Room {
   players: Player[];
 }
 
+// Papel de quem está na sala: joga, ou só assiste (entrou com a partida em andamento ou
+// com a sala cheia) e vira jogador na próxima partida. Espectador nunca recebe cartas.
+export type Role = "player" | "spectator";
+
 // Respostas de ack (callback) usadas em create/join.
 export interface CreateRoomAck {
   roomId: string;
@@ -27,7 +31,7 @@ export interface CreateRoomAck {
 // cliente dele, em sessionStorage) e permite voltar ao mesmo assento depois de F5
 // ou queda de rede. O `id` é público (aparece nas views).
 export type JoinRoomAck =
-  | { ok: true; players: Player[]; you: { id: string; token: string } }
+  | { ok: true; role: Role; players: Player[]; spectators: Player[]; you: { id: string; token: string } }
   | { ok: false; error: string };
 
 // Ack genérico dos eventos de jogo: erro de regra volta privado a quem agiu.
@@ -36,6 +40,8 @@ export type GameActionAck = { ok: true } | { ok: false; error: string };
 // Eventos enviados pelo servidor para o client.
 export interface ServerToClientEvents {
   "room:players": (players: Player[]) => void;
+  // Quem está assistindo (nunca é jogador da partida em curso).
+  "room:spectators": (spectators: Player[]) => void;
   // Estado do jogo já FILTRADO para este socket (nunca vaza cartas alheias).
   game_state: (view: GameView) => void;
 }

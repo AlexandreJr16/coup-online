@@ -20,6 +20,7 @@ import type {
   GameActionAck,
   JoinRoomAck,
   Player,
+  Role,
   ServerToClientEvents,
 } from "../types/socket";
 
@@ -51,8 +52,12 @@ interface Client {
   id: string;
   token: string;
   view: GameView | null;
+  states: GameView[]; // TODAS as views recebidas (para varrer vazamentos)
   players: Player[];
+  spectators: Player[];
+  role: Role | "";
   join(room: string, token?: string): Promise<JoinRoomAck>;
+  leave(): void;
   start(config?: Partial<GameConfig>): Promise<GameActionAck>;
   action(action: ActionType, targetId?: string): Promise<GameActionAck>;
   block(character: Character): Promise<GameActionAck>;
@@ -71,17 +76,24 @@ function client(name: string): Client {
     id: "",
     token: "",
     view: null,
+    states: [],
     players: [],
+    spectators: [],
+    role: "",
     join: (room, token) =>
       new Promise((res) =>
         socket.emit("room:join", { roomId: room, name, token }, (ack) => {
           if (ack.ok) {
             c.id = ack.you.id;
             c.token = ack.you.token;
+            c.role = ack.role;
+            c.players = ack.players;
+            c.spectators = ack.spectators;
           }
           res(ack);
         }),
       ),
+    leave: () => socket.emit("room:leave"),
     start: (config) => new Promise((res) => socket.emit("game_start", { config }, res)),
     action: (action, targetId) =>
       new Promise((res) => socket.emit("game_action", { action, targetId }, res)),
@@ -92,8 +104,12 @@ function client(name: string): Client {
     reveal: (cardIndex) => new Promise((res) => socket.emit("game_reveal", { cardIndex }, res)),
     rematch: () => new Promise((res) => socket.emit("game_rematch", res)),
   };
-  socket.on("game_state", (v) => (c.view = v));
+  socket.on("game_state", (v) => {
+    c.view = v;
+    c.states.push(v);
+  });
   socket.on("room:players", (p) => (c.players = p));
+  socket.on("room:spectators", (sp) => (c.spectators = sp));
   open.push(c);
   return c;
 }
@@ -214,12 +230,214 @@ test("privacidade: ninguém vê as cartas ocultas dos outros", async () => {
   }
 });
 
-test("estranho não entra numa partida em andamento", async () => {
-  const { room } = await startedGame(["Ana", "Bia"]);
+test("estranho que chega com a partida em andamento entra como ESPECTADOR (não como jogador)", async () => {
+  const { room, cs } = await startedGame(["Ana", "Bia"]);
   const x = client("Intruso");
   const ack = await x.join(room);
-  assert.equal(ack.ok, false);
+  assert.equal(ack.ok, true);
+  assert.equal(x.role, "spectator");
+  assert.deepEqual(ack.ok && ack.players.map((p) => p.name), ["Ana", "Bia"], "a lista de jogadores não muda");
+  await waitFor(() => cs[0].spectators.some((p) => p.id === x.id), 2000, "jogadores veem o espectador");
 });
+
+// ── Espectador ───────────────────────────────────────────────────────────────
+// Coleta tudo que o espectador recebeu e garante que NENHUMA carta oculta nem a escolha
+// da Troca vazou, em nenhuma das views (varre cada game_state do começo ao fim).
+function assertNoHiddenLeak(c: Client, hiddenOwners: Client[] = []): void {
+  assert.ok(c.states.length > 0, `${c.name} não recebeu nenhuma view`);
+  for (const v of c.states) {
+    assert.equal(v.exchange, null, `${c.name} recebeu a escolha da Troca`);
+    for (const p of v.players) {
+      if (hiddenOwners.some((h) => h.id === c.id && h.id === p.id)) continue; // a própria mão é dele
+      for (const k of p.cards) {
+        if (!k.revealed) assert.equal(k.character, null, `${c.name} viu carta oculta de ${p.name}`);
+      }
+    }
+  }
+}
+
+test("espectador: entra no meio da partida e recebe só a view pública (nenhuma carta oculta)", async () => {
+  const { room, cs } = await startedGame(["Ana", "Bia"]);
+  const vigia = client("Vigia");
+  const ack = await vigia.join(room);
+  assert.equal(ack.ok, true);
+  assert.equal(vigia.role, "spectator");
+  assert.ok(ack.ok && !ack.players.some((p) => p.id === vigia.id), "espectador não aparece como jogador");
+  await waitFor(() => vigia.view !== null, 2000, "view do espectador");
+  const v = vigia.view!;
+  assert.equal(v.players.length, 2);
+  assert.ok(v.players.every((p) => p.cards.every((k) => k.character === null)), "todas as cartas ocultas");
+  assert.equal(v.exchange, null);
+  assert.equal(v.phase, cs[0].view!.phase);
+
+  // A partida anda e o espectador acompanha, sem nunca ver carta oculta.
+  await cs[0].action("renda");
+  await waitFor(() => vigia.view!.players.some((p) => p.coins === 3), 2000, "espectador viu a Renda");
+  assertNoHiddenLeak(vigia);
+  // Na 1ª view nada foi revelado nem alegado: o JSON inteiro não pode conter NENHUM personagem.
+  assert.ok(!/"character":"/.test(JSON.stringify(vigia.states[0])), "a view inicial do espectador vaza personagem");
+});
+
+test("espectador: durante a TROCA não recebe as cartas compradas nem a escolha do ator", async () => {
+  const { room, cs } = await startedGame(["Ana", "Bia"]);
+  const [a, b] = cs;
+  const vigia = client("Vigia");
+  await vigia.join(room);
+  await waitFor(() => vigia.view !== null);
+  assert.equal((await a.action("trocar")).ok, true);
+  await waitFor(() => b.view!.phase === "janela_reacao_global");
+  assert.equal((await b.pass()).ok, true);
+  await waitFor(() => a.view!.phase === "aguardando_troca" && a.view!.exchange !== null, 3000, "Ana escolhendo a troca");
+  assert.equal(a.view!.exchange!.pool.length, 4, "o ator vê as 4 cartas");
+  await waitFor(() => vigia.view!.phase === "aguardando_troca");
+  assert.equal(vigia.view!.exchange, null, "o espectador não vê o pool");
+  assert.equal(b.view!.exchange, null, "nem o outro jogador");
+  assertNoHiddenLeak(vigia);
+});
+
+test("espectador não age: ação, bloqueio, contestação, passar, revelar, passar automático e revanche são recusados", async () => {
+  const { room, cs } = await startedGame(["Ana", "Bia"]);
+  const vigia = client("Vigia");
+  await vigia.join(room);
+  await waitFor(() => vigia.view !== null);
+  const antes = JSON.stringify({ ph: cs[0].view!.phase, cur: cs[0].view!.currentPlayerId, c: cs[0].view!.players.map((p) => p.coins) });
+  for (const ack of [
+    await vigia.action("renda"),
+    await vigia.action("taxas"),
+    await vigia.block("duque"),
+    await vigia.challenge(),
+    await vigia.pass(),
+    await vigia.reveal(0),
+    await vigia.autopass(true),
+    await vigia.rematch(),
+    await vigia.start(),
+  ]) {
+    assert.equal(ack.ok, false, "espectador conseguiu agir");
+  }
+  await sleep(100);
+  const depois = JSON.stringify({ ph: cs[0].view!.phase, cur: cs[0].view!.currentPlayerId, c: cs[0].view!.players.map((p) => p.coins) });
+  assert.equal(depois, antes, "o estado da partida mudou por causa do espectador");
+});
+
+test("espectador: reconecta por token (mesmo id, continua espectador, sem duplicar)", async () => {
+  const { room, cs } = await startedGame(["Ana", "Bia"]);
+  const v1 = client("Vigia");
+  await v1.join(room);
+  const id = v1.id;
+  const token = v1.token;
+  v1.socket.close();
+  const v2 = client("Vigia");
+  const ack = await v2.join(room, token);
+  assert.equal(ack.ok, true);
+  assert.equal(v2.role, "spectator");
+  assert.equal(v2.id, id);
+  await waitFor(() => v2.view !== null, 2000, "view após reconectar");
+  await sleep(300);
+  assert.equal(cs[0].spectators.filter((p) => p.id === id).length, 1, "não pode duplicar");
+  // passada a graça (20s × 0,1), segue lá: voltou a tempo
+  await sleep(2500);
+  assert.ok(cs[0].spectators.some((p) => p.id === id && p.connected), "o espectador que voltou sumiu da lista");
+});
+
+test("espectador que cai e não volta sai da lista depois da graça (e não segura a sala)", async () => {
+  const { room, cs } = await startedGame(["Ana", "Bia"]);
+  const vigia = client("Vigia");
+  await vigia.join(room);
+  await waitFor(() => cs[0].spectators.length === 1);
+  vigia.socket.close();
+  await waitFor(() => cs[0].spectators.every((p) => !p.connected), 2000, "marcado ausente");
+  await waitFor(() => cs[0].spectators.length === 0, 4000, "removido após a graça");
+  assert.equal(cs[0].players.length, 2, "os jogadores não foram afetados");
+});
+
+test("espectador sai de propósito: some na hora", async () => {
+  const { room, cs } = await startedGame(["Ana", "Bia"]);
+  const vigia = client("Vigia");
+  await vigia.join(room);
+  await waitFor(() => cs[0].spectators.length === 1);
+  vigia.leave();
+  await waitFor(() => cs[0].spectators.length === 0, 1000, "saiu na hora");
+});
+
+test("sala cheia (6) no lobby: o 7º entra como espectador e a partida começa só com os 6", async () => {
+  const { room, cs } = await lobby(["A", "B", "C", "D", "E", "F"]);
+  const extra = client("Sobrando");
+  const ack = await extra.join(room);
+  assert.equal(ack.ok, true);
+  assert.equal(extra.role, "spectator");
+  assert.equal(extra.players.length, 6);
+  assert.equal((await cs[0].start()).ok, true);
+  await waitFor(() => cs.every((c) => c.view !== null) && extra.view !== null, 3000, "views");
+  assert.equal(cs[0].view!.players.length, 6);
+  assert.equal(extra.view!.players.length, 6);
+  assert.ok(!extra.view!.players.some((p) => p.id === extra.id));
+  assertNoHiddenLeak(extra);
+});
+
+test("lobby cheio abre vaga: o espectador sobe sozinho para jogador", async () => {
+  const { room, cs } = await lobby(["A", "B", "C", "D", "E", "F"]);
+  const extra = client("Sobrando");
+  await extra.join(room);
+  assert.equal(extra.role, "spectator");
+  cs[5].leave(); // o último jogador sai de propósito
+  await waitFor(() => extra.players.some((p) => p.id === extra.id), 2000, "espectador virou jogador");
+  assert.equal(extra.spectators.length, 0);
+  assert.equal(extra.players.length, 6);
+  // e o token dele agora dá assento de jogador
+  const again = client("Sobrando");
+  const ack = await again.join(room, extra.token);
+  assert.ok(ack.ok);
+  assert.equal(again.role, "player");
+  assert.equal(again.id, extra.id);
+});
+
+test("revanche: espectadores online viram jogadores e passam a ver a própria mão", async () => {
+  const { room, cs } = await startedGame(["Ana", "Bia"]);
+  const vigia = client("Vigia");
+  await vigia.join(room);
+  await waitFor(() => vigia.view !== null);
+  await playToEnd(cs);
+  await waitFor(() => vigia.view!.phase === "fim_de_jogo", 2000, "espectador viu o fim");
+  assertNoHiddenLeak(vigia);
+  assert.equal((await vigia.rematch()).ok, false, "espectador não pede revanche");
+  assert.equal((await cs[1].rematch()).ok, true);
+  await waitFor(() => cs[0].view!.matchNumber === 2, 3000, "nova partida");
+  await waitFor(() => vigia.players.some((p) => p.id === vigia.id), 2000, "espectador na lista de jogadores");
+  await waitFor(() => vigia.view!.matchNumber === 2 && vigia.view!.players.length === 3, 3000, "view do ex-espectador");
+  assert.equal(cs[0].view!.players.length, 3);
+  assert.equal(vigia.spectators.length, 0);
+  const mao = me(vigia).cards;
+  assert.ok(mao.every((k) => k.character !== null), "agora ele vê a própria mão");
+  for (const p of vigia.view!.players.filter((x) => x.id !== vigia.id)) {
+    assert.ok(p.cards.every((k) => k.character === null), "mas não a dos outros");
+  }
+  // os outros jogadores também não veem a mão do novato
+  assert.ok(cs[0].view!.players.filter((p) => p.id === vigia.id).every((p) => p.cards.every((k) => k.character === null)));
+});
+
+test("revanche com mais espectadores que vagas: respeita 6 jogadores, por ordem de chegada", async () => {
+  const { room, cs } = await startedGame(["A", "B", "C", "D"]);
+  const e1 = client("E1");
+  const e2 = client("E2");
+  const e3 = client("E3");
+  for (const e of [e1, e2, e3]) {
+    await e.join(room);
+    await waitFor(() => e.view !== null);
+  }
+  await playToEnd(cs);
+  assert.equal((await cs[0].rematch()).ok, true);
+  await waitFor(() => cs[0].view!.matchNumber === 2, 3000, "nova partida");
+  assert.equal(cs[0].view!.players.length, 6);
+  const ids = cs[0].view!.players.map((p) => p.id);
+  assert.ok(ids.includes(e1.id) && ids.includes(e2.id), "E1 e E2 chegaram primeiro");
+  assert.ok(!ids.includes(e3.id), "E3 não cabe: segue espectador");
+  await waitFor(() => e3.view!.matchNumber === 2, 3000, "E3 acompanha a nova partida");
+  assert.ok(!e3.view!.players.some((p) => p.id === e3.id));
+  assert.equal(e3.view!.players.length, 6);
+  assertNoHiddenLeak(e3);
+  await waitFor(() => e3.spectators.some((p) => p.id === e3.id), 2000, "E3 segue na lista de espectadores");
+});
+
 
 // ── Passar e relógio (F1/F3) ─────────────────────────────────────────────────
 test("Passar: não reinicia o relógio e a janela fecha antes do tempo quando todos passam", async () => {
@@ -279,7 +497,11 @@ test("sem token: reivindica o assento ausente pelo nome; não rouba o de quem es
   const { room, cs } = await startedGame(["Ana", "Bia"]);
   const [a, b] = cs;
   const thief = client("Ana");
-  assert.equal((await thief.join(room)).ok, false); // a Ana está online
+  // A Ana está online: o homônimo não rouba o assento dela, entra só como espectador.
+  assert.equal((await thief.join(room)).ok, true);
+  assert.equal(thief.role, "spectator");
+  assert.notEqual(thief.id, a.id);
+  assert.ok(a.players.some((p) => p.id === a.id && p.connected), "a Ana segue com o assento");
   b.socket.close();
   await waitFor(() => a.players.find((p) => p.id === b.id)?.connected === false);
   const b2 = client("BIA"); // maiúsculas não importam

@@ -16,9 +16,12 @@ import {
   deleteRoom,
   generateRoomId,
   getRoom,
+  isSpectator,
   joinRoom,
   markDisconnected,
+  promoteSpectators,
   removePlayer,
+  removeSpectator,
   tokenOfPlayer,
   type ServerRoom,
 } from "./rooms";
@@ -37,6 +40,12 @@ const LOBBY_GRACE_MS = 20_000;
 const ABANDON_MS = 10 * 60_000;
 // Em partida, se a mesa espera por alguém ausente, o relógio dele encurta para isso.
 const ABSENT_DECIDER_SECONDS = 5;
+// Espectador que caiu tem esse tempo para voltar (F5) antes de sair da lista.
+const SPECTATOR_GRACE_MS = 20_000;
+// "Quem está olhando" da view do espectador: nunca coincide com um jogador, então a engine
+// esconde TODAS as cartas ocultas e a escolha da Troca (viewForPlayer só revela ao dono).
+const SPECTATOR_VIEWER_ID = "__espectador__";
+const NO_SPECTATOR_PLAY = "Espectadores não jogam: você entra na próxima partida.";
 
 // Dados que guardamos por socket. A identidade é o playerId ESTÁVEL (não o socket.id).
 interface SocketData {
@@ -77,17 +86,35 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
     return room.timerEndsAt === null ? undefined : Math.max(0, room.timerEndsAt - Date.now());
   }
 
-  // Envia a cada jogador SÓ a sua view (servidor filtra as cartas alheias).
+  // Envia a cada jogador SÓ a sua view (servidor filtra as cartas alheias). Espectadores
+  // recebem a view pública (sem nenhuma carta oculta), igual para todos eles.
   function broadcastState(room: ServerRoom): void {
     if (!room.game) return;
     const remaining = timerRemainingMs(room);
     for (const p of room.game.players) {
       io.to(playerChannel(p.id)).emit("game_state", viewForPlayer(room.game, p.id, remaining));
     }
+    for (const sp of room.spectators) sendSpectatorState(room, sp.id, remaining);
   }
 
+  function sendSpectatorState(room: ServerRoom, spectatorId: string, remaining = timerRemainingMs(room)): void {
+    if (!room.game) return;
+    io.to(playerChannel(spectatorId)).emit(
+      "game_state",
+      viewForPlayer(room.game, SPECTATOR_VIEWER_ID, remaining),
+    );
+  }
+
+  // Lista de jogadores e de espectadores, para todos na sala.
   function broadcastPlayers(room: ServerRoom): void {
     io.to(room.id).emit("room:players", room.players);
+    io.to(room.id).emit("room:spectators", room.spectators);
+  }
+
+  // Abriu vaga no lobby: espectadores online sobem, por ordem de chegada.
+  function seatFreed(room: ServerRoom): void {
+    if (room.game) return;
+    promoteSpectators(room);
   }
 
   function isConnected(room: ServerRoom, playerId: string): boolean {
@@ -176,16 +203,42 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
       const p = room.players.find((x) => x.id === playerId);
       if (room.game || !p || p.connected) return;
       const updated = removePlayer(room.id, playerId);
-      if (updated) broadcastPlayers(updated);
+      if (updated) {
+        seatFreed(updated);
+        broadcastPlayers(updated);
+      }
     }, LOBBY_GRACE_MS * scale);
     room.graceTimers.set(playerId, t);
   }
 
+  // Espectador que sai ou cai: não mexe em relógio, host nem descarte da sala.
+  function applySpectatorAbsence(room: ServerRoom, id: string, voluntary: boolean): void {
+    if (voluntary) {
+      removeSpectator(room.id, id);
+      broadcastPlayers(room);
+      return;
+    }
+    markDisconnected(room.id, id);
+    broadcastPlayers(room);
+    const t = setTimeout(() => {
+      room.graceTimers.delete(id);
+      const sp = room.spectators.find((x) => x.id === id);
+      if (!sp || sp.connected) return;
+      removeSpectator(room.id, id);
+      broadcastPlayers(room);
+    }, SPECTATOR_GRACE_MS * scale);
+    room.graceTimers.set(id, t);
+  }
+
   function applyAbsence(room: ServerRoom, playerId: string, voluntary: boolean): void {
+    if (isSpectator(room, playerId)) return applySpectatorAbsence(room, playerId, voluntary);
     if (!room.game && voluntary) {
-      // Saiu de propósito do lobby: libera o assento na hora.
+      // Saiu de propósito do lobby: libera o assento na hora (e quem espera sobe).
       const updated = removePlayer(room.id, playerId);
-      if (updated) broadcastPlayers(updated);
+      if (updated) {
+        seatFreed(updated);
+        broadcastPlayers(updated);
+      }
       return;
     }
     markDisconnected(room.id, playerId);
@@ -226,6 +279,7 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
       if (!room || !room.game || !playerId) {
         return cb({ ok: false, error: "Partida não encontrada." });
       }
+      if (isSpectator(room, playerId)) return cb({ ok: false, error: NO_SPECTATOR_PLAY });
       const result = applyEvent(room.game, makeEvent(playerId));
       if (result.error) return cb({ ok: false, error: result.error });
       cb({ ok: true });
@@ -260,13 +314,14 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
 
       const result = joinRoom(roomId, name, effectiveToken);
       if (!result.ok) return cb({ ok: false, error: result.error });
-      const { room, player } = result;
+      const { room, player, role } = result;
 
-      // Voltou: cancela remoção pendente e o descarte da sala abandonada.
+      // Voltou: cancela remoção pendente. O descarte da sala abandonada só é cancelado por
+      // um JOGADOR: espectador não mantém a sala viva.
       const grace = room.graceTimers.get(player.id);
       if (grace) clearTimeout(grace);
       room.graceTimers.delete(player.id);
-      if (room.cleanupTimer) {
+      if (role === "player" && room.cleanupTimer) {
         clearTimeout(room.cleanupTimer);
         room.cleanupTimer = null;
       }
@@ -276,11 +331,20 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
       void socket.join(room.id);
       void socket.join(playerChannel(player.id));
 
-      cb({ ok: true, players: room.players, you: { id: player.id, token: result.token } });
+      cb({
+        ok: true,
+        role,
+        players: room.players,
+        spectators: room.spectators,
+        you: { id: player.id, token: result.token },
+      });
       // Avisa todos na sala (inclusive quem entrou) a lista atualizada.
       broadcastPlayers(room);
-      // Voltou com partida em andamento: reanima o relógio e manda o estado atual.
-      if (room.game) presenceChanged(room, player.id);
+      if (room.game) {
+        // Jogador que voltou: reanima o relógio e manda o estado. Espectador: só a view pública.
+        if (role === "player") presenceChanged(room, player.id);
+        else sendSpectatorState(room, player.id);
+      }
     });
 
     socket.on("room:leave", () => detach(socket, true));
@@ -296,6 +360,7 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
       if (room.game) return cb({ ok: false, error: "Partida já iniciada." });
       // Quem está ausente (na graça do lobby) fica de fora da partida.
       for (const p of room.players.filter((x) => !x.connected)) removePlayer(room.id, p.id);
+      promoteSpectators(room); // sala que estava cheia e abriu vaga: quem espera entra
       if (room.players.length < 2) return cb({ ok: false, error: "Mínimo de 2 jogadores." });
       let game: GameState;
       try {
@@ -326,13 +391,20 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
         return cb({ ok: false, error: "Só quem jogou pode pedir revanche." });
       }
       for (const p of room.players.filter((x) => !x.connected)) removePlayer(room.id, p.id);
+      // Espectadores online viram jogadores da nova partida (ordem de chegada, até 6).
+      promoteSpectators(room);
       if (room.players.length < 2) return cb({ ok: false, error: "Mínimo de 2 jogadores." });
-      const game = createGame(
-        room.players.map((p) => ({ id: p.id, name: p.name })),
-        prev.config,
-        undefined,
-        { firstPlayerId: prev.winnerId ?? undefined, matchNumber: prev.matchNumber + 1 },
-      );
+      let game: GameState;
+      try {
+        game = createGame(
+          room.players.map((p) => ({ id: p.id, name: p.name })),
+          prev.config,
+          undefined,
+          { firstPlayerId: prev.winnerId ?? undefined, matchNumber: prev.matchNumber + 1 },
+        );
+      } catch (e) {
+        return cb({ ok: false, error: e instanceof Error ? e.message : "Erro ao iniciar a revanche." });
+      }
       cb({ ok: true });
       broadcastPlayers(room);
       commit(room, game);
@@ -351,6 +423,7 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
       const { roomId, playerId } = socket.data;
       const room = roomId ? getRoom(roomId) : undefined;
       if (!room || !playerId) return cb({ ok: false, error: "Sala não encontrada." });
+      if (isSpectator(room, playerId)) return cb({ ok: false, error: NO_SPECTATOR_PLAY });
       if (typeof payload?.enabled !== "boolean") return cb({ ok: false, error: "Valor inválido." });
       if (payload.enabled) room.autoPass.add(playerId);
       else room.autoPass.delete(playerId);

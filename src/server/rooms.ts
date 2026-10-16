@@ -9,27 +9,31 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
 import type { GameState } from "../types/game";
-import type { Player, Room } from "../types/socket";
+import type { Player, Role, Room } from "../types/socket";
 
 export const MAX_PLAYERS = 6;
 
 // Sala no servidor = lobby (Room) + estado de jogo + handles de timer. Tudo isso
 // é server-only; o cliente recebe só a view filtrada (game_state).
 export interface ServerRoom extends Room {
+  // Quem só assiste, por ordem de chegada. Fica SEPARADO de `players` de propósito:
+  // `players[0]` é o host, o limite de 6 e a revanche contam só jogadores. Spectators
+  // entram na partida via promoteSpectators (início de partida ou revanche).
+  spectators: Player[];
   game: GameState | null;
   timer: NodeJS.Timeout | null;
   // Relógio da fase atual: `timerSeq` = GameState.phaseSeq para o qual o timer foi
   // armado (só rearma quando a fase/janela muda); `timerEndsAt` = epoch ms do fim.
   timerSeq: number | null;
   timerEndsAt: number | null;
-  tokens: Map<string, string>; // token (segredo) → playerId
+  tokens: Map<string, string>; // token (segredo) → playerId (jogador OU espectador)
   autoPass: Set<string>; // jogadores com "passar automático" ligado
   graceTimers: Map<string, NodeJS.Timeout>; // lobby: remoção pendente após desconexão
   cleanupTimer: NodeJS.Timeout | null; // sala sem ninguém online: apagar depois
 }
 
 export type JoinResult =
-  | { ok: true; room: ServerRoom; player: Player; token: string; reconnected: boolean }
+  | { ok: true; room: ServerRoom; player: Player; token: string; reconnected: boolean; role: Role }
   | { ok: false; error: string };
 
 const rooms = new Map<string, ServerRoom>();
@@ -60,36 +64,50 @@ export function tokenOfPlayer(room: ServerRoom, playerId: string): string | unde
 
 /**
  * Entra numa sala (criando-a se não existir). Ordem de decisão:
- *  1. token válido desta sala → retoma o assento;
+ *  1. token válido desta sala → retoma o assento (de jogador ou de espectador);
  *  2. nome de um assento AUSENTE → retoma (perdeu o token, ex.: fechou a aba);
- *  3. partida em andamento → recusa (só volta quem já jogava);
- *  4. lobby → novo jogador (até MAX_PLAYERS).
+ *  3. partida em andamento OU sala cheia → entra como ESPECTADOR (vira jogador na
+ *     próxima partida, por ordem de chegada);
+ *  4. lobby com vaga → novo jogador (até MAX_PLAYERS).
  */
 export function joinRoom(roomId: string, name: string, token?: string): JoinResult {
   const existing = rooms.get(roomId);
 
   if (existing && token) {
-    const playerId = existing.tokens.get(token);
-    const player = playerId ? existing.players.find((p) => p.id === playerId) : undefined;
+    const id = existing.tokens.get(token);
+    const player = id ? existing.players.find((p) => p.id === id) : undefined;
     if (player) {
       player.connected = true;
-      return { ok: true, room: existing, player, token, reconnected: true };
+      return { ok: true, room: existing, player, token, reconnected: true, role: "player" };
+    }
+    const spectator = id ? existing.spectators.find((p) => p.id === id) : undefined;
+    if (spectator) {
+      spectator.connected = true;
+      return { ok: true, room: existing, player: spectator, token, reconnected: true, role: "spectator" };
     }
   }
 
   if (existing) {
     const wanted = name.trim().toLowerCase();
-    const ghost = existing.players.find((p) => !p.connected && p.name.toLowerCase() === wanted);
+    const isGhost = (p: Player) => !p.connected && p.name.toLowerCase() === wanted;
+    const ghost = existing.players.find(isGhost);
     const ghostToken = ghost ? tokenOfPlayer(existing, ghost.id) : undefined;
     if (ghost && ghostToken) {
       ghost.connected = true;
-      return { ok: true, room: existing, player: ghost, token: ghostToken, reconnected: true };
+      return { ok: true, room: existing, player: ghost, token: ghostToken, reconnected: true, role: "player" };
     }
-    if (existing.game) {
-      return { ok: false, error: "Partida em andamento. Só quem já estava jogando pode voltar." };
+    const specGhost = existing.spectators.find(isGhost);
+    const specToken = specGhost ? tokenOfPlayer(existing, specGhost.id) : undefined;
+    if (specGhost && specToken) {
+      specGhost.connected = true;
+      return { ok: true, room: existing, player: specGhost, token: specToken, reconnected: true, role: "spectator" };
     }
-    if (existing.players.length >= MAX_PLAYERS) {
-      return { ok: false, error: `Sala cheia (máximo ${MAX_PLAYERS} jogadores).` };
+    if (existing.game || existing.players.length >= MAX_PLAYERS) {
+      const spectator: Player = { id: randomUUID(), name: name.trim(), connected: true };
+      const specNewToken = randomBytes(16).toString("hex");
+      existing.spectators.push(spectator);
+      existing.tokens.set(specNewToken, spectator.id);
+      return { ok: true, room: existing, player: spectator, token: specNewToken, reconnected: false, role: "spectator" };
     }
   }
 
@@ -97,6 +115,7 @@ export function joinRoom(roomId: string, name: string, token?: string): JoinResu
     existing ?? {
       id: roomId,
       players: [],
+      spectators: [],
       game: null,
       timer: null,
       timerSeq: null,
@@ -112,16 +131,59 @@ export function joinRoom(roomId: string, name: string, token?: string): JoinResu
   const newToken = randomBytes(16).toString("hex");
   room.players.push(player);
   room.tokens.set(newToken, player.id);
-  return { ok: true, room, player, token: newToken, reconnected: false };
+  return { ok: true, room, player, token: newToken, reconnected: false, role: "player" };
 }
 
-/** Marca o jogador como ausente (não remove o assento). */
+export function isSpectator(room: ServerRoom, id: string): boolean {
+  return room.spectators.some((p) => p.id === id);
+}
+
+// Esquece a identidade de alguém que saiu de vez: token, "passar automático" e graça.
+function dropIdentity(room: ServerRoom, id: string): void {
+  for (const [token, owner] of room.tokens) if (owner === id) room.tokens.delete(token);
+  room.autoPass.delete(id);
+  const grace = room.graceTimers.get(id);
+  if (grace) clearTimeout(grace);
+  room.graceTimers.delete(id);
+}
+
+/** Marca o jogador (ou espectador) como ausente (não remove o assento). */
 export function markDisconnected(roomId: string, playerId: string): ServerRoom | null {
   const room = rooms.get(roomId);
   if (!room) return null;
-  const player = room.players.find((p) => p.id === playerId);
-  if (player) player.connected = false;
+  const who =
+    room.players.find((p) => p.id === playerId) ?? room.spectators.find((p) => p.id === playerId);
+  if (who) who.connected = false;
   return room;
+}
+
+/** Tira um espectador da sala (saiu, ou caiu e não voltou). Nunca apaga a sala. */
+export function removeSpectator(roomId: string, id: string): ServerRoom | null {
+  const room = rooms.get(roomId);
+  if (!room) return null;
+  room.spectators = room.spectators.filter((p) => p.id !== id);
+  dropIdentity(room, id);
+  return room;
+}
+
+/**
+ * Passa espectadores CONECTADOS para a lista de jogadores, por ordem de chegada, até
+ * MAX_PLAYERS. Quem não cabe segue como espectador; quem está desconectado é descartado.
+ * O token do espectador continua valendo (o id é o mesmo): ele vira jogador sem reentrar.
+ * Retorna quem foi promovido.
+ */
+export function promoteSpectators(room: ServerRoom): Player[] {
+  const promoted: Player[] = [];
+  const staying: Player[] = [];
+  for (const s of room.spectators) {
+    if (!s.connected) dropIdentity(room, s.id);
+    else if (room.players.length < MAX_PLAYERS) {
+      room.players.push(s);
+      promoted.push(s);
+    } else staying.push(s);
+  }
+  room.spectators = staying;
+  return promoted;
 }
 
 /**
@@ -134,18 +196,19 @@ export function removePlayer(roomId: string, playerId: string): ServerRoom | nul
   const room = rooms.get(roomId);
   if (!room) return null;
   room.players = room.players.filter((p) => p.id !== playerId);
-  for (const [token, id] of room.tokens) if (id === playerId) room.tokens.delete(token);
-  room.autoPass.delete(playerId);
-  const grace = room.graceTimers.get(playerId);
-  if (grace) clearTimeout(grace);
-  room.graceTimers.delete(playerId);
+  dropIdentity(room, playerId);
   if (room.players.length === 0) {
-    deleteRoom(roomId);
-    return null;
+    // Sem jogadores, mas com espectadores online: eles assumem a sala em vez de perdê-la.
+    promoteSpectators(room);
+    if (room.players.length === 0) {
+      deleteRoom(roomId);
+      return null;
+    }
   }
   return room;
 }
 
+/** Algum JOGADOR online? Espectadores não contam: não seguram o relógio nem a sala. */
 export function anyConnected(room: ServerRoom): boolean {
   return room.players.some((p) => p.connected);
 }
