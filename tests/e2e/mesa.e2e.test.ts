@@ -71,6 +71,13 @@ async function layoutIssues(p: Page): Promise<string[]> {
       const a = seats[i].r, b = seats[j].r;
       if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) issues.push(seats[i].n + ' sobrepõe ' + seats[j].n);
     }
+    const feed = document.querySelector('[data-feed]');
+    if (feed) {
+      const f = feed.getBoundingClientRect();
+      for (const s of seats) {
+        if (s.r.left < f.right && f.left < s.r.right && s.r.top < f.bottom && f.top < s.r.bottom) issues.push('feed de Intrigas cobre ' + s.n);
+      }
+    }
     if (dock.bottom > innerHeight + 0.5) issues.push('dock cortado');
     return issues;
   })()`);
@@ -187,10 +194,10 @@ test("reação: a bandeja usa selos (Contestar/Passar) e some depois de passar",
 test("página /dev/selos: 5 estados × 4 selos, ícones e fallback de emoji sem erros", async () => {
   const p = await open("/dev/selos");
   await p.waitFor(`document.querySelectorAll('[data-testid="selos"] .seal').length === 20`, "20 selos");
-  // contestar/assassinar ainda não têm arte → emoji; os 10 existentes carregam.
+  // só contestar ainda não tem arte → emoji; os 11 existentes carregam.
   await p.waitFor(`[...document.querySelectorAll('[data-testid="icones"] img')].every(i => i.complete && i.naturalWidth > 0)`, "ícones carregados");
   const semArte = await p.eval<number>(`[...document.querySelectorAll('[data-testid="icones"] > div')].filter(d => d.innerText.includes("(emoji)")).length`);
-  assert.equal(semArte, 2);
+  assert.equal(semArte, 1);
   noErrors(p);
 });
 
@@ -205,6 +212,8 @@ test("atalhos: Espaço passa e C contesta (teclado real, sem clicar)", async () 
   await b.key(" ");
   await waitCoins(a, "Ana", 5); // a Taxas resolveu porque a Bia passou pelo teclado
 
+  // espera a mão da Bia ficar ativa (a vez chega pelo servidor): clicar antes não faz nada
+  await b.waitFor(`document.querySelector('[data-zone="centro"] .hand-card.can-act')`, "vez da Bia");
   await b.click('[data-zone="centro"] [title="Barão do Café"]'); // vez da Bia: Taxas
   await a.waitFor(`document.querySelectorAll('[data-zone="reacoes"] .seal').length === 2`, "bandeja da Ana");
   await a.key("c"); // Ana contesta pelo teclado
@@ -471,6 +480,68 @@ test("layout 1920×1080 com 6 jogadores", async () => {
   await ps[0].waitFor(`document.querySelectorAll('[data-seat]').length === 6`, "6 assentos");
   assert.deepEqual(await layoutIssues(ps[0]), []);
   noErrors(...ps);
+});
+
+test("layout 1600×900 com 6 jogadores: o feed de Intrigas aberto não cobre nenhum assento", async () => {
+  const { ps } = await game(["Ana", "Bia", "Caio", "Davi", "Eva", "Fábio"], { w: 1600, h: 900 });
+  await ps[0].waitFor(`document.querySelectorAll('[data-seat]').length === 6 && document.querySelector('[data-feed]')`, "assentos e feed");
+  assert.deepEqual(await layoutIssues(ps[0]), []);
+  // recolher o feed devolve a faixa à mesa e continua sem sobreposição
+  await ps[0].click('[data-feed] button[title="Recolher"]');
+  await ps[0].waitFor(`document.querySelector('button[data-feed]')`, "feed recolhido");
+  assert.deepEqual(await layoutIssues(ps[0]), []);
+  noErrors(...ps);
+});
+
+test("retratos: o mesmo jogador tem o mesmo retrato no lobby e na mesa, sem repetir, e todos carregam", async () => {
+  const id = room();
+  const ps: Page[] = [];
+  for (const n of ["Ana", "Bia", "Caio"]) {
+    const p = await open(`/room/${id}?name=${n}`);
+    await p.waitText(`${n} (você)`);
+    ps.push(p);
+  }
+  await ps[0].waitFor(`document.querySelectorAll('li[data-avatar]').length === 3`, "3 jogadores no lobby");
+  const lobby = await ps[0].eval<Record<string, string>>(`Object.fromEntries([...document.querySelectorAll('li[data-avatar]')].map(e => [e.getAttribute('data-player'), e.getAttribute('data-avatar')]))`);
+  assert.equal(new Set(Object.values(lobby)).size, 3, "retratos repetidos no lobby");
+  const imgsOk = `[...document.querySelectorAll('li[data-avatar] img')].every(i => i.complete && i.naturalWidth > 0)`;
+  await ps[0].waitFor(imgsOk, "retratos do lobby carregados");
+  await ps[0].click("button", "Iniciar jogo");
+  for (const p of ps) await p.waitFor(`document.querySelector('[data-testid="dock"]')`, "dock da mesa");
+  for (const p of ps) {
+    const mesa = await p.eval<Record<string, string>>(`Object.fromEntries([...document.querySelectorAll('[data-seat]')].map(e => [e.getAttribute('data-seat'), e.querySelector('[data-avatar]')?.getAttribute('data-avatar')]))`);
+    assert.deepEqual(mesa, lobby, "retrato da mesa difere do lobby (ou difere entre clientes)");
+    await p.waitFor(`[...document.querySelectorAll('[data-seat] [data-avatar] img')].every(i => i.complete && i.naturalWidth > 0)`, "retratos da mesa carregados");
+  }
+  noErrors(...ps);
+});
+
+test("mão: o nome e o poder de cada carta ficam visíveis (nenhuma carta cobre a legenda da vizinha)", async () => {
+  const { ps } = await game(["Ana", "Bia"], { w: 1600, h: 900 });
+  const covered = await ps[0].eval<string[]>(`(() => {
+    const out = [];
+    for (const card of document.querySelectorAll('[data-zone="centro"] .hand-card')) {
+      const cap = card.querySelector('[data-caption] span');
+      if (!cap) { out.push((card.getAttribute('title') || '?') + ' sem legenda'); continue; }
+      const r = cap.getBoundingClientRect();
+      for (const fx of [0.15, 0.5, 0.85]) {
+        const top = document.elementFromPoint(r.left + r.width * fx, r.top + r.height / 2);
+        if (!top || !card.contains(top)) out.push(card.getAttribute('title') + ' coberta em ' + fx);
+      }
+    }
+    return out;
+  })()`);
+  assert.deepEqual(covered, []);
+  noErrors(...ps);
+});
+
+test("menu: o leque dos 5 personagens carrega e o painel tem fundo próprio (não transparente)", async () => {
+  const p = await open("/");
+  await p.waitFor(`document.querySelectorAll('[data-testid="home-fan"] img').length === 5`, "5 retratos no menu");
+  await p.waitFor(`[...document.querySelectorAll('[data-testid="home-fan"] img')].every(i => i.complete && i.naturalWidth > 0)`, "retratos carregados");
+  const bg = await p.eval<string>(`getComputedStyle(document.querySelector('.panel-salon')).backgroundImage`);
+  assert.ok(bg.includes("gradient"), "painel sem fundo: " + bg);
+  noErrors(p);
 });
 
 // ── Páginas de revisão não podem quebrar ─────────────────────────────────────

@@ -4,8 +4,8 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { type CSSProperties, useEffect, useState, useSyncExternalStore } from "react";
 
 import GameBoard from "@/src/components/game/GameBoard";
-import { avatarColor, CINZEL, COLORS } from "@/src/components/game/helpers";
-import TableBackdrop from "@/src/components/game/TableBackdrop";
+import { assignAvatars, avatarColor, avatarUrl, CINZEL, COLORS } from "@/src/components/game/helpers";
+import TableBackdrop, { SalonBg } from "@/src/components/game/TableBackdrop";
 import TimerSettings, { DEFAULT_TIMERS } from "@/src/components/game/TimerSettings";
 import { clearToken, readCrt, readToken, saveCrt, saveToken, subscribeCrt } from "@/src/lib/session";
 import { usePrefs } from "@/src/lib/audio/usePrefs";
@@ -93,6 +93,9 @@ export default function RoomPage() {
   }
 
   // Sair de propósito: libera o assento (no lobby) e esquece a sessão desta sala.
+  // Mesmo retrato no lobby e na mesa: o sorteio usa só a lista de ids, que é a mesma.
+  const avatarSlugs = assignAvatars(players.map((p) => p.id));
+
   function leave() {
     getSocket().emit("room:leave");
     clearToken(roomId);
@@ -161,13 +164,16 @@ export default function RoomPage() {
         <div
           style={{
             flex: 1,
+            position: "relative",
+            overflow: "hidden",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             padding: 24,
           }}
         >
-          <div style={lobbyCard}>
+          <SalonBg />
+          <div className="panel-salon" style={lobbyCard}>
             <h2 style={{ margin: "0 0 4px", fontFamily: CINZEL, fontSize: 24, fontWeight: 800 }}>
               Sala de espera
             </h2>
@@ -185,16 +191,26 @@ export default function RoomPage() {
             </h3>
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
               {players.map((p) => (
-                <li key={p.id} style={playerItem}>
+                <li key={p.id} data-player={p.name} data-avatar={avatarSlugs[players.indexOf(p)]} style={playerItem}>
                   <span
                     style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
+                      width: 30,
+                      height: 36,
+                      borderRadius: 6,
+                      border: `2px solid ${p.connected ? COLORS.gold : "#555"}`,
                       background: avatarColor(p.name),
                       flex: "none",
+                      overflow: "hidden",
                     }}
-                  />
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={avatarUrl(avatarSlugs[players.indexOf(p)])}
+                      alt=""
+                      draggable={false}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", imageRendering: "pixelated", display: "block" }}
+                    />
+                  </span>
                   <span style={{ fontWeight: p.id === myId ? 700 : 500, opacity: p.connected ? 1 : 0.5 }}>
                     {p.name}
                     {p.id === myId ? " (você)" : ""}
@@ -238,8 +254,9 @@ const topBar: CSSProperties = {
   justifyContent: "space-between",
   gap: 12,
   padding: "10px 16px",
-  background: "#15152b",
-  borderBottom: "1px solid rgba(255,255,255,0.07)",
+  background: "linear-gradient(#2b1f1c, #1a1214)",
+  borderBottom: "2px solid rgba(240,165,0,0.6)",
+  boxShadow: "0 6px 18px rgba(0,0,0,0.45)",
   color: COLORS.text,
 };
 const roomChip: CSSProperties = {
@@ -270,22 +287,19 @@ const leaveBtn = {
   "--c": "#3a3550",
 } as CSSProperties;
 const lobbyCard: CSSProperties = {
+  position: "relative",
   width: "100%",
   maxWidth: 440,
-  background: "#20203a",
-  border: `1px solid ${COLORS.neutral}`,
-  borderRadius: 16,
   padding: 28,
   color: COLORS.text,
-  boxShadow: "0 18px 50px rgba(0,0,0,0.5)",
 };
 const shareBox: CSSProperties = {
   display: "block",
   padding: "10px 12px",
   fontSize: 13,
   color: COLORS.text,
-  background: "#15152b",
-  border: `1px solid ${COLORS.neutral}`,
+  background: "rgba(14,8,10,0.7)",
+  border: "1px solid rgba(240,165,0,0.35)",
   borderRadius: 10,
   userSelect: "all",
   wordBreak: "break-all",

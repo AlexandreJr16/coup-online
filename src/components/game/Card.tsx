@@ -26,7 +26,7 @@ interface Dim {
 }
 const DIMS: Record<Size, Dim> = {
   sm: { w: 40, h: 56, icon: 22, label: 0, radius: 6 },
-  lg: { w: 88, h: 124, icon: 34, label: 13, radius: 10 },
+  lg: { w: 88, h: 124, icon: 34, label: 12, radius: 10 },
 };
 
 export default function Card({
@@ -275,13 +275,13 @@ function FrontFace({
             }}
           />
           {size === "lg" && (
-            <div style={caption}>
+            <div data-caption style={caption}>
               <span
-                style={{ fontFamily: CINZEL, fontWeight: 700, fontSize: d.label, letterSpacing: 0.5 }}
+                style={{ fontFamily: CINZEL, fontWeight: 800, fontSize: d.label, letterSpacing: 0.3, textShadow: "0 1px 2px #000, 0 0 6px #000" }}
               >
                 {CHAR_SHORT[character]}
               </span>
-              {hint && <span style={{ fontSize: 10, color: "rgba(255,255,255,0.78)" }}>{hint}</span>}
+              {hint && <span style={{ fontSize: 10, color: "rgba(255,240,210,0.92)", textShadow: "0 1px 2px #000" }}>{hint}</span>}
             </div>
           )}
         </>

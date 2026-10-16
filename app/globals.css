@@ -376,3 +376,51 @@ html[data-crt="1"] body::after {
   .foil { animation: none; }
   .pop { animation: none; }
 }
+
+/* ── Mesa de veludo: aro de madeira, filete dourado, trama e luz do lampião ─────── */
+.table-rim,
+.table-velvet {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.table-rim {
+  width: calc(62% + 44px);
+  height: calc(58% + 44px);
+  background:
+    linear-gradient(180deg, rgba(255, 225, 160, 0.28), transparent 18%),
+    repeating-linear-gradient(92deg, rgba(0, 0, 0, 0.12) 0 3px, transparent 3px 9px),
+    linear-gradient(180deg, #7a4d27, #4a2c17 55%, #6a4121);
+  box-shadow:
+    0 22px 46px rgba(0, 0, 0, 0.65),
+    inset 0 3px 0 rgba(255, 225, 160, 0.35),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.55);
+}
+.table-velvet {
+  width: 62%;
+  height: 58%;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(255, 205, 130, 0.2), transparent 62%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.06) 0 2px, transparent 2px 4px),
+    radial-gradient(ellipse at 50% 42%, #8c2335 0%, #6b1727 48%, #3f0f1b 100%);
+  box-shadow:
+    0 0 0 3px rgba(240, 165, 0, 0.7),
+    0 0 0 5px rgba(20, 12, 8, 0.8),
+    inset 0 0 70px rgba(0, 0, 0, 0.6),
+    inset 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+/* Painel do salão (menu e sala de espera): madeira escura, filete dourado, luz por cima. */
+.panel-salon {
+  background: linear-gradient(#2b1f1c, #1a1214 70%, #140d10);
+  border: 2px solid rgba(240, 165, 0, 0.6);
+  border-radius: 16px;
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 225, 160, 0.2),
+    inset 0 0 40px rgba(0, 0, 0, 0.35);
+}

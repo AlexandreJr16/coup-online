@@ -5,7 +5,8 @@ import { type CSSProperties, Suspense, useState } from "react";
 
 import { getSocket } from "@/src/lib/socket";
 import type { CreateRoomAck } from "@/src/types/socket";
-import { CINZEL, COLORS } from "@/src/components/game/helpers";
+import { ALL_CHARACTERS, artUrl, CINZEL, COLORS } from "@/src/components/game/helpers";
+import { SalonBg } from "@/src/components/game/TableBackdrop";
 
 // Next 16 exige <Suspense> em volta de quem usa useSearchParams na página
 // pré-renderizada ("/"); sem isso o `next build` (e o `npm start`) falha.
@@ -53,20 +54,37 @@ function Home() {
         alignItems: "center",
         justifyContent: "center",
         padding: 24,
-        background: `radial-gradient(ellipse at 50% 0%, #232347, ${COLORS.bg} 70%)`,
+        position: "relative",
+        overflow: "hidden",
+        background: COLORS.bg,
       }}
     >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 400,
-          background: "#20203a",
-          border: `1px solid ${COLORS.neutral}`,
-          borderRadius: 16,
-          padding: 28,
-          boxShadow: "0 18px 50px rgba(0,0,0,0.5)",
-        }}
-      >
+      <SalonBg />
+      <div className="panel-salon" style={{ position: "relative", width: "100%", maxWidth: 400, padding: 28 }}>
+        {/* Os cinco personagens em leque, como numa mão de cartas */}
+        <div data-testid="home-fan" style={{ display: "flex", justifyContent: "center", marginBottom: 14, height: 112 }}>
+          {ALL_CHARACTERS.map((c, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={c}
+              src={artUrl(c, "neutro", "lg") ?? undefined}
+              alt=""
+              draggable={false}
+              style={{
+                width: 70,
+                height: 99,
+                marginLeft: i === 0 ? 0 : -8,
+                borderRadius: 8,
+                border: `2px solid ${COLORS.gold}`,
+                boxShadow: "0 6px 14px rgba(0,0,0,0.6)",
+                imageRendering: "pixelated",
+                objectFit: "cover",
+                transform: `rotate(${(i - 2) * 6}deg) translateY(${Math.abs(i - 2) * 5}px)`,
+                zIndex: 5 - Math.abs(i - 2),
+              }}
+            />
+          ))}
+        </div>
         <h1
           style={{
             margin: 0,
@@ -74,12 +92,13 @@ function Home() {
             fontSize: 42,
             fontWeight: 900,
             letterSpacing: 1,
+            textAlign: "center",
           }}
         >
           <span style={{ color: COLORS.gold }}>Coup</span>{" "}
           <span style={{ color: COLORS.text }}>Online</span>
         </h1>
-        <p style={{ margin: "6px 0 22px", color: COLORS.dim, fontSize: 14 }}>
+        <p style={{ margin: "6px 0 22px", color: COLORS.dim, fontSize: 14, textAlign: "center" }}>
           Blefe, dedução e traição — 2 a 6 jogadores.
         </p>
 
@@ -141,8 +160,8 @@ const input: CSSProperties = {
   padding: "11px 12px",
   fontSize: 15,
   color: COLORS.text,
-  background: "#15152b",
-  border: `1px solid ${COLORS.neutral}`,
+  background: "rgba(14,8,10,0.7)",
+  border: "1px solid rgba(240,165,0,0.35)",
   borderRadius: 10,
   outline: "none",
 };

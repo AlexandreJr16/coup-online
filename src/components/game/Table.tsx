@@ -1,4 +1,4 @@
-// Mesa de poker vista de cima: elipse de feltro com os jogadores em volta.
+// Mesa de salão vista de cima: elipse de veludo com aro de madeira e os jogadores em volta.
 // O jogador local fica sempre embaixo-centro (rotaciona a lista). Marca o turno
 // e acende os alvos selecionáveis quando uma ação targeted pede alvo.
 "use client";
@@ -9,7 +9,7 @@ import type { PublicPlayer } from "@/src/types/game";
 import { useCountUp } from "./CoinFx";
 import Card from "./Card";
 import { centerOf, flyIn, reducedMotion } from "./motion";
-import { CINZEL, COLORS, seatLayout, seatStyle } from "./helpers";
+import { assignAvatars, CINZEL, COLORS, seatLayout, seatStyle } from "./helpers";
 import Seat from "./Seat";
 
 export default function Table({
@@ -45,6 +45,9 @@ export default function Table({
   const meIndex = Math.max(0, players.findIndex((p) => p.id === myId));
   const ordered = [...players.slice(meIndex), ...players.slice(0, meIndex)];
   const layout = seatLayout(ordered.length);
+  // Retratos pela ordem ORIGINAL da lista (igual em todos os clientes), não pela rotação local.
+  const avatarSlugs = assignAvatars(players.map((p) => p.id));
+  const avatarByPlayer = new Map(players.map((p, i) => [p.id, avatarSlugs[i]]));
   const shownTreasury = useCountUp(treasury ?? 0);
 
   // Distribuição inicial: cada carta dos assentos voa do baralho até o seu lugar.
@@ -74,22 +77,11 @@ export default function Table({
         overflow: "hidden",
       }}
     >
-      {/* Feltro central (os assentos ficam ancorados nas bordas, fora dele) */}
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          top: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "62%",
-          height: "58%",
-          borderRadius: "50%",
-          background: `radial-gradient(ellipse at center, ${COLORS.felt}, ${COLORS.feltEdge})`,
-          boxShadow: "inset 0 0 40px rgba(0,0,0,0.5), 0 0 0 8px #14130f",
-        }}
-      />
+      {/* Mesa de veludo: aro de madeira + filete dourado + veludo bordô com trama e vinheta */}
+      <div aria-hidden className="table-rim" />
+      <div aria-hidden className="table-velvet" />
 
-        {/* Tesouro Central no centro do feltro (Economia viva) */}
+        {/* Tesouro Central no centro do veludo (Economia viva) */}
         {typeof treasury === "number" && (
           <div
             data-erario
@@ -144,6 +136,7 @@ export default function Table({
             dim={dimOthers && p.id !== currentPlayerId}
             urgent={urgentIds.includes(p.id)}
             passed={passedIds.includes(p.id)}
+            avatar={avatarByPlayer.get(p.id)}
             style={seatStyle(layout[i])}
           />
         ))}

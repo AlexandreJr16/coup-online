@@ -13,6 +13,9 @@ import {
   avatarInitials,
   backUrl,
   basicSealState,
+  AVATARS,
+  assignAvatars,
+  avatarUrl,
   ICONS_AVAILABLE,
   iconUrl,
   CHAR_SHORT,
@@ -181,6 +184,18 @@ test("basicSealState: fora da vez apaga; sem moedas trava; 10+ só libera o Golp
   assert.equal(basicSealState(10, "golpe", true), "mandatory"); // golpe obrigatório
   assert.equal(basicSealState(10, "renda", true), "locked");
   assert.equal(basicSealState(12, "ajuda_externa", true), "locked");
+});
+
+test("assignAvatars: sem repetição, determinístico e todos os arquivos existem", () => {
+  const ids = ["a1", "b2", "c3", "d4", "e5", "f6"];
+  const a = assignAvatars(ids);
+  assert.equal(new Set(a).size, ids.length);
+  assert.deepEqual(a, assignAvatars(ids));
+  assert.equal(new Set(assignAvatars(Array.from({ length: 12 }, (_, i) => `p${i}`))).size, 12);
+  assert.deepEqual(assignAvatars([]), []);
+  for (const slug of AVATARS) {
+    assert.ok(existsSync(join(process.cwd(), "public", avatarUrl(slug))), `faltando arquivo: ${slug}`);
+  }
 });
 
 test("iconUrl: sm/lg e ícone sem arquivo devolve null (o selo cai no emoji)", () => {

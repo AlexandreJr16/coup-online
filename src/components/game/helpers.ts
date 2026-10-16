@@ -18,8 +18,6 @@ export const CINZEL = "var(--font-cinzel), Georgia, serif";
 // Paleta (DESIGN.md "Tipografia e Cores"). Inline styles, sem lib de UI.
 export const COLORS = {
   bg: "#1a1a2e", // fundo
-  felt: "#2d5a27", // mesa (feltro)
-  feltEdge: "#21421d",
   gold: "#f0a500", // ações de moeda
   red: "#c0392b", // ações agressivas
   coup: "#1f1f24", // golpe (preto/cinza escuro)
@@ -87,10 +85,10 @@ export type IconName =
   | "renda" | "ajuda_externa" | "golpe" | "taxas" | "assassinar" | "extorquir"
   | "trocar" | "contestar" | "bloquear" | "passar" | "mascara" | "cadeado";
 
-// Ícones que JÁ existem como arquivo; os demais caem no emoji do selo (contestar e
-// assassinar entram quando a 2ª leva de geração for curada).
+// Ícones que JÁ existem como arquivo; os demais caem no emoji do selo (contestar
+// entra quando a 2ª leva de geração for curada).
 export const ICONS_AVAILABLE: readonly IconName[] = [
-  "renda", "ajuda_externa", "golpe", "taxas", "extorquir", "trocar",
+  "renda", "ajuda_externa", "golpe", "taxas", "assassinar", "extorquir", "trocar",
   "bloquear", "passar", "mascara", "cadeado",
 ];
 
@@ -237,6 +235,26 @@ export function avatarColor(name: string): string {
   let h = 0;
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   return `hsl(${h % 360} 60% 45%)`;
+}
+
+// ── Retratos dos jogadores (public/art/<tema>/avatares/<slug>.png, 64×92) ────
+export const AVATARS = [
+  "ator", "capitao_porto", "colono", "dama_corte", "doceira", "estudante",
+  "frei", "jovem_barao", "medico", "parteira", "professora", "ribeirinho",
+] as const;
+export type AvatarSlug = (typeof AVATARS)[number];
+
+export function avatarUrl(slug: string): string {
+  return `/art/${ART_THEME}/avatares/${slug}.png`;
+}
+
+// Sorteio determinístico e SEM repetição dentro da mesa: parte de um hash dos ids
+// (igual para todos os clientes, pois a lista de jogadores é a mesma) e anda de 5
+// em 5 (coprimo de 12, então até 12 jogadores nunca colidem).
+export function assignAvatars(ids: string[]): AvatarSlug[] {
+  let h = 0;
+  for (const ch of ids[0] ?? "") h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return ids.map((_, i) => AVATARS[(h + i * 5) % AVATARS.length]);
 }
 
 // ── Layout dos assentos em volta da mesa ────────────────────────────────────

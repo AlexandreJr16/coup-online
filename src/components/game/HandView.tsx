@@ -61,10 +61,10 @@ export default function HandView({
             }}
             style={
               {
-                marginLeft: i === 0 ? 0 : -16,
+                marginLeft: i === 0 ? 0 : 3,
                 // --lift só é fixado inline quando armada; senão o :hover da classe manda.
                 ...(isArmed ? { "--lift": "-26px" } : {}),
-                transform: `rotate(${(i - 2) * 5}deg) translateY(var(--lift, 0px)) scale(${isArmed ? 1.1 : 1}) perspective(520px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))`,
+                transform: `rotate(${(i - 2) * 3}deg) translateY(${Math.abs(i - 2) * 3}px) translateY(var(--lift, 0px)) scale(${isArmed ? 1.1 : 1}) perspective(520px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))`,
                 transformOrigin: "bottom center",
                 zIndex: isArmed ? 10 : i,
                 opacity: dragging === char ? 0.35 : canAct || isArmed ? 1 : 0.92,

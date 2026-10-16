@@ -101,10 +101,10 @@ Detalhes de design em `docs/DESIGN_MESA_V2.md`. Nasceu do playtest da Fase 3 (ar
   Distribuição inicial a partir do baralho visível (com contagem); moedas voando entre Erário e jogadores, em pilhas que crescem; Trocar (2 cartas voam do baralho e as escolhidas voltam); Contestar (carta vira + tremor + selo); perder influência (vira e vai para a pilha de descarte do jogador). Pergunto antes de instalar lib de animação (sugestão: `motion`); sem ela dá com WAAPI/CSS.
   **DoD:** 60 fps com 6 jogadores; `prefers-reduced-motion` desliga o que balança; animação nunca atrasa o turno.
   🎮 **Teste de "sensação de baralho".**
-- [ ] **4.5 Retratos, molduras e falas** 🤝
+- [ ] **4.5 Retratos, molduras e falas** 🤝 _(parcial: 12 retratos de convidados com moldura dourada, sorteados sem repetição e iguais no lobby e na mesa; falta a escolha no lobby, persistência na reconexão por escolha e os balões de fala)_
   Conjunto de ~12 retratos de convidados do baile (pipeline `tools/art`), moldura, escolha no lobby; balões de fala estilo Undertale com o bordão do personagem ao declarar.
   **DoD:** nenhum círculo com iniciais restante; avatar escolhido persiste na reconexão; fala não atrasa o turno.
-- [ ] **4.6 Coerência visual do site inteiro** 🤝 🎮
+- [ ] **4.6 Coerência visual do site inteiro** 🤝 🎮 _(parcial: mesa de veludo bordô com aro de madeira e filete dourado, dock/header/painéis de madeira escura com ouro, menu e lobby sobre o salão com o leque dos 5 personagens, feed de Intrigas em faixa própria; falta favicon/título, `prefers-reduced-motion` global e o teste de coerência 🎮)_
   Mesa em veludo imperial com bordado (some a elipse verde); menu, lobby, botões, feed e painéis no mesmo vocabulário (papel, lacre, ouro, Cinzel); favicon e título.
   **DoD:** nenhuma tela com visual do v1; contraste legível; um `prefers-reduced-motion` global.
   🎮 **Teste de coerência.**

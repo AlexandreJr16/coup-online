@@ -44,6 +44,7 @@ const REACTION_PHASES = new Set<GameView["phase"]>([
 ]);
 
 const DOCK_HEIGHT = 214;
+const FEED_LANE = 232; // largura reservada ao feed de Intrigas aberto (painel 216 + folga)
 
 export default function GameBoard({
   view,
@@ -56,6 +57,7 @@ export default function GameBoard({
 }) {
   const socket = getSocket();
   const [error, setError] = useState("");
+  const [feedOpen, setFeedOpen] = useState(true);
   const [targetingAction, setTargetingAction] = useState<ActionType | null>(null);
   const [keepSel, setKeepSel] = useState<number[]>([]);
 
@@ -352,6 +354,9 @@ export default function GameBoard({
     <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", color: COLORS.text }}>
       {/* Mesa — ocupa todo o espaço acima do dock */}
       <div className={shaking ? "shake" : undefined} style={{ position: "relative", flex: 1, minHeight: 0 }}>
+       {/* Palco: a mesa e tudo que se ancora nela. Com o feed de Intrigas aberto, ele
+           ganha uma faixa própria à direita em vez de cobrir os assentos. */}
+       <div data-stage style={{ position: "absolute", inset: 0, right: feedOpen ? FEED_LANE : 0, transition: "right 200ms ease" }}>
         <Table
           players={view.players}
           currentPlayerId={view.currentPlayerId}
@@ -393,7 +398,9 @@ export default function GameBoard({
           </div>
         )}
 
-        <IntrigueFeed log={events.log} />
+       </div>
+
+        <IntrigueFeed log={events.log} open={feedOpen} onOpenChange={setFeedOpen} />
 
         {view.phase === "fim_de_jogo" && (
           <VictoryPanel
@@ -479,6 +486,8 @@ const dock: CSSProperties = {
   alignItems: "center",
   gap: 20,
   padding: "0 20px",
-  background: "linear-gradient(#15152b, #101022)",
-  borderTop: "1px solid rgba(255,255,255,0.08)",
+  // Balcão de madeira escura com filete dourado em cima (mesmo vocabulário da mesa).
+  background: "linear-gradient(#2b1f1c, #1a1214 70%, #120c0f)",
+  borderTop: "2px solid rgba(240,165,0,0.6)",
+  boxShadow: "inset 0 1px 0 rgba(255,225,160,0.18), 0 -10px 24px rgba(0,0,0,0.45)",
 };
