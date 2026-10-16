@@ -3,6 +3,9 @@
 //
 // Uso:
 //   npx tsx tools/art/generate.ts capoeira [--expr neutro,blefe] [--seeds 3] [--seed 1850]
+//   npx tsx tools/art/generate.ts capoeira --expr blefe --from neutro [--strength 0.6]
+//     (img2img: parte da imagem `neutro` da MESMA seed — mantém o personagem e deixa
+//      só o rosto/pose mudarem. Strength baixo = mais fiel; alto = mais expressivo.)
 //
 // Ambiente (opcional): SD_HOME = pasta com sdcpp/ e models/ (padrão ~/ai-art).
 // Saída: $SD_HOME/out/<id>_<expressao>_s<seed>.png  (curar à mão e depois rodar postprocess.ts)
@@ -28,6 +31,7 @@ interface PromptFile {
     cfg: number;
     sampler: string;
     seed_base: number;
+    img2img_strength?: number; // padrão do --from
   };
 }
 
@@ -57,6 +61,8 @@ function main(): void {
   const expressions = (flag("expr") ?? Object.keys(prompt.expressoes).join(",")).split(",");
   const baseSeed = Number(flag("seed") ?? g.seed_base);
   const seedCount = Number(flag("seeds") ?? 1);
+  const from = flag("from"); // expressão-base para img2img
+  const strength = Number(flag("strength") ?? g.img2img_strength ?? 0.6);
 
   for (const expr of expressions) {
     const expression = prompt.expressoes[expr];
@@ -64,8 +70,11 @@ function main(): void {
     const text = `${prompt.estilo}, ${prompt.personagem}, ${expression} <lora:${g.lora}:${g.lora_peso}>`;
     for (let k = 0; k < seedCount; k++) {
       const seed = baseSeed + k;
-      const out = join(outDir, `${prompt.id}_${expr}_s${seed}.png`);
-      console.log(`→ ${expr} seed=${seed}`);
+      const suffix = from ? `_from-${from}-${strength}` : "";
+      const out = join(outDir, `${prompt.id}_${expr}_s${seed}${suffix}.png`);
+      const init = from ? join(outDir, `${prompt.id}_${from}_s${seed}.png`) : null;
+      if (init && !existsSync(init)) throw new Error(`imagem-base não encontrada: ${init}`);
+      console.log(`→ ${expr} seed=${seed}${from ? ` (img2img de ${from}, strength ${strength})` : ""}`);
       // Array de argumentos (sem shell): o texto do prompt nunca é interpretado como comando.
       const res = spawnSync(
         bin,
@@ -82,6 +91,7 @@ function main(): void {
           "--sampling-method", g.sampler,
           "-s", String(seed),
           "--vae-tiling",
+          ...(init ? ["-i", init, "--strength", String(strength)] : []),
           "-o", out,
         ],
         { stdio: ["ignore", "ignore", "inherit"] },

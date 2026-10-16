@@ -50,3 +50,11 @@ Revisar em `http://localhost:3000/dev/cartas` (com `npm run dev`).
 - Prompts versionados em `tools/art/prompts/<id>.json`; subir `versao` ao mudar.
 - Arquivos finais: `public/art/<tema>/<id-da-carta>/<expressao>.png` e `.sm.png`. `<id-da-carta>` é o id interno (`assassino`, não "capoeira").
 - A carta só usa a imagem se `arte` em `src/lib/game/cards.ts` listar a expressão; senão, emoji.
+
+## Dicas aprendidas (Fases 2–3)
+- **Curar por seeds:** gere 6 por personagem (`--seeds 6`, ~8 min) e escolha olhando uma folha de contato. A variedade é grande e a qualidade, alta.
+- **Fundo:** o modelo ignora "fundo magenta" e devolve branco/cinza liso; o `postprocess` detecta pela cor mais frequente da borda e só semeia o preenchimento no topo e nos lados (o busto é cortado embaixo e o branco da roupa seria apagado).
+- **Verso e cenário** (sem fundo a remover): `--bg "#ff00ff" --tol 0`. Verso em `--size 88x128` (o CSS cobre e corta 2 px); cenário `--size 168x96`, exibido suavizado/desfocado.
+- **Expressões:** `--from neutro --strength 0.55..0.75` (img2img) preserva a identidade mas **quase não muda o rosto**; por isso o jogo usa 1 retrato por personagem e traduz reações em efeito.
+- Se uma cor do retrato virar vermelho/laranja demais, meça com a paleta e acrescente o tom que falta em `palette.json` (foi assim que entraram os cobres).
+- **Cuidado no shell:** `ls` aqui é alias do `eza` e pode travar em segundo plano; use `command ls`.

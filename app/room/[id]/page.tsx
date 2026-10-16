@@ -5,6 +5,7 @@ import { type CSSProperties, useEffect, useState } from "react";
 
 import GameBoard from "@/src/components/game/GameBoard";
 import { avatarColor, CINZEL, COLORS } from "@/src/components/game/helpers";
+import TableBackdrop from "@/src/components/game/TableBackdrop";
 import TimerSettings, { DEFAULT_TIMERS } from "@/src/components/game/TimerSettings";
 import { clearToken, readToken, saveToken } from "@/src/lib/session";
 import { getSocket } from "@/src/lib/socket";
@@ -133,7 +134,7 @@ export default function RoomPage() {
 
       {view ? (
         // Partida em andamento: o tabuleiro ocupa todo o espaço restante.
-        <div style={{ flex: 1, minHeight: 0 }}>
+        <TableBackdrop>
           <GameBoard
             key={view.matchNumber} // revanche = tabuleiro novo (feed e animações zeram)
             view={view}
@@ -141,7 +142,7 @@ export default function RoomPage() {
             interactionMode={interactionMode}
             absentIds={players.filter((p) => !p.connected).map((p) => p.id)}
           />
-        </div>
+        </TableBackdrop>
       ) : (
         // Lobby: card centralizado com link, jogadores e início.
         <div

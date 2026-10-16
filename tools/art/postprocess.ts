@@ -105,19 +105,23 @@ function nearest(c: RGB, palette: RGB[], paletteLab: RGB[]): RGB {
   return palette[bestIdx];
 }
 
-// Cor de fundo = média dos 4 cantos (blocos 4x4).
+// Cor de fundo = a cor MAIS FREQUENTE em toda a borda da imagem (agrupada em
+// baldes de 16 níveis por canal). A média dos cantos falhava nos bustos: os cantos
+// de baixo são roupa, e a "média" virava um cinza que não existe na imagem.
 function detectBackground(buf: Buffer, w: number, h: number): RGB {
-  let r = 0, g = 0, b = 0, n = 0;
-  const corners: Array<[number, number]> = [[0, 0], [w - 4, 0], [0, h - 4], [w - 4, h - 4]];
-  for (const [cx, cy] of corners) {
-    for (let y = cy; y < cy + 4; y++) {
-      for (let x = cx; x < cx + 4; x++) {
-        const i = (y * w + x) * 4;
-        r += buf[i]; g += buf[i + 1]; b += buf[i + 2]; n++;
-      }
-    }
-  }
-  return [r / n, g / n, b / n];
+  const buckets = new Map<number, { n: number; r: number; g: number; b: number }>();
+  const add = (x: number, y: number): void => {
+    const i = (y * w + x) * 4;
+    const key = ((buf[i] >> 4) << 8) | ((buf[i + 1] >> 4) << 4) | (buf[i + 2] >> 4);
+    const e = buckets.get(key) ?? { n: 0, r: 0, g: 0, b: 0 };
+    e.n++; e.r += buf[i]; e.g += buf[i + 1]; e.b += buf[i + 2];
+    buckets.set(key, e);
+  };
+  for (let x = 0; x < w; x++) { add(x, 0); add(x, h - 1); }
+  for (let y = 1; y < h - 1; y++) { add(0, y); add(w - 1, y); }
+  let best = { n: 0, r: 0, g: 0, b: 0 };
+  for (const e of buckets.values()) if (e.n > best.n) best = e;
+  return [best.r / best.n, best.g / best.n, best.b / best.n];
 }
 
 // Flood fill a partir das bordas: só apaga fundo conectado à borda (não fura o personagem).
@@ -133,7 +137,10 @@ function removeBackground(buf: Buffer, w: number, h: number, bg: RGB, tol: numbe
     seen[idx] = 1;
     stack.push(idx);
   };
-  for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
+  // Sementes só no topo e nos lados: os retratos são bustos CORTADOS embaixo, então o
+  // sujeito toca a borda inferior. Semear dali apagava roupa branca (camisa, faixa)
+  // que tem a mesma cor do fundo.
+  for (let x = 0; x < w; x++) push(x, 0);
   for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
   while (stack.length) {
     const idx = stack.pop() as number;

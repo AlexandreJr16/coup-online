@@ -1,0 +1,31 @@
+{
+  "id": "barao",
+  "card": "duque",
+  "nome": "Barão do Café",
+  "versao": 1,
+  "notas": "Fazendeiro do Vale do Paraíba, ~1860. Cavalheiro da corte, elegante e orgulhoso. Sem retratar escravidão: o poder dele é o dinheiro e o título.",
+  "estilo": "pixel art, 16-bit video game character portrait, bust portrait, head and shoulders and chest only, face large and clearly readable, limited color palette, clean dark outline, warm tropical colors, soft cel shading, plain solid white background, no shadow, no floor, no text, no frame",
+  "personagem": "elderly Brazilian Empire coffee baron from the 1860s, distinguished gentleman around 60 years old, white mutton-chop sideburns and a neat white mustache, dark green velvet frock coat with a high collar and gold buttons, white silk cravat with a gold pin, black top hat, a small branch of red coffee cherries pinned to the lapel, gold pocket watch chain across the vest",
+  "expressoes": {
+    "neutro": "calm proud look, looking at the viewer, chin slightly raised"
+  },
+  "negativo": "photo, realistic, 3d render, blurry, text, watermark, frame, border, caricature, offensive stereotype, gradient background, colored background, shadow, floor, full body, legs, necklace, beads, jewelry, gold chain, multiple people, crown, king, medieval armor, fantasy, modern clothes",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 704,
+    "altura": 1024,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 1851
+  },
+  "pos": {
+    "tamanho": "88x124",
+    "tamanho_miniatura": "40x56",
+    "kernel": "lanczos3",
+    "tol": 70
+  }
+}

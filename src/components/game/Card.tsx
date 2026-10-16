@@ -13,7 +13,7 @@ import { type CSSProperties, type ReactNode, useState } from "react";
 
 import type { Expressao } from "@/src/lib/game/cards";
 import type { Character } from "@/src/types/game";
-import { artUrl, CHAR_LABEL, CHAR_VISUAL, CINZEL, COLORS } from "./helpers";
+import { artUrl, backUrl, CHAR_LABEL, CHAR_SHORT, CHAR_VISUAL, CINZEL, COLORS } from "./helpers";
 
 type Size = "sm" | "lg";
 interface Dim {
@@ -83,13 +83,13 @@ export default function Card({
             transform: revealed ? "rotateY(180deg)" : "rotateY(0deg)",
           }}
         >
-          <BackFace d={d} />
+          <BackFace d={d} size={size} />
           {/* Face revelada (perdida) — só ganha personagem no instante da virada,
               então a carta oculta de outro jogador nunca fica no DOM. */}
           {character ? (
             <FrontFace d={d} character={character} size={size} lost transform="rotateY(180deg)" />
           ) : (
-            <BackFace d={d} transform="rotateY(180deg)" />
+            <BackFace d={d} size={size} transform="rotateY(180deg)" />
           )}
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function Card({
       style={outer}
     >
       {faceDown || !character ? (
-        <BackFace d={d} />
+        <BackFace d={d} size={size} />
       ) : (
         <FrontFace
           d={d}
@@ -139,17 +139,38 @@ function faceStyle(d: Dim, extra: CSSProperties): CSSProperties {
   };
 }
 
-function BackFace({ d, transform }: { d: Dim; transform?: string }) {
+function BackFace({ d, size, transform }: { d: Dim; size: Size; transform?: string }) {
+  // Verso em pixel art do tema; se o arquivo faltar, cai no verso CSS (coroa ♛).
+  const [failed, setFailed] = useState(false);
+  const src = failed ? null : backUrl(size);
   return (
     <div
       style={faceStyle(d, {
         background: `linear-gradient(150deg, ${COLORS.cardBack}, #1f2d3d)`,
-        border: "1px solid rgba(240,165,0,0.5)",
+        border: src ? "none" : "1px solid rgba(240,165,0,0.5)",
         boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.05)",
         transform,
       })}
     >
-      <span style={{ fontSize: d.icon, opacity: 0.3, color: COLORS.gold }}>♛</span>
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt=""
+          draggable={false}
+          onError={() => setFailed(true)}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            imageRendering: "pixelated",
+          }}
+        />
+      ) : (
+        <span style={{ fontSize: d.icon, opacity: 0.3, color: COLORS.gold }}>♛</span>
+      )}
     </div>
   );
 }
@@ -237,7 +258,7 @@ function FrontFace({
               <span
                 style={{ fontFamily: CINZEL, fontWeight: 700, fontSize: d.label, letterSpacing: 0.5 }}
               >
-                {CHAR_LABEL[character]}
+                {CHAR_SHORT[character]}
               </span>
               {hint && <span style={{ fontSize: 10, color: "rgba(255,255,255,0.78)" }}>{hint}</span>}
             </div>
@@ -250,7 +271,7 @@ function FrontFace({
             <span
               style={{ fontFamily: CINZEL, fontWeight: 700, fontSize: d.label, letterSpacing: 0.5 }}
             >
-              {CHAR_LABEL[character]}
+              {CHAR_SHORT[character]}
             </span>
           )}
           {size === "lg" && hint && (

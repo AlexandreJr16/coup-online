@@ -33,6 +33,11 @@ export const CHAR_LABEL = Object.fromEntries(
   CARDS.map((c) => [c.id, c.nome]),
 ) as Record<Character, string>;
 
+// Rótulo curto para a legenda da carta (quando o nome completo não cabe nos 88px).
+export const CHAR_SHORT = Object.fromEntries(
+  CARDS.map((c) => [c.id, CARD_BY_ID[c.id].nomeCurto ?? c.nome]),
+) as Record<Character, string>;
+
 // Identidade visual (cor + ícone) de cada personagem — derivada do catálogo.
 export const CHAR_VISUAL = Object.fromEntries(
   CARDS.map((c) => [c.id, { color: c.cor, icon: c.icone }]),
@@ -52,12 +57,23 @@ export function reactorIds(view: GameView): string[] {
 // futuro seletor/teste A/B (ROADMAP Fase 8) trocar o estilo sem tocar nos componentes.
 export const ART_THEME = "imperio";
 
+// Verso da carta (face-down) do tema; a miniatura tem arquivo próprio.
+export function backUrl(size: "sm" | "lg"): string {
+  return `/art/${ART_THEME}/verso${size === "sm" ? ".sm" : ""}.png`;
+}
+
+// Cenário atrás da mesa (pixel art em baixa resolução, ampliado com cover).
+export const TABLE_BG_URL = `/art/${ART_THEME}/mesa.png`;
+
 // URL do retrato (ou null → a carta usa o emoji). A miniatura (size "sm") tem
 // arquivo próprio `.sm.png` para manter pixels inteiros; ver tools/art/.
 export function artUrl(character: Character, expr: Expressao, size: "sm" | "lg"): string | null {
   const arte = CARD_BY_ID[character].arte;
-  if (!arte?.includes(expr)) return null;
-  return `/art/${ART_THEME}/${character}/${expr}${size === "sm" ? ".sm" : ""}.png`;
+  // Sem arte para esta expressão → usa a neutra (as reações viram efeito/filtro em
+  // CSS, não retrato novo). Sem nenhuma arte → null e a carta cai no emoji.
+  const use = arte?.includes(expr) ? expr : arte?.includes("neutro") ? "neutro" : null;
+  if (!use) return null;
+  return `/art/${ART_THEME}/${character}/${use}${size === "sm" ? ".sm" : ""}.png`;
 }
 
 export type ActionCategory = "coin" | "aggressive" | "coup" | "neutral";

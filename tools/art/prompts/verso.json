@@ -1,0 +1,31 @@
+{
+  "id": "verso",
+  "card": null,
+  "nome": "Verso da carta",
+  "versao": 1,
+  "notas": "Verso das cartas (face-down). Simétrico, esmeralda e ouro, azulejo e coroa imperial com ramos de café e fumo. Sem texto. Preenche o quadro todo: no postprocess usar --bg #ff00ff (nada é removido).",
+  "estilo": "pixel art, 16-bit, playing card back design, perfectly symmetrical ornate pattern, flat top-down view filling the whole frame, thin gold border frame, limited color palette, no text, no letters",
+  "personagem": "Brazilian Empire imperial card back, deep emerald green and gold, blue and white azulejo tile pattern borders, an imperial crown with laurel branches of coffee and tobacco leaves in the center, intricate geometric filigree",
+  "expressoes": {
+    "padrao": "centered emblem, symmetrical, ornate, rich details"
+  },
+  "negativo": "photo, realistic, text, letters, numbers, people, faces, 3d render, blurry, asymmetrical, gradient background, white background, shadow",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 704,
+    "altura": 1024,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 1860
+  },
+  "pos": {
+    "tamanho": "88x124",
+    "kernel": "nearest",
+    "tol": 0,
+    "bg": "#ff00ff"
+  }
+}

@@ -13,7 +13,8 @@ export type Expressao = "neutro" | "blefe" | "atingido" | "eliminado";
 export interface CardDef {
   id: Character;
   nome: string;
-  cor: string; // cor base (DESIGN.md "Cartas — Visual")
+  nomeCurto?: string; // rótulo na carta pequena quando o nome não cabe (ex.: "Barão")
+  cor: string; // fundo atrás do retrato / cor base (DESIGN.md "Cartas — Visual")
   icone: string;
   arte?: readonly Expressao[]; // expressões com imagem disponível; sem isso a carta usa o emoji
   acao: ActionType | null; // ação de turno concedida (Condessa não tem)
@@ -27,9 +28,11 @@ export interface CardDef {
 export const CARDS = [
   {
     id: "duque",
-    nome: "Duque",
-    cor: "#7b2d8b",
+    nome: "Barão do Café",
+    nomeCurto: "Barão",
+    cor: "#1f3a2a",
     icone: "👑",
+    arte: ["neutro"],
     acao: "taxas",
     bloqueia: ["ajuda_externa"],
     dica: "Taxas +3",
@@ -48,9 +51,10 @@ export const CARDS = [
   },
   {
     id: "capitao",
-    nome: "Capitão",
-    cor: "#1a4a8a",
+    nome: "Coronel",
+    cor: "#1a2a4a",
     icone: "⚓",
+    arte: ["neutro"],
     acao: "extorquir",
     bloqueia: ["extorquir"],
     dica: "Extorquir",
@@ -58,9 +62,10 @@ export const CARDS = [
   },
   {
     id: "embaixador",
-    nome: "Embaixador",
-    cor: "#2d6a4f",
+    nome: "Regatão",
+    cor: "#1d4e5f",
     icone: "🕊️",
+    arte: ["neutro"],
     acao: "trocar",
     bloqueia: ["extorquir"],
     dica: "Trocar",
@@ -68,9 +73,10 @@ export const CARDS = [
   },
   {
     id: "condessa",
-    nome: "Condessa",
-    cor: "#8b1a1a",
+    nome: "Benzedeira",
+    cor: "#5c1620",
     icone: "💎",
+    arte: ["neutro"],
     acao: null,
     bloqueia: ["assassinar"],
     dica: "Bloqueia Assassinato",

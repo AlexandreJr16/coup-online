@@ -1,0 +1,31 @@
+{
+  "id": "coronel",
+  "card": "capitao",
+  "nome": "Coronel da Guarda Nacional",
+  "versao": 1,
+  "notas": "Coronel da Guarda Nacional (patente comprada), poder local e achaque; aponta para o coronelismo. Autoridade severa, não caricatura.",
+  "estilo": "pixel art, 16-bit video game character portrait, bust portrait, head and shoulders and chest only, face large and clearly readable, limited color palette, clean dark outline, warm tropical colors, soft cel shading, plain solid white background, no shadow, no floor, no text, no frame",
+  "personagem": "Brazilian National Guard colonel from the 1860s, stern middle-aged man with a thick black handlebar mustache, dark blue military tunic with a red collar, gold braid epaulettes and brass buttons, white sash across the chest, tall black shako military hat with a brass plate, a sword hilt visible at the shoulder",
+  "expressoes": {
+    "neutro": "commanding authoritative look, looking at the viewer, jaw set"
+  },
+  "negativo": "photo, realistic, 3d render, blurry, text, watermark, frame, border, caricature, offensive stereotype, gradient background, colored background, shadow, floor, full body, legs, necklace, beads, jewelry, gold chain, multiple people, crown, king, medieval armor, fantasy, modern clothes",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 704,
+    "altura": 1024,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 1852
+  },
+  "pos": {
+    "tamanho": "88x124",
+    "tamanho_miniatura": "40x56",
+    "kernel": "lanczos3",
+    "tol": 70
+  }
+}

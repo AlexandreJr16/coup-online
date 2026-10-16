@@ -122,15 +122,17 @@ Cada personagem tem identidade visual própria via cor + ícone + nome.
 Estado atual: CSS puro + emoji. A arte em pixel art entra na Fase 3 do
 `docs/ROADMAP.md`, com o emoji mantido como fallback quando faltar imagem.
 
-| Personagem  | Cor base  | Hex       | Ícone |
-|-------------|-----------|-----------|-------|
-| Duque       | Roxo      | #7b2d8b   | 👑    |
-| Assassino   | Preto     | #1a1a1a   | 🗡️    |
-| Capitão     | Azul      | #1a4a8a   | ⚓    |
-| Embaixador  | Verde     | #2d6a4f   | 🕊️    |
-| Condessa    | Vermelho  | #8b1a1a   | 💎    |
+| Personagem (id)            | Fundo atrás do retrato | Retrato |
+|----------------------------|------------------------|---------|
+| Barão do Café (duque)      | #1f3a2a esmeralda      | pixel art |
+| Capoeira (assassino)       | #1a1a1a                | pixel art |
+| Coronel (capitao)          | #1a2a4a azul-marinho   | pixel art |
+| Regatão (embaixador)       | #1d4e5f verde-água     | pixel art |
+| Benzedeira (condessa)      | #5c1620 vinho          | pixel art |
 
-Carta face-down: #2c3e50 com borda dourada sutil.
+Retratos 88×124 (carta `lg`) e 40×56 (`sm`) em `public/art/<tema>/<id>/`, paleta mestra
+de 38 cores. Sem arquivo, a carta usa o emoji do catálogo (`cards.ts`).
+Carta face-down: verso em pixel art (`verso.png`, esmeralda e ouro com coroa imperial); sem arquivo, #2c3e50 com borda dourada sutil.
 Carta revelada (perdida): dessaturada, opacidade 50%, ícone ❌.
 Carta no HandView:
 - Que você TEM: cor cheia, borda brilhante

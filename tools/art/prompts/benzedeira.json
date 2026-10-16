@@ -1,0 +1,31 @@
+{
+  "id": "benzedeira",
+  "card": "condessa",
+  "nome": "Benzedeira",
+  "versao": 1,
+  "notas": "Benzedeira (curandeira católica popular), 'corpo fechado': protege contra dano (bloqueia assassinato). Sábia e acolhedora, sem estereótipo; rosário e arruda, nada de religião afro-brasileira para evitar caricatura.",
+  "estilo": "pixel art, 16-bit video game character portrait, bust portrait, head and shoulders and chest only, face large and clearly readable, limited color palette, clean dark outline, warm tropical colors, soft cel shading, plain solid white background, no shadow, no floor, no text, no frame",
+  "personagem": "elderly Afro-Brazilian benzedeira healer woman from the 1860s, kind wise face with gentle wrinkles, white head wrap (lenco branco), white linen blouse with a woven shawl, wooden rosary and colorful bead necklace, holding a green sprig of rue (arruda) in one hand and a small lit candle in the other",
+  "expressoes": {
+    "neutro": "warm protective gentle smile, looking at the viewer, calm wise eyes"
+  },
+  "negativo": "photo, realistic, 3d render, blurry, text, watermark, frame, border, caricature, offensive stereotype, gradient background, colored background, shadow, floor, full body, legs, necklace, beads, jewelry, gold chain, multiple people, crown, king, medieval armor, fantasy, modern clothes",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 704,
+    "altura": 1024,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 1854
+  },
+  "pos": {
+    "tamanho": "88x124",
+    "tamanho_miniatura": "40x56",
+    "kernel": "lanczos3",
+    "tol": 70
+  }
+}

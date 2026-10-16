@@ -1,0 +1,31 @@
+{
+  "id": "regatao",
+  "card": "embaixador",
+  "nome": "Regatão",
+  "versao": 1,
+  "notas": "Comerciante fluvial amazônico (~1870), caboclo esperto e simpático: escambo/troca. Aceno à Manaus do Alexandre.",
+  "estilo": "pixel art, 16-bit video game character portrait, bust portrait, head and shoulders and chest only, face large and clearly readable, limited color palette, clean dark outline, warm tropical colors, soft cel shading, plain solid white background, no shadow, no floor, no text, no frame",
+  "personagem": "Amazonian river trader (regatao) from the 1870s, friendly clever caboclo man with mixed indigenous and European features, wide-brim straw hat, light blue cotton shirt with rolled sleeves, a bundle of colorful cloth bolts and small clay pots slung over his shoulder, a pipe in the corner of his mouth, a small brass compass hanging from a cord on his neck",
+  "expressoes": {
+    "neutro": "sly friendly smile, looking at the viewer, one eyebrow slightly raised"
+  },
+  "negativo": "photo, realistic, 3d render, blurry, text, watermark, frame, border, caricature, offensive stereotype, gradient background, colored background, shadow, floor, full body, legs, necklace, beads, jewelry, gold chain, multiple people, crown, king, medieval armor, fantasy, modern clothes",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 704,
+    "altura": 1024,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 1853
+  },
+  "pos": {
+    "tamanho": "88x124",
+    "tamanho_miniatura": "40x56",
+    "kernel": "lanczos3",
+    "tol": 70
+  }
+}

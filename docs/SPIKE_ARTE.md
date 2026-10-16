@@ -64,3 +64,10 @@ SDXL base 1.0 (OpenRAIL++), pixel-art-xl e SD 1.5 (CreativeML OpenRAIL-M). Licen
 - `public/art/imperio/assassino/{neutro,blefe,atingido,eliminado}[.sm].png`
 - `app/dev/cartas/page.tsx`: galeria de revisão em `/dev/cartas`
 - `Card.tsx`, `helpers.ts` (`ART_THEME`, `artUrl`), `cards.ts` (`arte`, nome "Capoeira")
+
+## Addendum — Fase 3 (arte das 5 cartas)
+- **6 seeds por personagem** deram variedade e qualidade suficientes para escolher a melhor de cada: Barão (1852), Capoeira (1850), Coronel (1856), Regatão (1853), Benzedeira (1859). Verso 1863 e cenário 1872.
+- **img2img não resolve expressão**: strength 0.55 e 0.75 mantêm a identidade e mexem pouco no rosto. Decisão: 1 retrato por personagem + efeitos (Fase 4).
+- **Bugs do pipeline encontrados e corrigidos:** média dos cantos como cor de fundo (falhava em bustos); preenchimento semeado na borda inferior apagava roupa branca; paleta sem cobres deixava a pele vermelha.
+- **O prompt nem sempre é obedecido:** pedi benzedeira *idosa*; vieram quase só jovens de turbante (lê como baiana). Escolhi a mais fiel (arruda nas mãos, lenço simples). O Coronel veio com várias caps do século XX e uma com bandeira dos EUA (descartada).
+- **Cenário a 168×96 ampliado ~8× vira mosaico**; solução: suavizar e desfocar atrás da mesa.

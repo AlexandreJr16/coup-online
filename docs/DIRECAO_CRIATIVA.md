@@ -1,6 +1,6 @@
 # Direção Criativa — Coup Online (Brasil Império)
 
-> Status: **rascunho para revisão**. Os 5 personagens são propostas a refinar uma a uma.
+> Status: personagens **definidos e com arte** (Fase 3). Expressões extras e poses ficam para a Fase 4.
 
 ## Objetivo
 Sair do "funcional" para um jogo com cara de pronto: visual com **juice** estilo Balatro, **pixel art + voz por personagem** estilo Undertale e **clima aconchegante** estilo Stardew, ambientado no **Brasil Império (1822–1889)**. Jogabilidade fluida acima de tudo.
@@ -33,7 +33,7 @@ Os **ids internos** (`duque`, `assassino`, `capitao`, `embaixador`, `condessa`) 
 |---|---|---|---|
 | Duque (Taxas +3, bloqueia Ajuda Externa) | **Barão do Café** | Poder econômico do Vale do Paraíba | Visconde |
 | Assassino (Assassinar) | **Capoeira** (navalha, gangue de rua carioca, contratado por políticos) | Figura real do Rio imperial, visual forte | Capanga |
-| Capitão (Extorquir, bloqueia extorsão) | **Coronel da Guarda Nacional** | Patente comprada, poder local, achaque | Tropeiro |
+| Capitão (Extorquir, bloqueia extorsão) | **Coronel** (da Guarda Nacional) | Patente comprada, poder local, achaque | Tropeiro |
 | Embaixador (Trocar, bloqueia extorsão) | **Regatão** (comerciante fluvial) | Escambo; aceno à Manaus | Mascate |
 | Condessa (bloqueia assassinato) | **Benzedeira** ("corpo fechado") | Proteção contra dano, folclore brasileiro | Frei capuchinho |
 

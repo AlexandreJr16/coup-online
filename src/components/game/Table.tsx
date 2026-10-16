@@ -40,7 +40,7 @@ export default function Table({
         width: "100%",
         height: "100%",
         minHeight: 420,
-        background: COLORS.bg,
+        background: "transparent", // o fundo vem do TableBackdrop (cenário do tema)
         borderRadius: 12,
         overflow: "hidden",
       }}
@@ -83,7 +83,7 @@ export default function Table({
             }}
           >
             <span style={{ fontFamily: CINZEL, fontWeight: 700, color: COLORS.text, fontSize: 13 }}>
-              Tesouro
+              Erário
             </span>
             <span style={{ fontWeight: 800, color: COLORS.gold }}>🪙 {shownTreasury}</span>
           </div>

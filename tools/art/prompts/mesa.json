@@ -1,0 +1,31 @@
+{
+  "id": "mesa",
+  "card": null,
+  "nome": "Salão imperial (fundo da mesa)",
+  "versao": 1,
+  "notas": "Cenário atrás da mesa. Aconchegante (Stardew), noite, lustres dourados. Sem personagens. Postprocess: --grid 8 --size 168x96 --bg #ff00ff e CSS pixelated cover com véu escuro.",
+  "estilo": "pixel art, 16-bit, wide background scene, warm cozy lighting, limited color palette, no characters, no people, no text",
+  "personagem": "interior of an opulent Brazilian Empire palace ballroom at night, 1860s, tall arched windows with a deep blue night sky, crystal chandeliers glowing warm gold, wooden parquet floor, dark green velvet curtains, blue and white azulejo tiled wainscot, a few potted palm trees and coffee plants, candle light",
+  "expressoes": {
+    "salao": "wide establishing shot, symmetrical composition, empty room, seen straight on"
+  },
+  "negativo": "photo, realistic, 3d render, blurry, text, watermark, people, characters, faces, frame, border, white background, daylight",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 1344,
+    "altura": 768,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 1870
+  },
+  "pos": {
+    "tamanho": "168x96",
+    "kernel": "nearest",
+    "tol": 0,
+    "bg": "#ff00ff"
+  }
+}

@@ -4,6 +4,11 @@
 Manual oficial: Rikki Tahta / La Mame Games (edição Funbox Jogos)
 Todos os nomes de ações, personagens e mecânicas seguem o português do manual.
 
+> **Tema Brasil Império (só na interface):** as regras e a engine continuam com os ids do manual
+> (`duque`, `assassino`, `capitao`, `embaixador`, `condessa`). Na tela eles aparecem como
+> Barão do Café, Capoeira, Coronel, Regatão e Benzedeira; o Tesouro Central aparece como Erário.
+> Ver `docs/DIRECAO_CRIATIVA.md`.
+
 ## Preparação
 - 25 cartas de personagem (5 de cada: Duque, Assassino, Capitão, Embaixador, Condessa)
 - Cada jogador começa com 2 cartas viradas para baixo e 2 moedas

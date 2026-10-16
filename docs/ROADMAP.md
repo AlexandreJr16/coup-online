@@ -17,14 +17,14 @@ Legenda: 🤖 autônomo · 👤 precisa do Alexandre · 🤝 misto (Claude execu
 | Época | Brasil Império (1822–1889) |
 | Personagens | Barão do Café, **Capoeira**, Coronel da Guarda Nacional, Regatão, Benzedeira (ids internos inalterados) |
 | Capoeira | Tratado com dignidade: malandro carismático, ginga, calça branca, lenço colorido, navalha. Nada de estereótipo de "bandido genérico" |
-| Paleta | Mestra **v1, 36 cores** (abaixo; fonte única em `tools/art/palette.json`). Decidido no spike |
+| Paleta | Mestra **v2, 38 cores** (abaixo; fonte única em `tools/art/palette.json`). Decidido no spike |
 | Resolução | **Retrato 88×124 nativo** (carta lg em 1:1) e miniatura **40×56** (carta sm). 44×62 foi descartado: o rosto ficou ilegível (ver `docs/SPIKE_ARTE.md`) |
 | Temas | Arte organizada por tema (`public/art/<tema>/...`) para permitir trocar o estilo e fazer teste A/B depois |
 | Música | Trilha **procedural por código** como placeholder já na Fase 5. Faixas por IA substituem depois (Fase 8) |
 | Gerador de imagem | **stable-diffusion.cpp (Vulkan) + SDXL base + LoRA pixel-art-xl**, local na RX 6600 (~80 s por imagem). Decidido no spike |
 
-### Paleta mestra v1 (36 cores)
-v0 tinha 32; o spike mostrou que faltavam marrons médios (pele ia para laranja), então entraram 4.
+### Paleta mestra v2 (38 cores)
+v0 tinha 32; faltavam marrons médios (+4 na v1) e cobres (+2 na v2: peles terracota caíam no vermelho).
 - Tinta/neutros: `#14101a #2b2236 #4a3d5c #7c6f8a #bdb0a6 #f6ecd6`
 - Pele/madeira: `#3a2218 #4e2f20 #5e3a26 #734630 #8a5535 #a0643d #b87a48 #cd9358 #dba26c #efc89a`
 - Vermelhos: `#5c1620 #9a2a2a #d0453a #f08a5d`
@@ -70,13 +70,16 @@ v0 tinha 32; o spike mostrou que faltavam marrons médios (pele ia para laranja)
 **DoD:** pelo menos um caminho gera imagens em tempo aceitável (alvo: minutos, não horas, por imagem); o Capoeira aparece na carta com a paleta mestra; o Alexandre aprova (ou rejeita) o look; o gerador e a resolução ficam decididos.
 **Se nenhum caminho local funcionar:** o plano continua com geração online e o resto do roadmap não muda.
 
-### Fase 3 — Arte das 5 cartas, verso e cenário 🤝
-- [ ] Estrutura `public/art/<tema>/<personagem>/<expressao>.png` + manifest, campo `arte` em `src/lib/game/cards.ts`
-- [ ] 5 personagens × 4 expressões, verso da carta, fundo da mesa (salão imperial)
-- [ ] Reskin: `nome`, `cor`, `icone` e rótulos de `ACTION_META` (Erário, réis, etc.)
-- [ ] Mapear expressões aos estados (neutro, blefe, atingido, eliminado)
+### Fase 3 — Arte das 5 cartas, verso e cenário ✅ concluída
+- [x] Estrutura `public/art/<tema>/<id-da-carta>/neutro.png` (+ `.sm.png`) e campo `arte` em `src/lib/game/cards.ts`
+- [x] 5 retratos (Barão do Café, Capoeira, Coronel, Regatão, Benzedeira), verso da carta (`verso.png`) e cenário da mesa (`mesa.png`), com 6 seeds curadas por personagem
+- [x] Reskin: nomes e cores de fundo por carta, "Tesouro" → "Erário" (`nomeCurto` "Barão" para caber na carta)
+- [x] Reações **sem retrato novo**: `artUrl` cai na expressão neutra; blefe/perdida usam o filtro cinza, e o "atingido" vira efeito (Fase 4). O teste de img2img mostrou que SDXL + LoRA não faz careta a 88 px
+- [x] Cenário suavizado e desfocado atrás da mesa (pixel art ampliado 8× virava mosaico)
+- [x] Páginas de revisão: `/dev/cartas` (todos os estados) e `/dev/mesa` (mesa fictícia com cenário)
 
-**DoD:** todas as cartas com arte; falta de imagem cai no emoji sem quebrar; nenhuma regra de jogo tocada, `npm test` verde; o personagem de carta alheia só chega ao DOM quando revelada.
+**DoD cumprido:** todas as cartas com arte; falta de imagem cai no emoji sem quebrar; nenhuma regra tocada (testes verdes); personagem de carta alheia só no DOM quando revelada.
+**Pendente (fica para a Fase 4/7):** o feltro verde da mesa ainda é o do v1 (re-tematizar como veludo imperial); em modo "mão" a barra inferior ocupa muito espaço e corta o assento do jogador em telas baixas.
 
 ### Fase 4 — Juice estilo Balatro (CSS primeiro) 🤖
 - [ ] Tilt 3D no hover, foil/holo, screen shake e hit-stop curto na eliminação
