@@ -2,24 +2,27 @@
 
 Origem: primeira partida real com amigos (~3 partidas). Feedback geral muito positivo ("tá incrível", jogaram e se divertiram). Abaixo, o que pediram e o que ficou para verificar.
 
-## 1. Colinha das cartas (mais pedido)
+> **Status (16/10/2026):** itens 1 a 5 e as verificações implementados na branch `feat/playtest-v2`
+> (ainda não mesclada na `main`). Pendências no fim deste arquivo.
+
+## 1. Colinha das cartas (mais pedido) ✅
 Três pessoas pediram. Falta informação sobre **as cartas e o jogo**.
 - Botão fixo no canto com um **"?" estilizado** (tema Brasil Império) que abre a colinha dos personagens, como a carta de referência do Coup físico: nome, ação, efeito e se pode ser bloqueada/contestada (e por quem).
 - Também resumir as regras básicas (renda, ajuda externa, golpe obrigatório com 10+ moedas, contestação).
 - Conteúdo vem de `game-rules.md` (fonte única), não duplicar texto à mão.
 - DoD: abre/fecha por clique e tecla, não bloqueia input da mesa, cenário E2E + página `/dev/*` de revisão.
 
-## 2. Mais informação de rodada
+## 2. Mais informação de rodada ✅ (faixa de status no cabeçalho da sala)
 - **De quem é a vez**, bem destacado (além do histórico no canto direito).
 - **O que está acontecendo agora**: ação declarada, alvo, quem pode reagir, quem já passou, o que se espera de cada um.
 - O histórico lateral continua, mas não deve ser a única fonte.
 
-## 3. Entrar no meio da partida como espectador
+## 3. Entrar no meio da partida como espectador ✅
 - Quem abre o link de uma sala em andamento entra como **spec** e vira jogador na **próxima partida** (revanche).
 - Spec vê a mesa pública, nunca as cartas de ninguém (regra do servidor continua valendo).
 - Interage com a fila de revanche: ao iniciar a próxima, specs viram jogadores (respeitando o limite de 6).
 
-## 4. Jogador demorando / ausente
+## 4. Jogador demorando / ausente ✅ (aviso dos últimos 5s)
 - Hoje: estourou o timer → Renda (ou Golpe obrigatório), carta sorteada, troca neutra; ausente da vez joga em 5s.
 - Pedido: **contador de alguns segundos visível** antes de assumir a ação básica (Renda), pra deixar claro que o jogo vai seguir sem a pessoa. Avaliar se o contador atual já cobre isso ou se falta a UI.
 
@@ -39,3 +42,12 @@ Print: mão com 4 cartas (Capoeira, Regatão, Regatão, Capoeira) — é uma **T
 
 ## 6. Resposta rápida (não é código)
 - Site feito em **Next.js** (versão 16 no `package.json`, não 14/15). Amigo pediu pra anotar como issue: abrir issues no GitHub com os itens acima.
+
+## Pendências da branch `feat/playtest-v2`
+- **E2E não rodado nas últimas entregas:** os cenários de faixa de status, aviso dos 5s e espectador
+  estão escritos em `tests/e2e/mesa.e2e.test.ts`, mas a suíte completa não foi executada depois da
+  colinha (por pedido: o E2E só roda quando solicitado). Rodar `npm run test:e2e` antes do merge.
+- Teste de revisão no ar: rodar a branch (`PORT=3100 npm start`) e jogar com 2-3 abas, ou subir um
+  serviço de teste separado no Render apontando para a branch.
+- Espectador: a promoção (revanche, início, vaga no lobby) está coberta na integração; o E2E de
+  navegador cobre a mesa em modo leitura e o lobby cheio, não a promoção.

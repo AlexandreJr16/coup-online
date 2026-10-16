@@ -17,7 +17,8 @@ const EMOJI: Record<Award["id"], string> = {
   ricaco: "💰",
 };
 
-export default function VictoryPanel({ view, onRematch }: { view: GameView; onRematch: () => void }) {
+// `onRematch` ausente = espectador: só aguarda (ele entra na próxima partida).
+export default function VictoryPanel({ view, onRematch }: { view: GameView; onRematch?: () => void }) {
   const winner = view.players.find((p) => p.id === view.winnerId);
   const names = Object.fromEntries(view.players.map((p) => [p.id, p.name]));
   const awards = computeAwards(view.stats, names);
@@ -55,7 +56,13 @@ export default function VictoryPanel({ view, onRematch }: { view: GameView; onRe
         </ul>
 
         <div style={{ display: "flex", justifyContent: "center" }}>
-          <ActionSeal icon="trocar" emoji="🔄" label="Jogar de novo" color={COLORS.gold} onClick={onRematch} />
+          {onRematch ? (
+            <ActionSeal icon="trocar" emoji="🔄" label="Jogar de novo" color={COLORS.gold} onClick={onRematch} />
+          ) : (
+            <p data-testid="victory-wait" style={{ margin: 0, color: COLORS.dim, fontSize: 14, textAlign: "center" }}>
+              Você está assistindo: se um jogador pedir a revanche, você entra na próxima partida.
+            </p>
+          )}
         </div>
       </div>
     </div>

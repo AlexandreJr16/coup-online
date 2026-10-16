@@ -22,6 +22,7 @@ export default function RoomPage() {
   const roomId = (params.id ?? "").toUpperCase();
   const name = searchParams.get("name") ?? "";
   const [players, setPlayers] = useState<Player[]>([]);
+  const [spectators, setSpectators] = useState<Player[]>([]);
   const [view, setView] = useState<GameView | null>(null);
   const [myId, setMyId] = useState("");
   const [error, setError] = useState("");
@@ -54,10 +55,14 @@ export default function RoomPage() {
     function onPlayers(list: Player[]) {
       setPlayers(list);
     }
+    function onSpectators(list: Player[]) {
+      setSpectators(list);
+    }
     function onState(v: GameView) {
       setView(v);
     }
     socket.on("room:players", onPlayers);
+    socket.on("room:spectators", onSpectators);
     socket.on("game_state", onState);
 
     function join() {
@@ -69,6 +74,7 @@ export default function RoomPage() {
         }
         setError("");
         setPlayers(ack.players);
+        setSpectators(ack.spectators);
         setMyId(ack.you.id);
         saveToken(roomId, ack.you.token);
       });
@@ -80,12 +86,16 @@ export default function RoomPage() {
 
     return () => {
       socket.off("room:players", onPlayers);
+      socket.off("room:spectators", onSpectators);
       socket.off("game_state", onState);
       socket.off("connect", join);
     };
   }, [roomId, name, router]);
 
   const isHost = players[0]?.id === myId;
+  // Só assiste: entrou com a partida em andamento (ou a sala cheia). O papel sai da lista de
+  // jogadores, então a promoção na próxima partida vira jogador sem evento extra.
+  const isSpectator = myId !== "" && !players.some((p) => p.id === myId);
 
   function startGame() {
     setError("");
@@ -122,6 +132,15 @@ export default function RoomPage() {
             <span style={{ color: COLORS.gold }}>Coup</span> Online
           </span>
           <span style={roomChip}>Sala {roomId}</span>
+          {spectators.length > 0 && (
+            <span
+              style={roomChip}
+              data-testid="spectators-chip"
+              title={`Assistindo: ${spectators.map((s) => s.name).join(", ")}`}
+            >
+              👁 {spectators.length}
+            </span>
+          )}
         </div>
 
         {/* Miolo do cabeçalho: a faixa de status da rodada entra aqui (portal do TurnBanner) */}
@@ -163,6 +182,7 @@ export default function RoomPage() {
             view={view}
             myId={myId}
             absentIds={players.filter((p) => !p.connected).map((p) => p.id)}
+            spectator={isSpectator}
           />
         </TableBackdrop>
       ) : (
@@ -231,7 +251,23 @@ export default function RoomPage() {
               ))}
             </ul>
 
-            {isHost ? (
+            {spectators.length > 0 && (
+              <>
+                <h3 style={{ margin: "16px 0 6px", fontSize: 15, color: COLORS.dim }}>
+                  Assistindo ({spectators.length})
+                </h3>
+                <p data-testid="lobby-spectators" style={{ margin: 0, fontSize: 14, color: COLORS.dim }}>
+                  {spectators.map((s) => `${s.name}${s.id === myId ? " (você)" : ""}`).join(", ")}
+                </p>
+              </>
+            )}
+
+            {isSpectator ? (
+              <p data-testid="spectator-notice" style={{ color: COLORS.turn, marginTop: 20 }}>
+                👁 Sala cheia: você está assistindo. Entra como jogador quando abrir uma vaga ou na
+                próxima partida.
+              </p>
+            ) : isHost ? (
               <>
                 <TimerSettings value={timers} onChange={setTimers} />
                 <button

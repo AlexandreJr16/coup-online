@@ -2,6 +2,7 @@
 // Estados por query: ?fase=turno (padrão) | reacao | contestar | revelar | troca | fim
 //   ?n=2..6 muda o número de jogadores. Útil para as Fases 3–4 do ROADMAP.
 //   ?restante=3 fixa o tempo restante da fase (em s): revisa o aviso dos últimos segundos.
+//   ?espectador=1 abre a mesa como espectador (somente leitura, sem mão nem ações).
 "use client";
 
 import { useSearchParams } from "next/navigation";
@@ -107,7 +108,9 @@ function Mesa() {
     q.get("restante") !== null && Number.isFinite(restante) && built.timer
       ? { ...built, timer: { ...built.timer, remainingMs: Math.max(0, restante) * 1000 } }
       : built;
-  // Em "reacao"/"contestar" quem age é o p2; eu (p1) sou espectador/reator.
+  // Em "reacao"/"contestar" quem age é o p2; eu (p1) sou reator. Com ?espectador=1 eu não
+  // sou ninguém da mesa.
+  const spectator = q.get("espectador") === "1";
   return (
     <main style={{ height: "100vh", display: "flex", flexDirection: "column", background: COLORS.bg }}>
       {/* Faixa do topo como a da sala: só o slot da faixa de status da rodada */}
@@ -115,7 +118,7 @@ function Mesa() {
         <RoundStatusSlot />
       </header>
       <TableBackdrop>
-        <GameBoard view={view} myId="p1" />
+        <GameBoard view={view} myId={spectator ? "espectador-dev" : "p1"} spectator={spectator} />
       </TableBackdrop>
     </main>
   );

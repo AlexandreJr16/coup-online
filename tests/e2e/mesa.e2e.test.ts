@@ -844,6 +844,74 @@ test("faixa de status: bloqueio da Ajuda Externa e volta ao turno ao passar", as
   noErrors(...ps);
 });
 
+// ── Espectador ───────────────────────────────────────────────────────────────
+test("espectador (/dev/mesa): mesa só de leitura, sem mão, sem ações e sem 'Você' na faixa", async () => {
+  const p = await open("/dev/mesa?fase=turno&n=4&espectador=1", { w: 1280, h: 720 });
+  await p.waitFor(`!!document.querySelector('[data-testid="spectator-notice"]')`, "aviso de espectador");
+  const dom = await p.eval<{ dockSpectator: string | null; zones: number; cards: number; passAuto: boolean; notice: string }>(`(() => ({
+    dockSpectator: document.querySelector('[data-testid="dock"]').getAttribute('data-spectator'),
+    zones: document.querySelectorAll('[data-zone]').length,
+    cards: document.querySelectorAll('[data-zone="centro"] [title]').length,
+    passAuto: document.body.innerText.includes('Passar automático'),
+    notice: document.querySelector('[data-testid="spectator-notice"]').innerText,
+  }))()`);
+  assert.equal(dom.dockSpectator, "sim");
+  assert.equal(dom.zones, 0, "espectador não tem ações, mão nem reações");
+  assert.equal(dom.cards, 0);
+  assert.equal(dom.passAuto, false);
+  assert.match(dom.notice, /assistindo/i);
+  // A faixa usa nomes (ele não é ninguém da mesa) e nenhum assento diz "(você)".
+  await headIs(p, "Vez de Ana");
+  assert.equal((await p.text()).includes("(você)"), false);
+  // Nenhuma carta oculta mostra personagem (view pública), e o layout continua inteiro.
+  assert.deepEqual(await layoutIssues(p), []);
+  noErrors(p);
+});
+
+test("espectador (/dev/mesa): na vitória não há 'Jogar de novo', só o aviso de espera", async () => {
+  const p = await open("/dev/mesa?fase=fim&n=4&espectador=1", { w: 1280, h: 720 });
+  await p.waitFor(`!!document.querySelector('[data-testid="victory-wait"]')`, "aviso de espera da revanche");
+  assert.equal((await p.text()).includes("Jogar de novo"), false);
+  noErrors(p);
+});
+
+test("espectador: quem abre a sala em andamento assiste, os jogadores veem o 👁 e ninguém erra", async () => {
+  const { id, ps } = await game(["Ana", "Bia", "Caio"], { w: 1280, h: 720 });
+  const vigia = await open(`/room/${id}?name=Vigia`, { w: 1280, h: 720 });
+  await vigia.waitFor(`!!document.querySelector('[data-testid="spectator-notice"]')`, "espectador vê o aviso");
+  const dom = await vigia.eval<{ zones: number; seats: number; voce: boolean }>(`(() => ({
+    zones: document.querySelectorAll('[data-zone]').length,
+    seats: document.querySelectorAll('[data-seat]').length,
+    voce: document.body.innerText.includes('(você)'),
+  }))()`);
+  assert.equal(dom.zones, 0, "espectador com botões de jogo");
+  assert.equal(dom.seats, 3, "ele vê os 3 jogadores");
+  assert.equal(dom.voce, false);
+  // Os jogadores veem o contador de espectadores no cabeçalho.
+  await ps[0].waitFor(`document.querySelector('[data-testid="spectators-chip"]')?.innerText.includes('1')`, "👁 1 na sala");
+  // A partida segue normal para quem joga: Ana joga Renda e o espectador acompanha.
+  await ps[0].click('[data-zone="basicas"] button', "Renda");
+  await waitCoins(vigia, "Ana", 3);
+  assert.deepEqual(await layoutIssues(vigia), []);
+  noErrors(vigia, ...ps);
+});
+
+test("espectador: com 6 jogadores no lobby, o 7º vê a sala de espera como espectador", async () => {
+  const id = room();
+  const jogadores: Page[] = [];
+  for (const n of ["A1", "B2", "C3", "D4", "E5", "F6"]) {
+    const p = await open(`/room/${id}?name=${n}`);
+    await p.waitText(`${n} (você)`);
+    jogadores.push(p);
+  }
+  const extra = await open(`/room/${id}?name=Sobrando`);
+  await extra.waitFor(`!!document.querySelector('[data-testid="spectator-notice"]')`, "aviso de sala cheia");
+  assert.match(await extra.text(), /Sala cheia/);
+  assert.equal((await extra.text()).includes("Iniciar jogo"), false);
+  await jogadores[0].waitFor(`!!document.querySelector('[data-testid="lobby-spectators"]')`, "lista de espectadores no lobby");
+  noErrors(extra, ...jogadores);
+});
+
 // ── Páginas de revisão não podem quebrar ─────────────────────────────────────
 for (const path of ["/dev/cartas", "/dev/colinha", "/dev/mesa", "/dev/mesa?fase=reacao&n=6", "/dev/mesa?fase=revelar&n=3", "/dev/mesa?fase=troca&n=2", "/dev/mesa?fase=fim&n=4", "/dev/mesa?fase=contestar&n=4"]) {
   test(`página de revisão ${path} renderiza sem erros`, async () => {

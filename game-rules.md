@@ -131,6 +131,19 @@ de reação não têm aviso (nelas "passar" já resolve e o estouro só fecha a 
   → alguém contestou: `resolvendo_contestacao` → resolve → `proximo_turno`
 → alguém contestou a ação: `resolvendo_contestacao` → resolve → `proximo_turno`
 
+## Espectadores
+Quem abre o link de uma sala com a **partida em andamento** (ou com os **6 lugares ocupados** no
+lobby) entra como **espectador**, em vez de ser recusado.
+- Vê a mesa pública (moedas, cartas reveladas, jogadas, histórico), **nunca as cartas ocultas de
+  ninguém**, nem a escolha de cartas de uma Troca. O servidor monta essa view; o cliente não filtra.
+- Não age: ações, bloqueios, contestações, passar, revelar, "passar automático", iniciar e pedir
+  revanche são recusados pelo servidor.
+- **Vira jogador** por ordem de chegada, até 6, quando: (1) uma revanche começa, (2) o host inicia
+  uma partida do lobby, (3) abre vaga no lobby. Quem não cabe segue espectador; espectador
+  desconectado é descartado. O token dele continua valendo (mesmo id), sem reentrar.
+- Não conta como "alguém online": não segura o relógio nem a sala (sala só com espectadores segue a
+  regra de sala abandonada). Se cair, tem 20s para voltar (F5); sair de propósito tira da lista na hora.
+
 ## Casos Especiais
 
 ### ⚠️ Perigo Duplo do Assassino
