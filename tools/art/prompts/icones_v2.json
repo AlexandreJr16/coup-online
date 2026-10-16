@@ -1,0 +1,34 @@
+{
+  "id": "icones_v2",
+  "card": null,
+  "nome": "Ícones de ação (v2, reforço)",
+  "versao": 2,
+  "notas": "Reforço dos que falharam na v1: contestar, assassinar, trocar. Prompts mais simples e diretos.",
+  "estilo": "pixel art icon, 16-bit video game item, ONE single object only, centered, thick dark outline, limited color palette, plain solid white background, empty background, no pattern, no shadow, no text, no frame, no border",
+  "personagem": "Brazilian Empire 1860s theme",
+  "expressoes": {
+    "contestar": "a big bold red exclamation mark inside a round red wax seal",
+    "contestar_dedo": "a hand with the index finger pointing forward, white glove, accusing gesture",
+    "assassinar": "a single open straight razor with a silver blade and a black handle, diagonal",
+    "trocar": "two playing cards crossing each other in an X shape with a curved arrow",
+    "trocar_setas": "two curved arrows forming a circle swapping, gold on dark green"
+  },
+  "negativo": "photo, realistic, 3d render, blurry, text, letters, numbers, watermark, frame, border, multiple objects, many items, grid, pattern, collage, sheet, gradient background, shadow, floor, plants, jewels",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 512,
+    "altura": 512,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 3000
+  },
+  "pos": {
+    "tamanho": "64x64",
+    "kernel": "nearest",
+    "tol": 70
+  }
+}

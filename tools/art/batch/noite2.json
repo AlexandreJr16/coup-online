@@ -1,0 +1,12 @@
+{
+  "_comment": "Segunda leva da noite: refor\u00e7o dos \u00edcones que falharam.",
+  "jobs": [
+    {
+      "id": "icones_v2",
+      "args": [
+        "--seeds",
+        "6"
+      ]
+    }
+  ]
+}
