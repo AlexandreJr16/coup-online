@@ -1,0 +1,40 @@
+{
+  "id": "ui",
+  "card": null,
+  "nome": "Elementos de UI",
+  "versao": 1,
+  "notas": "Peças de interface (Fase 4). Objeto único centrado em fundo branco.",
+  "estilo": "pixel art icon, 16-bit video game item, single object centered, thick dark outline, limited color palette, warm colors, plain solid white background, no shadow, no text, no frame",
+  "personagem": "Brazilian Empire 1860s theme",
+  "expressoes": {
+    "lacre": "a round red wax seal stamp, shiny, with a simple crown emblem pressed in",
+    "pilha_moedas": "a neat stack of shiny gold coins with a few coins spilling",
+    "saco_moedas": "a fat cloth coin bag tied with rope, full of gold coins",
+    "baralho": "a small neat stack of playing cards seen from the side, emerald green backs with gold trim",
+    "balao_fala": "an empty cream-colored speech bubble with a dark outline and a small tail, nothing inside",
+    "moldura_retrato": "an ornate gold picture frame, empty plain white inside, small crown at the top",
+    "brasao": "imperial coat of arms of Brazil, a shield with a crown on top, coffee and tobacco branches around it, no text",
+    "coroa": "an imperial crown with red velvet and gold, jewels",
+    "vela": "a single lit candle in a brass holder, warm flame",
+    "pergaminho": "a rolled parchment scroll tied with a red ribbon"
+  },
+  "negativo": "photo, realistic, 3d render, blurry, text, letters, numbers, watermark, frame, border, multiple objects, hands, people, faces, gradient background, shadow, floor",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 512,
+    "altura": 512,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 2100
+  },
+  "pos": {
+    "tamanho": "64x64",
+    "tamanho_miniatura": "40x56",
+    "kernel": "lanczos3",
+    "tol": 70
+  }
+}

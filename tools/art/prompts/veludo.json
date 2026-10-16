@@ -1,0 +1,33 @@
+{
+  "id": "veludo",
+  "card": null,
+  "nome": "Veludo imperial (mesa)",
+  "versao": 1,
+  "notas": "Textura da mesa no lugar do feltro verde (Fase 4.6). Vista de cima, sem objetos.",
+  "estilo": "pixel art, 16-bit, seamless top-down texture, flat, limited color palette, no objects, no text",
+  "personagem": "deep emerald green velvet table cloth with a fine gold embroidered border and subtle damask pattern",
+  "expressoes": {
+    "mesa": "evenly lit, flat top-down, empty",
+    "mesa_vinho": "deep wine red velvet instead of green, gold embroidery, evenly lit, flat top-down"
+  },
+  "negativo": "photo, realistic, 3d, text, letters, people, objects, cards, coins, perspective, shadow, vignette",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 1024,
+    "altura": 1024,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 2300
+  },
+  "pos": {
+    "tamanho": "128x128",
+    "tamanho_miniatura": "40x56",
+    "kernel": "lanczos3",
+    "tol": 0,
+    "bg": "#ff00ff"
+  }
+}

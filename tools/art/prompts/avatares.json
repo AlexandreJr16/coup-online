@@ -1,0 +1,46 @@
+{
+  "id": "avatares",
+  "card": null,
+  "nome": "Convidados do baile (avatares)",
+  "versao": 1,
+  "notas": "Avatares dos jogadores (Fase 4.5). Cada expressão = um tipo de convidado. Busto, fundo branco; recortar em círculo no CSS.",
+  "estilo": "pixel art, 16-bit video game character portrait, bust portrait, head and shoulders and chest only, face large and clearly readable, limited color palette, clean dark outline, warm tropical colors, soft cel shading, plain solid white background, no shadow, no floor, no text, no frame",
+  "personagem": "Brazilian Empire 1860s guest at a palace ball",
+  "expressoes": {
+    "dama_corte": "elegant lady of the imperial court, hair in a bun with a small ornate comb, high-collared lace dress, holding a folded fan, composed smile",
+    "estudante": "young law student, round wire spectacles, black coat and tie, rolled papers under the arm, earnest look",
+    "frei": "friar in a brown hooded habit with a rope belt and a wooden cross, kind round face, gentle smile",
+    "soldado": "young soldier of the imperial army, dark blue uniform with white crossed belts, forage cap, shy smile",
+    "tropeiro": "muleteer (tropeiro) with a wide felt hat, leather vest, thick mustache, sun-weathered face, rope over the shoulder",
+    "doceira": "Afro-Brazilian woman street vendor selling sweets, white headscarf, blouse and shawl, a wooden tray of sweets at her chest, proud warm smile",
+    "ourives": "goldsmith with a magnifying loupe on the forehead, leather apron, small hammer in hand, focused look",
+    "medico": "doctor in a black frock coat, gray beard, round glasses, leather medical bag, calm serious look",
+    "tipografo": "newspaper typesetter with ink-stained fingers, visor cap, sleeve garters, cheeky grin",
+    "parteira": "older midwife woman, wool shawl over a plain dress, small cloth bag of herbs, calm reassuring face",
+    "ribeirinho": "Amazonian river fisherman, straw hat, bare shoulders with a cloth over one shoulder, fishing net, friendly squint",
+    "colono": "German immigrant farmer, blond beard, suspenders, wide-brim hat, a stalk of wheat in the mouth",
+    "professora": "school teacher woman, small glasses, hair in a tight bun, holding a book and chalk, patient smile",
+    "ator": "theatre actor with expressive eyebrows, ruffled theatrical collar, dramatic hand on chest",
+    "jovem_barao": "young heir in a fine dark suit, silk waistcoat, top hat tilted to one side, cocky smile",
+    "capitao_porto": "ship captain with a navy coat, white beard, spyglass under the arm, tanned weathered face"
+  },
+  "negativo": "photo, realistic, 3d render, blurry, text, watermark, frame, border, caricature, offensive stereotype, gradient background, colored background, shadow, floor, full body, legs, necklace, beads, jewelry, gold chain, multiple people, crown, king, medieval armor, fantasy, modern clothes, nsfw",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 704,
+    "altura": 1024,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 2000
+  },
+  "pos": {
+    "tamanho": "88x124",
+    "tamanho_miniatura": "40x56",
+    "kernel": "lanczos3",
+    "tol": 70
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "poses",
+  "card": null,
+  "nome": "Poses de vitória",
+  "versao": 1,
+  "notas": "Corpo inteiro para a tela de vitória (Fase 4.8). Uma entrada por personagem.",
+  "estilo": "pixel art, 16-bit video game character sprite, full body standing, limited color palette, clean dark outline, warm tropical colors, soft cel shading, plain solid white background, no shadow, no floor, no text, no frame",
+  "personagem": "Brazilian Empire 1860s",
+  "expressoes": {
+    "barao": "elderly Brazilian Empire coffee baron from the 1860s, distinguished gentleman around 60 years old, white mutton-chop sideburns and a neat white mustache, dark green velvet frock coat with a high collar and gold buttons, white silk cravat with a gold pin, black top hat, a small branch of red coffee cherries pinned to the lapel, gold pocket watch chain across the vest, triumphant victory pose, full body, celebrating, confident big smile",
+    "capoeira": "Afro-Brazilian capoeirista man from 19th century Rio de Janeiro, charismatic malandro, white linen shirt with rolled sleeves open at the collar, red cloth bandana scarf knotted around his neck, straw hat tilted to one side, thin mustache, triumphant victory pose, full body, celebrating, confident big smile",
+    "coronel": "Brazilian National Guard colonel from the 1860s, stern middle-aged man with a thick black handlebar mustache, dark blue military tunic with a red collar, gold braid epaulettes and brass buttons, white sash across the chest, tall black shako military hat with a brass plate, a sword hilt visible at the shoulder, triumphant victory pose, full body, celebrating, confident big smile",
+    "regatao": "Amazonian river trader (regatao) from the 1870s, friendly clever caboclo man with mixed indigenous and European features, wide-brim straw hat, light blue cotton shirt with rolled sleeves, a bundle of colorful cloth bolts and small clay pots slung over his shoulder, a pipe in the corner of his mouth, a small brass compass hanging from a cord on his neck, triumphant victory pose, full body, celebrating, confident big smile",
+    "benzedeira": "elderly Afro-Brazilian benzedeira healer woman from the 1860s, kind wise face with gentle wrinkles, white head wrap (lenco branco), white linen blouse with a woven shawl, wooden rosary and colorful bead necklace, holding a green sprig of rue (arruda) in one hand and a small lit candle in the other, triumphant victory pose, full body, celebrating, confident big smile"
+  },
+  "negativo": "photo, realistic, 3d render, blurry, text, watermark, frame, border, caricature, offensive stereotype, gradient background, colored background, shadow, floor, full body, legs, necklace, beads, jewelry, gold chain, multiple people, crown, king, medieval armor, fantasy, modern clothes, nsfw, bust, cropped, close-up",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 704,
+    "altura": 1024,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 2400
+  },
+  "pos": {
+    "tamanho": "88x128",
+    "tamanho_miniatura": "40x56",
+    "kernel": "lanczos3",
+    "tol": 70
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "_comment": "Lote noturno (docs/NOITE.md). Ordem = prioridade: se o PC parar, o essencial já saiu. Cada job: id do prompt + argumentos do generate.ts.",
+  "jobs": [
+    { "id": "avatares",    "args": ["--seeds", "4"] },
+    { "id": "ui",          "args": ["--seeds", "4"] },
+    { "id": "cenarios",    "args": ["--seeds", "4"] },
+    { "id": "veludo",      "args": ["--seeds", "4"] },
+    { "id": "benzedeira_v2","args": ["--expr", "neutro", "--seeds", "6"] },
+    { "id": "coronel_v2",  "args": ["--expr", "neutro", "--seeds", "6"] },
+    { "id": "regatao",     "args": ["--expr", "neutro", "--seed", "1860", "--seeds", "6"] },
+    { "id": "poses",       "args": ["--seeds", "4"] },
+    { "id": "avatares",    "args": ["--seed", "2004", "--seeds", "2"] }
+  ]
+}

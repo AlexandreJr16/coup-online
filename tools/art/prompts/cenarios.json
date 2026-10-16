@@ -1,0 +1,37 @@
+{
+  "id": "cenarios",
+  "card": null,
+  "nome": "Cenários",
+  "versao": 1,
+  "notas": "Menu, Gabinete (lobby), vitória e salão em 3 horários (Fase 7). Sem personagens.",
+  "estilo": "pixel art, 16-bit, wide background scene, warm cozy lighting, limited color palette, no characters, no people, no text",
+  "personagem": "Brazilian Empire 1860s",
+  "expressoes": {
+    "menu": "grand facade of a Brazilian Empire palace at dusk, lit lanterns, palm trees, wide establishing shot, symmetrical, empty courtyard",
+    "gabinete": "imperial study room, large wooden desk with candles, shelves of books, a globe and framed maps, green velvet curtains, cozy, empty room",
+    "vitoria": "palace balcony at night overlooking the bay of Rio de Janeiro, fireworks in the sky, lanterns, celebratory mood, no people",
+    "salao_tarde": "opulent Brazilian Empire palace ballroom in the afternoon, golden sunlight through tall arched windows, crystal chandeliers, parquet floor, potted palms, empty room",
+    "salao_entardecer": "opulent Brazilian Empire palace ballroom at sunset, orange and pink light through tall windows, crystal chandeliers, parquet floor, potted palms, empty room",
+    "salao_madrugada": "opulent Brazilian Empire palace ballroom very late at night, only a few candles lit, deep blue shadows, crystal chandeliers dim, parquet floor, empty room"
+  },
+  "negativo": "photo, realistic, 3d render, blurry, text, watermark, people, characters, faces, frame, border, white background, modern",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 1344,
+    "altura": 768,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 2200
+  },
+  "pos": {
+    "tamanho": "168x96",
+    "tamanho_miniatura": "40x56",
+    "kernel": "lanczos3",
+    "tol": 0,
+    "bg": "#ff00ff"
+  }
+}

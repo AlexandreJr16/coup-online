@@ -4,6 +4,7 @@
 // Uso:
 //   npx tsx tools/art/generate.ts capoeira [--expr neutro,blefe] [--seeds 3] [--seed 1850]
 //   npx tsx tools/art/generate.ts capoeira --expr blefe --from neutro [--strength 0.6]
+//   --skip-existing   não regera arquivos que já existem (lote retomável)
 //     (img2img: parte da imagem `neutro` da MESMA seed — mantém o personagem e deixa
 //      só o rosto/pose mudarem. Strength baixo = mais fiel; alto = mais expressivo.)
 //
@@ -61,6 +62,7 @@ function main(): void {
   const expressions = (flag("expr") ?? Object.keys(prompt.expressoes).join(",")).split(",");
   const baseSeed = Number(flag("seed") ?? g.seed_base);
   const seedCount = Number(flag("seeds") ?? 1);
+  const skipExisting = args.includes("--skip-existing");
   const from = flag("from"); // expressão-base para img2img
   const strength = Number(flag("strength") ?? g.img2img_strength ?? 0.6);
 
@@ -73,6 +75,10 @@ function main(): void {
       const suffix = from ? `_from-${from}-${strength}` : "";
       const out = join(outDir, `${prompt.id}_${expr}_s${seed}${suffix}.png`);
       const init = from ? join(outDir, `${prompt.id}_${from}_s${seed}.png`) : null;
+      if (skipExisting && existsSync(out)) {
+        console.log(`  pulando (já existe) ${out}`);
+        continue;
+      }
       if (init && !existsSync(init)) throw new Error(`imagem-base não encontrada: ${init}`);
       console.log(`→ ${expr} seed=${seed}${from ? ` (img2img de ${from}, strength ${strength})` : ""}`);
       // Array de argumentos (sem shell): o texto do prompt nunca é interpretado como comando.

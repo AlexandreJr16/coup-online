@@ -1,0 +1,31 @@
+{
+  "id": "benzedeira_v2",
+  "card": "condessa",
+  "nome": "Benzedeira (v2, bem idosa)",
+  "versao": 2,
+  "notas": "Re-roll: a v1 saiu jovem e de turbante. Aqui: muito idosa, lenço simples, arruda.",
+  "estilo": "pixel art, 16-bit video game character portrait, bust portrait, head and shoulders and chest only, face large and clearly readable, limited color palette, clean dark outline, warm tropical colors, soft cel shading, plain solid white background, no shadow, no floor, no text, no frame",
+  "personagem": "very old Afro-Brazilian benzedeira healer woman, around 80 years old, deep wrinkles, gray hair under a simple plain white cotton headscarf (not a turban), plain white linen blouse and a woven shawl, holding a green sprig of rue (arruda) in both hands, a wooden rosary around the neck",
+  "expressoes": {
+    "neutro": "warm protective gentle smile, looking at the viewer, calm wise eyes"
+  },
+  "negativo": "photo, realistic, 3d render, blurry, text, watermark, frame, border, caricature, offensive stereotype, gradient background, colored background, shadow, floor, full body, legs, necklace, beads, jewelry, gold chain, multiple people, crown, king, medieval armor, fantasy, modern clothes",
+  "geracao": {
+    "modelo": "sd_xl_base_1.0.safetensors",
+    "vae": "sdxl.vae.safetensors",
+    "lora": "pixel-art-xl",
+    "lora_peso": 1.0,
+    "largura": 704,
+    "altura": 1024,
+    "passos": 28,
+    "cfg": 6.5,
+    "sampler": "euler_a",
+    "seed_base": 2500
+  },
+  "pos": {
+    "tamanho": "88x124",
+    "tamanho_miniatura": "40x56",
+    "kernel": "lanczos3",
+    "tol": 70
+  }
+}
