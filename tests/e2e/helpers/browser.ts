@@ -268,6 +268,16 @@ export class Page {
     await mouse("mouseReleased", b.x, b.y);
   }
 
+  /** Move o mouse (sem clicar) para a posição relativa (fx, fy ∈ [0,1]) do elemento. */
+  async mouseTo(selector: string, fx = 0.5, fy = 0.5): Promise<void> {
+    await this.cdp.send("Page.bringToFront"); // pointermove só chega a aba visível
+    const p = await this.eval<{ x: number; y: number }>(`(() => {
+      const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+      return { x: r.left + r.width * ${fx}, y: r.top + r.height * ${fy} };
+    })()`);
+    await this.cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y, button: "none" });
+  }
+
   /** Tecla de verdade (keyDown+keyUp). Aceita "Escape", " " (Espaço) ou uma letra. */
   async key(key: string): Promise<void> {
     const special: Record<string, { code: string; vk: number; text?: string }> = {

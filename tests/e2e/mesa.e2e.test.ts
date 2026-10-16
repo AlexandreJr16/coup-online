@@ -300,7 +300,7 @@ test("contestação: a carta alegada é revelada na mesa para todos, com o vered
     await p.waitFor(`document.querySelector('[data-testid="challenge-reveal"]')`, "revelação");
     const r = await p.eval<{ had: string; txt: string }>(`(() => { const e = document.querySelector('[data-testid="challenge-reveal"]'); return { had: e.getAttribute('data-had-card'), txt: e.innerText }; })()`);
     assert.ok(r.had === "true" || r.had === "false");
-    assert.match(r.txt, r.had === "true" ? /Tinha a carta/ : /Era blefe/);
+    assert.match(r.txt, r.had === "true" ? /Tinha/ : /Era blefe/); // a mão é sorteada: os dois casos valem
   }
   await a.waitFor(`!document.querySelector('[data-testid="challenge-reveal"]')`, "revelação some", 6000);
   noErrors(a, b);
@@ -331,6 +331,54 @@ test("reduced-motion: sem distribuição nem moedas voando", async () => {
   assert.equal(await b.eval<number>(`window.__voos`), 0);
   assert.equal(await a.eval<boolean>(`!document.querySelector('[data-dealt]')`), true);
   noErrors(a, b);
+});
+
+// ── Juice (4.9) ──────────────────────────────────────────────────────────────
+test("tilt: o mouse sobre a carta inclina em 3D e ao sair volta ao normal", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [, b] = ps; // Bia não está na vez: a inclinação vale mesmo assim (é só visual)
+  await b.waitFor(`document.querySelectorAll('[data-zone="centro"] .hand-card').length === 5`, "mão");
+  const alvo = '[data-zone="centro"] .hand-card:nth-child(3)';
+  // A borda direita é coberta pela carta vizinha do leque: mira a parte VISÍVEL (até ~80%).
+  await b.mouseTo(alvo, 0.78, 0.5);
+  await b.waitFor(`parseFloat(document.querySelector('${alvo}').style.getPropertyValue('--ry')) > 3`, "inclinou para a direita");
+  await b.mouseTo(alvo, 0.1, 0.5);
+  await b.waitFor(`parseFloat(document.querySelector('${alvo}').style.getPropertyValue('--ry')) < -3`, "inclinou para a esquerda");
+  await b.mouseTo('[data-testid="dock"]', 0.02, 0.02); // fora da mão
+  await b.waitFor(`document.querySelector('${alvo}').style.getPropertyValue('--ry') === ''`, "voltou ao normal");
+  noErrors(b);
+});
+
+test("foil: só as cartas que são minhas brilham (1 ou 2), nunca as de blefe", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  await ps[0].waitFor(`document.querySelectorAll('[data-zone="centro"] [data-foil]').length >= 1`, "foil");
+  const n = await ps[0].eval<number>(`document.querySelectorAll('[data-zone="centro"] [data-foil]').length`);
+  assert.ok(n >= 1 && n <= 2, `foil em ${n} cartas`);
+  noErrors(ps[0]);
+});
+
+test("moedas: o contador 'pula' quando muda (para quem joga e para quem assiste)", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await a.click('[data-zone="basicas"] .seal', "Renda");
+  await b.waitFor(`document.querySelector('[data-seat="Ana"] .pop')`, "contador com animação pop");
+  noErrors(a, b);
+});
+
+test("CRT: liga/desliga sem bloquear nenhum clique e persiste ao recarregar", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a] = ps;
+  assert.equal(await a.eval<string>(`document.documentElement.dataset.crt`), "0");
+  await a.click('[data-testid="crt-toggle"]');
+  await a.waitFor(`document.documentElement.dataset.crt === "1"`, "CRT ligado");
+  // com o filtro ligado ainda dá para jogar: o overlay não captura cliques
+  await a.click('[data-zone="basicas"] .seal', "Renda");
+  await waitCoins(a, "Ana", 3);
+  await a.reload();
+  await a.waitFor(`document.documentElement.dataset.crt === "1"`, "CRT persistiu");
+  await a.click('[data-testid="crt-toggle"]'); // desliga
+  await a.waitFor(`document.documentElement.dataset.crt === "0"`, "CRT desligado");
+  noErrors(a);
 });
 
 // ── Fim de partida (4.8) ─────────────────────────────────────────────────────

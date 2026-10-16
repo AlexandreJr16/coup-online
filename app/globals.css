@@ -325,3 +325,54 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .shake { animation: none; }
 }
+
+/* ── Juice: foil/holo nas cartas suas, contador que pula, CRT opcional ───────── */
+.foil {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.55;
+  mix-blend-mode: color-dodge;
+  background: linear-gradient(
+    115deg,
+    transparent 18%,
+    rgba(255, 255, 255, 0.22) 36%,
+    rgba(120, 210, 255, 0.2) 46%,
+    rgba(255, 170, 230, 0.2) 56%,
+    rgba(255, 235, 140, 0.18) 66%,
+    transparent 82%
+  );
+  background-size: 260% 100%;
+  background-position: var(--shine, 0%) 0;
+  animation: foil-drift 5.5s ease-in-out infinite alternate;
+}
+.hand-card:hover .foil {
+  opacity: 0.95;
+  animation: none;
+}
+@keyframes foil-drift {
+  from { background-position: 0% 0; }
+  to { background-position: 100% 0; }
+}
+@keyframes pop {
+  0% { transform: scale(1.5); }
+  60% { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+.pop { animation: pop 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+
+html[data-crt="1"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0) 0 2px, rgba(0, 0, 0, 0.2) 3px 3px),
+    radial-gradient(ellipse at center, transparent 62%, rgba(0, 0, 0, 0.38) 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .foil { animation: none; }
+  .pop { animation: none; }
+}

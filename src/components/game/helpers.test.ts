@@ -281,3 +281,16 @@ test("planCoinFlights: sem variação não há voo", () => {
   assert.deepEqual(planCoinFlights({}), []);
   assert.deepEqual(planCoinFlights({ p1: 0 }), []);
 });
+
+// ── Inclinação 3D (4.9) ──────────────────────────────────────────────────────
+import { tiltFromPointer } from "./motion";
+
+test("tiltFromPointer: centro = 0; bordas = ±máximo; fora da carta é limitado", () => {
+  assert.deepEqual(tiltFromPointer(44, 62, 88, 124), { rx: -0, ry: 0 });
+  const dir = tiltFromPointer(88, 62, 88, 124, 9);
+  assert.equal(dir.ry, 9); // mouse na borda direita: vira para a direita
+  assert.equal(tiltFromPointer(0, 62, 88, 124, 9).ry, -9);
+  assert.equal(tiltFromPointer(44, 0, 88, 124, 9).rx, 9); // topo: rotateX positivo
+  assert.equal(tiltFromPointer(44, 124, 88, 124, 9).rx, -9);
+  assert.equal(tiltFromPointer(500, -500, 88, 124, 9).ry, 9); // limitado
+});

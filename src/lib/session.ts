@@ -45,3 +45,33 @@ export function saveAutoPass(enabled: boolean): void {
     /* sem storage: a preferência vale só até recarregar */
   }
 }
+
+// Filtro CRT (scanlines): preferência do jogador, vale entre salas (localStorage).
+export function readCrt(): boolean {
+  try {
+    return localStorage.getItem("coup:crt") === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function saveCrt(on: boolean): void {
+  try {
+    localStorage.setItem("coup:crt", on ? "1" : "0");
+  } catch {
+    /* sem storage: vale só nesta sessão */
+  }
+  window.dispatchEvent(new Event(CRT_EVENT)); // avisa quem assina (useSyncExternalStore)
+}
+
+export const CRT_EVENT = "coup:crt";
+
+/** Para useSyncExternalStore: lê a preferência sem divergir do HTML do servidor na hidratação. */
+export function subscribeCrt(onChange: () => void): () => void {
+  window.addEventListener(CRT_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(CRT_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}

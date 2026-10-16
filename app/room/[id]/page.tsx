@@ -1,13 +1,13 @@
 "use client";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { type CSSProperties, useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState, useSyncExternalStore } from "react";
 
 import GameBoard from "@/src/components/game/GameBoard";
 import { avatarColor, CINZEL, COLORS } from "@/src/components/game/helpers";
 import TableBackdrop from "@/src/components/game/TableBackdrop";
 import TimerSettings, { DEFAULT_TIMERS } from "@/src/components/game/TimerSettings";
-import { clearToken, readToken, saveToken } from "@/src/lib/session";
+import { clearToken, readCrt, readToken, saveCrt, saveToken, subscribeCrt } from "@/src/lib/session";
 import { getSocket } from "@/src/lib/socket";
 import type { GameConfig, GameView } from "@/src/types/game";
 import type { JoinRoomAck, Player } from "@/src/types/socket";
@@ -22,6 +22,16 @@ export default function RoomPage() {
   const [view, setView] = useState<GameView | null>(null);
   const [myId, setMyId] = useState("");
   const [error, setError] = useState("");
+  // useSyncExternalStore: o servidor renderiza "off" e o cliente troca depois da hidratação,
+  // sem erro #418 (ler localStorage direto no useState divergia do HTML do servidor).
+  const crt = useSyncExternalStore(subscribeCrt, readCrt, () => false);
+  // Aplica o filtro no <html>: o CSS faz o resto (scanlines que não capturam cliques).
+  useEffect(() => {
+    document.documentElement.dataset.crt = crt ? "1" : "0";
+    return () => {
+      document.documentElement.dataset.crt = "0";
+    };
+  }, [crt]);
   const [timers, setTimers] = useState<GameConfig>(DEFAULT_TIMERS); // só o host usa
 
   // Só existe no cliente; o <code> usa suppressHydrationWarning (SSR renderiza vazio).
@@ -108,6 +118,16 @@ export default function RoomPage() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => saveCrt(!crt)}
+            className="game-btn"
+            style={toggleBtn}
+            data-testid="crt-toggle"
+            aria-pressed={crt}
+            title="Filtro CRT (scanlines)"
+          >
+            📺 CRT {crt ? "on" : "off"}
+          </button>
           <button onClick={leave} className="game-btn" style={leaveBtn}>
             Sair
           </button>
@@ -222,6 +242,14 @@ const roomChip: CSSProperties = {
   whiteSpace: "nowrap",
 };
 // Cor base via --c; o gradiente/sombra/press vêm da classe .game-btn.
+const toggleBtn = {
+  padding: "7px 12px",
+  fontSize: 13,
+  color: COLORS.text,
+  borderRadius: 8,
+  whiteSpace: "nowrap",
+  "--c": COLORS.neutral,
+} as CSSProperties;
 const leaveBtn = {
   padding: "7px 12px",
   fontSize: 13,

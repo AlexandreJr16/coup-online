@@ -104,3 +104,14 @@ export function spawnCoins(layer: HTMLElement, from: Point, to: Point, count: nu
     anim.onfinish = () => coin.remove();
   }
 }
+
+// ── Inclinação 3D da carta (estilo Balatro) ─────────────────────────────────
+/**
+ * Graus de rotação X/Y para uma carta de w×h com o mouse em (x,y) dentro dela.
+ * No centro = 0; nas bordas = ±max. O topo "afunda" (rotateX positivo) e a direita avança.
+ */
+export function tiltFromPointer(x: number, y: number, w: number, h: number, max = 9): { rx: number; ry: number } {
+  const nx = Math.max(-1, Math.min(1, (x / w - 0.5) * 2));
+  const ny = Math.max(-1, Math.min(1, (y / h - 0.5) * 2));
+  return { rx: -ny * max, ry: nx * max };
+}

@@ -112,7 +112,7 @@ export default function Seat({
       </div>
 
       <div data-seat-coin style={{ position: "relative", color: COLORS.gold, fontWeight: 600 }}>
-        🪙 {shownCoins}
+        <span key={coins} className="pop" style={{ display: "inline-block" }}>🪙 {shownCoins}</span>
         <CoinDelta delta={coinDelta} deltaKey={deltaKey} />
       </div>
 

@@ -44,6 +44,9 @@ export default function Card({
   className,
   onPointerDown,
   flipLost = true,
+  foil = false,
+  onPointerMove,
+  onPointerLeave,
 }: {
   character?: Character | null;
   faceDown?: boolean;
@@ -58,6 +61,9 @@ export default function Card({
   hint?: ReactNode; // texto auxiliar (ação) — só no size="lg"
   className?: string; // classe na carta (ex.: hand-card para o hover da mão)
   onPointerDown?: (e: React.PointerEvent) => void; // início de arrasto (mão)
+  foil?: boolean; // brilho holográfico (cartas que são suas)
+  onPointerMove?: (e: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerLeave?: (e: React.PointerEvent<HTMLDivElement>) => void;
   flipLost?: boolean; // no modo flip, a face aparece como "perdida" (dessaturada); false = viva
 }) {
   const d = DIMS[size];
@@ -109,6 +115,8 @@ export default function Card({
     <div
       onClick={onClick}
       onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
       title={character ? CHAR_LABEL[character] : undefined}
       className={className}
       style={outer}
@@ -124,6 +132,7 @@ export default function Card({
           bluff={bluff}
           selected={selected}
           hint={hint}
+          foil={foil}
         />
       )}
     </div>
@@ -194,6 +203,7 @@ function FrontFace({
   selected,
   hint,
   transform,
+  foil,
 }: {
   d: Dim;
   character: Character;
@@ -203,6 +213,7 @@ function FrontFace({
   selected?: boolean;
   hint?: ReactNode;
   transform?: string;
+  foil?: boolean;
 }) {
   const v = CHAR_VISUAL[character];
   const muted = lost || bluff;
@@ -290,6 +301,7 @@ function FrontFace({
         </>
       )}
 
+      {foil && !muted && <div data-foil className="foil" aria-hidden />}
       {lost && <Corner size={size}>❌</Corner>}
       {bluff && !lost && (
         <Corner size={size}>
