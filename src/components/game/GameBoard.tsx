@@ -419,7 +419,7 @@ export default function GameBoard({
       </div>
 
       {/* Faixa de status da rodada (portal no cabeçalho da sala) */}
-      <TurnBanner view={view} myId={myId} />
+      <TurnBanner view={view} myId={myId} secondsLeft={secondsLeft} />
 
       {drag && <DragGhost character={drag.char} x={drag.x} y={drag.y} />}
 

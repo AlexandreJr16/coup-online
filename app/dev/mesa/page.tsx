@@ -1,6 +1,7 @@
 // Mesa de demonstração (sem socket): partida FICTÍCIA só para revisar visual.
 // Estados por query: ?fase=turno (padrão) | reacao | contestar | revelar | troca | fim
 //   ?n=2..6 muda o número de jogadores. Útil para as Fases 3–4 do ROADMAP.
+//   ?restante=3 fixa o tempo restante da fase (em s): revisa o aviso dos últimos segundos.
 "use client";
 
 import { useSearchParams } from "next/navigation";
@@ -100,7 +101,12 @@ function build(fase: string, n: number): GameView {
 
 function Mesa() {
   const q = useSearchParams();
-  const view = build(q.get("fase") ?? "turno", Math.min(6, Math.max(2, Number(q.get("n") ?? 4))));
+  const built = build(q.get("fase") ?? "turno", Math.min(6, Math.max(2, Number(q.get("n") ?? 4))));
+  const restante = Number(q.get("restante"));
+  const view =
+    q.get("restante") !== null && Number.isFinite(restante) && built.timer
+      ? { ...built, timer: { ...built.timer, remainingMs: Math.max(0, restante) * 1000 } }
+      : built;
   // Em "reacao"/"contestar" quem age é o p2; eu (p1) sou espectador/reator.
   return (
     <main style={{ height: "100vh", display: "flex", flexDirection: "column", background: COLORS.bg }}>

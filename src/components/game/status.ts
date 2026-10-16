@@ -3,6 +3,7 @@
 // testada sem React. Alimenta a faixa do cabeçalho (TurnBanner). Os nomes dos jogadores
 // viram "você" para quem está olhando (myId); para espectador, sempre o nome.
 
+import { TIMEOUT_WARNING_SECONDS } from "@/src/lib/game/config";
 import type { GameView } from "@/src/types/game";
 import { ACTION_META, CHAR_LABEL, reactionOptions, reactorIds } from "./helpers";
 
@@ -33,13 +34,19 @@ function joinE(items: string[]): string {
   return `${items.slice(0, -1).join(", ")} e ${items[items.length - 1]}`;
 }
 
-export function deriveRoundStatus(view: GameView, myId: string): RoundStatus {
+// Nome para exibir: "você" para quem está olhando (`Who` com a inicial maiúscula).
+function namers(view: GameView, myId: string) {
   const nameOf = (id: string | null) => view.players.find((p) => p.id === id)?.name ?? "?";
   const who = (id: string | null) => (id !== null && id === myId ? "você" : nameOf(id));
   const Who = (id: string | null) => {
     const w = who(id);
     return w.charAt(0).toUpperCase() + w.slice(1);
   };
+  return { nameOf, who, Who };
+}
+
+export function deriveRoundStatus(view: GameView, myId: string): RoundStatus {
+  const { nameOf, who, Who } = namers(view, myId);
 
   const p = view.pending;
   const passedIds = p?.passedIds ?? [];
@@ -135,5 +142,34 @@ export function deriveRoundStatus(view: GameView, myId: string): RoundStatus {
         waitingOnIds: [],
       };
     }
+  }
+}
+
+/**
+ * Aviso dos últimos segundos de uma fase de DECISÃO: o que o servidor vai jogar pelo
+ * jogador se o tempo acabar (game-rules.md "Quando o tempo estoura"). null fora dessas
+ * fases e enquanto ainda sobra tempo. Janelas de reação não avisam: nelas "passar" já
+ * resolve e o estouro só fecha a janela.
+ */
+export function timeoutWarning(view: GameView, myId: string, secondsLeft: number): string | null {
+  const timer = view.timer;
+  if (!timer || secondsLeft > TIMEOUT_WARNING_SECONDS) return null;
+  const { Who } = namers(view, myId);
+  const n = Math.max(1, Math.ceil(secondsLeft));
+
+  switch (timer.phase) {
+    case "aguardando_acao": {
+      const cur = view.players.find((p) => p.id === view.currentPlayerId);
+      const quem = Who(view.currentPlayerId);
+      return (cur?.coins ?? 0) >= 10
+        ? `${quem} dá Golpe em alguém sorteado em ${n}…`
+        : `${quem} joga Renda em ${n}…`;
+    }
+    case "aguardando_revelacao":
+      return `${Who(view.mustRevealPlayerId)} revela uma carta sorteada em ${n}…`;
+    case "aguardando_troca":
+      return `${Who(view.currentPlayerId)} mantém as próprias cartas em ${n}…`;
+    default:
+      return null;
   }
 }

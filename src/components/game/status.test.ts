@@ -5,7 +5,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import type { GameView } from "@/src/types/game";
-import { deriveRoundStatus } from "./status";
+import { TIMEOUT_WARNING_SECONDS } from "@/src/lib/game/config";
+import { deriveRoundStatus, timeoutWarning } from "./status";
 import { makeView, player } from "./test-utils";
 
 const ANA = "p1";
@@ -186,4 +187,71 @@ test("o status nunca expõe carta oculta: só usa nomes públicos, mesmo com mã
   const texto = JSON.stringify(deriveRoundStatus(v, ANA));
   // O Capoeira (assassino) está na mão da Ana, mas não é alegado: não pode aparecer.
   assert.ok(!texto.includes("Capoeira"), texto);
+});
+
+// ── Aviso dos últimos segundos antes da ação automática ──────────────────────
+test("aviso: o limite é de 5s e vem da config (não de um número solto na UI)", () => {
+  assert.equal(TIMEOUT_WARNING_SECONDS, 5);
+});
+
+test("aviso do turno: some enquanto sobra tempo e aparece nos últimos 5s (Renda)", () => {
+  const v = makeView(); // timer de turno, p1 (Ana) com 2 moedas
+  assert.equal(timeoutWarning(v, BIA, 45), null);
+  assert.equal(timeoutWarning(v, BIA, 5.01), null);
+  assert.equal(timeoutWarning(v, BIA, 5), "Ana joga Renda em 5…");
+  assert.equal(timeoutWarning(v, BIA, 3.2), "Ana joga Renda em 4…"); // arredonda para cima
+  assert.equal(timeoutWarning(v, BIA, 0.4), "Ana joga Renda em 1…"); // nunca mostra 0
+  assert.equal(timeoutWarning(v, BIA, 0), "Ana joga Renda em 1…");
+});
+
+test("aviso do turno: quem está no turno vê 'Você joga Renda'", () => {
+  assert.equal(timeoutWarning(makeView(), ANA, 3), "Você joga Renda em 3…");
+});
+
+test("aviso do turno: com 10+ moedas o que vem é o Golpe em alguém sorteado", () => {
+  const v = makeView({
+    players: [player("p1", { name: "Ana", coins: 10 }), player("p2", { name: "Bia" }), player("p3", { name: "Caio" })],
+  });
+  assert.equal(timeoutWarning(v, BIA, 2), "Ana dá Golpe em alguém sorteado em 2…");
+  assert.equal(timeoutWarning(v, ANA, 2), "Você dá Golpe em alguém sorteado em 2…");
+});
+
+test("aviso da revelação: carta sorteada", () => {
+  const v = makeView({
+    phase: "aguardando_revelacao",
+    mustRevealPlayerId: BIA,
+    timer: { phase: "aguardando_revelacao", seconds: 30, remainingMs: 4000 },
+  });
+  assert.equal(timeoutWarning(v, ANA, 4), "Bia revela uma carta sorteada em 4…");
+  assert.equal(timeoutWarning(v, BIA, 4), "Você revela uma carta sorteada em 4…");
+  assert.equal(timeoutWarning(v, ANA, 12), null);
+});
+
+test("aviso da troca: mantém as próprias cartas (troca neutra)", () => {
+  const v = makeView({
+    phase: "aguardando_troca",
+    timer: { phase: "aguardando_troca", seconds: 30, remainingMs: 3000 },
+  });
+  assert.equal(timeoutWarning(v, BIA, 3), "Ana mantém as próprias cartas em 3…");
+  assert.equal(timeoutWarning(v, ANA, 3), "Você mantém as próprias cartas em 3…");
+});
+
+test("aviso: janelas de reação e fim de jogo NÃO avisam (passar já resolve / não há timer)", () => {
+  const reacao = makeView({
+    phase: "janela_reacao_global",
+    pending: pending({}),
+    timer: { phase: "janela_reacao_global", seconds: 5, remainingMs: 2000 },
+  });
+  assert.equal(timeoutWarning(reacao, BIA, 2), null);
+  const bloqueio = makeView({
+    phase: "janela_contestar_bloqueio",
+    pending: pending({ block: { blockerId: BIA, character: "duque" } }),
+    timer: { phase: "janela_contestar_bloqueio", seconds: 5, remainingMs: 2000 },
+  });
+  assert.equal(timeoutWarning(bloqueio, ANA, 2), null);
+  assert.equal(timeoutWarning(makeView({ phase: "fim_de_jogo", timer: null, winnerId: ANA }), ANA, 0), null);
+});
+
+test("aviso: sem timer na view não há aviso", () => {
+  assert.equal(timeoutWarning(makeView({ timer: null }), ANA, 0), null);
 });

@@ -9,7 +9,7 @@ import { createPortal } from "react-dom";
 
 import type { GameView } from "@/src/types/game";
 import { assignAvatars, avatarUrl, CINZEL, COLORS } from "./helpers";
-import { deriveRoundStatus } from "./status";
+import { deriveRoundStatus, timeoutWarning } from "./status";
 
 export const ROUND_STATUS_SLOT_ID = "round-status-slot";
 
@@ -24,11 +24,21 @@ const subscribe = () => () => {};
 const getSlot = () => document.getElementById(ROUND_STATUS_SLOT_ID);
 const getServerSlot = () => null;
 
-export default function TurnBanner({ view, myId }: { view: GameView; myId: string }) {
+export default function TurnBanner({
+  view,
+  myId,
+  secondsLeft,
+}: {
+  view: GameView;
+  myId: string;
+  secondsLeft: number; // relógio do cliente ancorado no servidor (GameBoard)
+}) {
   const host = useSyncExternalStore(subscribe, getSlot, getServerSlot);
   if (!host) return null;
 
   const s = deriveRoundStatus(view, myId);
+  // Últimos segundos de uma decisão: o aviso do que vai ser jogado toma o lugar do detalhe.
+  const warning = timeoutWarning(view, myId, secondsLeft);
   const idx = view.players.findIndex((p) => p.id === s.turnPlayerId);
   const avatar = idx >= 0 ? assignAvatars(view.players.map((p) => p.id))[idx] : null;
 
@@ -40,11 +50,16 @@ export default function TurnBanner({ view, myId }: { view: GameView; myId: strin
       data-phase={view.phase}
       data-turn-id={s.turnPlayerId ?? ""}
       data-mine={s.mine ? "sim" : undefined}
-      title={`${s.headline}. ${s.detail}`}
+      data-warning={warning ? "sim" : undefined}
+      title={`${s.headline}. ${warning ?? s.detail}`}
       style={{
         ...banner,
-        borderColor: s.mine ? COLORS.turn : "rgba(240,165,0,0.35)",
-        boxShadow: s.mine ? "0 0 0 1px rgba(255,216,102,0.35), 0 0 14px rgba(255,216,102,0.35)" : "none",
+        borderColor: warning ? COLORS.red : s.mine ? COLORS.turn : "rgba(240,165,0,0.35)",
+        boxShadow: warning
+          ? "0 0 0 1px rgba(192,57,43,0.45), 0 0 14px rgba(192,57,43,0.5)"
+          : s.mine
+            ? "0 0 0 1px rgba(255,216,102,0.35), 0 0 14px rgba(255,216,102,0.35)"
+            : "none",
       }}
     >
       {avatar && (
@@ -62,8 +77,11 @@ export default function TurnBanner({ view, myId }: { view: GameView; myId: strin
         <div data-testid="round-status-headline" style={{ ...headline, color: s.mine ? COLORS.turn : COLORS.text }}>
           {s.headline}
         </div>
-        <div data-testid="round-status-detail" style={detail}>
-          {s.detail}
+        <div
+          data-testid="round-status-detail"
+          style={warning ? { ...detail, color: "#ff8f80", fontWeight: 700 } : detail}
+        >
+          {warning ?? s.detail}
         </div>
       </div>
     </div>,

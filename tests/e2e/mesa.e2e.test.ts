@@ -749,6 +749,29 @@ for (const [fase, head, detail] of FASES_STATUS) {
   });
 }
 
+// Aviso dos últimos 5s (/dev/mesa?restante=N fixa o tempo restante da fase).
+for (const [fase, restante, texto] of [
+  ["turno", 3, "Você joga Renda em"],
+  ["revelar", 4, "Você revela uma carta sorteada em"],
+  ["troca", 2, "Você mantém as próprias cartas em"],
+] as const) {
+  test(`aviso dos últimos segundos: fase "${fase}" com ${restante}s avisa "${texto}…"`, async () => {
+    const p = await open(`/dev/mesa?fase=${fase}&n=4&restante=${restante}`, { w: 1280, h: 720 });
+    await p.waitFor(`document.querySelector('[data-testid="round-status"]')?.getAttribute('data-warning') === 'sim'`, "faixa em modo aviso");
+    const detalhe = await p.eval<string>(`document.querySelector('[data-testid="round-status-detail"]').innerText`);
+    assert.ok(detalhe.startsWith(texto), `aviso inesperado: ${detalhe}`);
+    noErrors(p);
+  });
+}
+
+test("aviso dos últimos segundos: com tempo de sobra (32s) a faixa não avisa", async () => {
+  const p = await open(`/dev/mesa?fase=turno&n=4`, { w: 1280, h: 720 });
+  await headIs(p, "Sua vez");
+  await detailIs(p, "Escolha uma ação");
+  assert.equal(await p.eval<boolean>(`document.querySelector('[data-testid="round-status"]').getAttribute('data-warning') === null`), true);
+  noErrors(p);
+});
+
 test("faixa de status: partida real — turno, declaração, passar, contestação e layout intacto", async () => {
   const { ps } = await game(["Ana", "Bia", "Caio"], { w: 1280, h: 720 });
   const [a, b, c] = ps;
