@@ -1,7 +1,7 @@
 # Mesa v2 — redesign da interação
 
-> Status: **proposta aprovada em conversa (2026-10-15)**, ainda sem código. Nasceu do playtest
-> da Fase 3: a arte agradou, a interface não. Entra no ROADMAP como Fase 4 revisada.
+> Status: **aprovado em conversa (2026-10-15)** e transformado em passos executáveis na **Fase 4**
+> do `docs/ROADMAP.md` (4.1 a 4.9). Nasceu do playtest da Fase 3: a arte agradou, a interface não.
 
 ## Princípios
 1. **Mostrar, não dizer.** O estado do jogo acontece na mesa (carta que sobe, moeda que voa, anel de tempo), não em banners de texto.
@@ -80,6 +80,8 @@ Atalhos (`Espaço` passar, `C` contestar, `B` bloquear), **passar automático** 
 Ícones de ação (10) + máscara + cadeado, moeda e pilhas, saco de moedas, baralho/pilha de cartas, veludo/bordado da mesa, moldura de retrato, conjunto de avatares (~12), balão de fala.
 Ícones primeiro (`tools/art/prompts/icones.json`).
 
-## Em aberto
-- Mobile conta? (decide se a tela é pensada de pé.)
-- Arrastar e clicar funcionando juntos (sugerido).
+## Fora do escopo (por enquanto)
+- **Mobile:** fica para uma v3/v4. A mesa v2 é desenhada para desktop.
+
+## Decidido
+- Arrastar **e** clicar funcionam juntos (arrastar chega no passo 4.3).

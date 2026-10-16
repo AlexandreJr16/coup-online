@@ -81,13 +81,39 @@ v0 tinha 32; faltavam marrons médios (+4 na v1) e cobres (+2 na v2: peles terra
 **DoD cumprido:** todas as cartas com arte; falta de imagem cai no emoji sem quebrar; nenhuma regra tocada (testes verdes); personagem de carta alheia só no DOM quando revelada.
 **Pendente (fica para a Fase 4/7):** o feltro verde da mesa ainda é o do v1 (re-tematizar como veludo imperial); em modo "mão" a barra inferior ocupa muito espaço e corta o assento do jogador em telas baixas.
 
-### Fase 4 — Juice estilo Balatro (CSS primeiro) 🤖
-- [ ] Tilt 3D no hover, foil/holo, screen shake e hit-stop curto na eliminação
-- [ ] Números que "pulam", CRT/scanlines leve (liga/desliga), entrada animada do `ReactionOverlay`
-- [ ] Tela de vitória dedicada
-- [ ] Fundo animado (CSS; WebGL só se o ganho justificar, avisando antes)
+### Fase 4 — Mesa v2 (redesign da interação) 🤝
+Detalhes de design em `docs/DESIGN_MESA_V2.md`. Nasceu do playtest da Fase 3 (arte aprovada, interface não). Sem mobile (fica para v3/v4). Cada passo = um commit; **pontos de teste** marcados com 🎮.
 
-**DoD:** nenhum efeito bloqueia clique; efeitos de gameplay ≤ ~400 ms; `prefers-reduced-motion` respeitado; 60 fps em partida de 6 jogadores no navegador (checagem manual); `npm test` verde.
+- [ ] **4.1 Layout limpo e uma zona para cada coisa** 🤖
+  Só modo mão (remove `ActionBar` e o toggle A/B); zonas fixas (topo só menus, mesa, dock fixo embaixo com mão + ações básicas); sem banners de texto ("Vez de…", "Escolha o alvo…", "Aguardando…"); alvo escolhido clicando no assento (anel/mira pulsando, Esc cancela); reação deixa de ser modal e vira bandeja junto da mão; timer vira anel; assentos nunca cortados.
+  **DoD:** em 1280×720 e 1920×1080 nada se sobrepõe nem é cortado (prints em `/dev/mesa`); zero banners de texto; a partida inteira jogável por 2 abas; testes/lint/build verdes.
+- [ ] **4.2 Selos de ação** 🤝 (precisa dos ícones: `tools/art/prompts/icones.json`)
+  Componente `ActionSeal` (moldura + ícone + palavra + custo) com estados: verdadeiro (brilho de vela), blefe (máscara no canto), sem moedas (cadeado), obrigatório (só o Golpe aceso); pré-visualização do efeito ao passar o mouse; ações básicas fixas e poderes pela carta (clicar; arrastar entra em 4.3); galeria `/dev/selos`.
+  **DoD:** todo botão do jogo é imagem + palavra; estados corretos para quem tem/não tem a carta (sem vazar nada para os outros); fallback para texto se faltar ícone.
+- [ ] **4.3 A jogada acontece na mesa** 🤖 🎮
+  Carta declarada sobe da mão e fica no centro virada, com lacre da ação e anel de tempo; ✔ no retrato de quem passou; assento ativo com brilho de lampião e os outros levemente escurecidos; arrastar o poder até o oponente (e clicar continua valendo); reações como selos (Contestar/Bloquear/Passar) perto da mão.
+  **DoD:** dá pra jogar uma rodada inteira sem ler nenhum texto de instrução; efeito nunca bloqueia clique.
+  🎮 **Primeiro teste de "está intuitivo?"**
+- [ ] **4.4 Animações de baralho** 🤖 🎮
+  Distribuição inicial a partir do baralho visível (com contagem); moedas voando entre Erário e jogadores, em pilhas que crescem; Trocar (2 cartas voam do baralho e as escolhidas voltam); Contestar (carta vira + tremor + selo); perder influência (vira e vai para a pilha de descarte do jogador). Pergunto antes de instalar lib de animação (sugestão: `motion`); sem ela dá com WAAPI/CSS.
+  **DoD:** 60 fps com 6 jogadores; `prefers-reduced-motion` desliga o que balança; animação nunca atrasa o turno.
+  🎮 **Teste de "sensação de baralho".**
+- [ ] **4.5 Retratos, molduras e falas** 🤝
+  Conjunto de ~12 retratos de convidados do baile (pipeline `tools/art`), moldura, escolha no lobby; balões de fala estilo Undertale com o bordão do personagem ao declarar.
+  **DoD:** nenhum círculo com iniciais restante; avatar escolhido persiste na reconexão; fala não atrasa o turno.
+- [ ] **4.6 Coerência visual do site inteiro** 🤝 🎮
+  Mesa em veludo imperial com bordado (some a elipse verde); menu, lobby, botões, feed e painéis no mesmo vocabulário (papel, lacre, ouro, Cinzel); favicon e título.
+  **DoD:** nenhuma tela com visual do v1; contraste legível; um `prefers-reduced-motion` global.
+  🎮 **Teste de coerência.**
+- [ ] **4.7 Rapidez** 🤖
+  Atalhos (`Espaço` passar, `C` contestar, `B` bloquear); "passar automático" opcional por jogador (servidor registra e emite o `pass`); TDD onde tocar a engine.
+  **DoD:** com todos em passar automático uma rodada de Renda/Taxas não pede nenhum clique de reação; testes cobrindo a preferência.
+- [ ] **4.8 Fim de partida** 🤖
+  Tela de vitória dedicada e prêmios ("Mentiroso do ano", "Maior desconfiado") calculados da partida (estatísticas na engine, com TDD).
+  **DoD:** prêmios corretos em partidas simuladas; revanche continua funcionando.
+- [ ] **4.9 Juice estilo Balatro** 🤖
+  Tilt 3D das cartas no hover, brilho foil/holo no selecionado, números que pulam, screen shake e hit-stop curtos, CRT leve (liga/desliga).
+  **DoD:** tudo ≤ ~400 ms e não bloqueante; reduced-motion respeitado.
 
 ### Fase 5 — SFX e trilha procedural 🤖
 - [ ] `src/lib/audio/`: sintetizadores (moeda, flip, selo, contestar, eliminação, vitória, tick de timer)
@@ -103,11 +129,9 @@ v0 tinha 32; faltavam marrons médios (+4 na v1) e cobres (+2 na v2: peles terra
 
 **DoD:** cada personagem tem voz distinguível; o texto não atrasa o turno nem bloqueia input; respeita mute.
 
-### Fase 7 — Menu, lobby e avatares tematizados 🤝
-- [ ] Menu e Gabinete (lobby) no estilo imperial; avatares em pixel art
-- [ ] Ciclo de luz da mesa (tarde → noite conforme a partida avança)
-
-**DoD:** fluxo menu → sala → jogo → vitória coerente visualmente; contraste legível; responsivo na largura do `Table`.
+### Fase 7 — Ciclo de luz da mesa 🤝
+O restante da antiga Fase 7 (menu, lobby, avatares) foi absorvido pelos passos 4.5 e 4.6. Sobra o **ciclo de luz** (tarde → noite conforme a partida avança).
+**DoD:** a luz muda suavemente, sem atrapalhar a leitura da mesa.
 
 ### Fase 8 — Trilha por IA e temas alternativos 👤
 - [ ] Alexandre gera as faixas (menu, mesa, tensão, vitória); o Claude integra e ajusta o loop
@@ -137,4 +161,4 @@ Pendências conhecidas (fora da trilha): indicar ausentes também na mesa (hoje 
 | Deploy com WebSocket (Vercel não serve) | Escolher Fly.io, Railway, Render ou VPS antes de divulgar |
 
 ## Ordem recomendada
-Feitas: Fase 0, Fase 2 (spike) e toda a trilha F. Próximas: Fase 3 → Fase 4 → Fase 5 → Fase 6 → Fase 7 → Fase 8. (A Fase 1, bíblia criativa, vai sendo fechada junto com cada personagem.)
+Feitas: Fase 0, Fase 2 (spike), toda a trilha F e Fase 3. Próximas: **4.1 → 4.2 → 4.3 (🎮) → 4.4 (🎮) → 4.5 → 4.6 (🎮) → 4.7 → 4.8 → 4.9**, depois Fase 5 (SFX, que já nasce encaixada nas animações), Fase 6 (vozes), Fase 7 (ciclo de luz) e Fase 8 (trilha por IA e temas). Mobile: v3/v4.
