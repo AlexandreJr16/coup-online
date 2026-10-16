@@ -243,3 +243,14 @@ test("reactionOptions: na janela do bloqueio só dá para contestar (e o ator po
   assert.deepEqual([ator.canReact, ator.canChallenge, ator.blocks], [true, true, []]);
   assert.equal(reactionOptions(v, "p2").canReact, false); // o bloqueador não contesta o próprio bloqueio
 });
+
+// ── Anel de tempo da carta jogada (4.3) ──────────────────────────────────────
+import { RING_PERIMETER, ringOffset } from "./ClaimCard";
+
+test("ringOffset: cheio = 0, vazio = perímetro, limitado a 0–100%", () => {
+  assert.equal(ringOffset(100), 0);
+  assert.equal(ringOffset(0), RING_PERIMETER);
+  assert.equal(Math.round(ringOffset(50)), Math.round(RING_PERIMETER / 2));
+  assert.equal(ringOffset(250), 0); // acima de 100 não passa do cheio
+  assert.equal(ringOffset(-5), RING_PERIMETER);
+});

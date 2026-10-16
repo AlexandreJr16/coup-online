@@ -5,6 +5,7 @@
 
 import type { PublicPlayer } from "@/src/types/game";
 import { useCountUp } from "./CoinFx";
+import Card from "./Card";
 import { CINZEL, COLORS, seatLayout, seatStyle } from "./helpers";
 import Seat from "./Seat";
 
@@ -13,6 +14,7 @@ export default function Table({
   currentPlayerId,
   myId,
   treasury,
+  deckCount,
   coinDeltas,
   deltaKey = 0,
   selectableTargetIds = [],
@@ -25,6 +27,7 @@ export default function Table({
   currentPlayerId: string | null;
   myId: string;
   treasury?: number; // Tesouro Central (Economia viva)
+  deckCount?: number; // cartas no baralho da Corte
   coinDeltas?: Record<string, number>;
   deltaKey?: number;
   selectableTargetIds?: string[];
@@ -69,10 +72,11 @@ export default function Table({
         {/* Tesouro Central no centro do feltro (Economia viva) */}
         {typeof treasury === "number" && (
           <div
+            data-erario
             style={{
               position: "absolute",
-              left: "50%",
-              top: "60%",
+              left: "30%",
+              top: "56%",
               transform: "translate(-50%, -50%)",
               display: "flex",
               alignItems: "center",
@@ -89,6 +93,21 @@ export default function Table({
               Erário
             </span>
             <span style={{ fontWeight: 800, color: COLORS.gold }}>🪙 {shownTreasury}</span>
+          </div>
+        )}
+
+        {/* Baralho da Corte (origem das animações de distribuir/comprar) */}
+        {typeof deckCount === "number" && (
+          <div
+            data-deck
+            style={{ position: "absolute", left: "70%", top: "56%", transform: "translate(-50%, -50%)", textAlign: "center" }}
+          >
+            <div style={{ position: "relative", width: 52, height: 66 }}>
+              {[2, 1, 0].map((i) => (
+                <Card key={i} faceDown size="sm" style={{ position: "absolute", left: i * 3, top: -i * 2, width: 40, height: 56 }} />
+              ))}
+            </div>
+            <div style={{ marginTop: 4, fontSize: 12, color: COLORS.dim, fontFamily: CINZEL }}>Corte · {deckCount}</div>
           </div>
         )}
 

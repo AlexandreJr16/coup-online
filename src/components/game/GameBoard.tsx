@@ -14,7 +14,8 @@ import type { GameActionAck } from "@/src/types/socket";
 import AutoPassToggle from "./AutoPassToggle";
 import BasicActions from "./BasicActions";
 import Card from "./Card";
-import ClaimPlate from "./ClaimPlate";
+import ClaimCard from "./ClaimCard";
+import DragGhost from "./DragGhost";
 import HandView from "./HandView";
 import IntrigueFeed from "./IntrigueFeed";
 import VictoryPanel from "./VictoryPanel";
@@ -172,6 +173,7 @@ export default function GameBoard({
   }
   // Clicar numa carta da mão = usar o poder dela (clicar de novo cancela a mira).
   function onUse(char: Character) {
+    if (suppressClick.current) return;
     const action = CHARACTER_ACTION[char];
     if (!action) return setError(`${CHAR_LABEL[char]} não tem ação de turno: só reage.`);
     if (targetingAction === action) return setTargetingAction(null);
@@ -182,6 +184,62 @@ export default function GameBoard({
     emitAction(targetingAction, id);
     setTargetingAction(null);
   }
+
+  // ── Arrastar um poder da mão: até um oponente (ações com alvo) ou para a mesa (as demais).
+  // Soltar no dock, ou fora de um alvo válido, cancela. O clique simples continua valendo.
+  const [drag, setDrag] = useState<{ char: Character; x: number; y: number } | null>(null);
+  const press = useRef<{ char: Character; x: number; y: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
+  function onPressCard(char: Character, e: React.PointerEvent) {
+    if (!canAct || e.button !== 0 || !CHARACTER_ACTION[char]) return;
+    press.current = { char, x: e.clientX, y: e.clientY, moved: false };
+  }
+  const coinsNow = me?.coins ?? 0;
+  useEffect(() => {
+    const move = (e: PointerEvent) => {
+      const p = press.current;
+      if (!p) return;
+      if (!p.moved) {
+        if (Math.hypot(e.clientX - p.x, e.clientY - p.y) < 8) return; // ainda é clique
+        const action = CHARACTER_ACTION[p.char]!;
+        const why = actionBlockedReason(coinsNow, action);
+        if (why) {
+          press.current = null;
+          setError(why);
+          return;
+        }
+        p.moved = true;
+        if (ACTION_META[action].needsTarget) setTargetingAction(action);
+      }
+      setDrag({ char: p.char, x: e.clientX, y: e.clientY });
+    };
+    const up = (e: PointerEvent) => {
+      const p = press.current;
+      press.current = null;
+      if (!p?.moved) return;
+      suppressClick.current = true; // o click que vem depois do arrasto não vale
+      setTimeout(() => (suppressClick.current = false), 150);
+      setDrag(null);
+      const action = CHARACTER_ACTION[p.char]!;
+      const hits = document.elementsFromPoint(e.clientX, e.clientY) as HTMLElement[];
+      if (ACTION_META[action].needsTarget) {
+        const id = hits.find((el) => el.dataset?.target === "sim")?.dataset.seatId;
+        setTargetingAction(null);
+        if (id) emitAction(action, id);
+      } else {
+        const noDock = !hits.some((el) => el.dataset?.testid === "dock");
+        if (noDock) emitAction(action);
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    // emitAction só usa o socket (singleton) e setError.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coinsNow, socket]);
 
   const targetIds =
     targetingAction != null
@@ -259,7 +317,7 @@ export default function GameBoard({
       </div>
     );
   } else {
-    center = <HandView view={view} myId={myId} armed={armedChar} canAct={canAct} onUse={onUse} />;
+    center = <HandView view={view} myId={myId} armed={armedChar} canAct={canAct} onUse={onUse} onPress={onPressCard} dragging={drag?.char ?? null} />;
   }
 
   return (
@@ -271,6 +329,7 @@ export default function GameBoard({
           currentPlayerId={view.currentPlayerId}
           myId={myId}
           treasury={view.treasury}
+          deckCount={view.deckCount}
           coinDeltas={events.coinDeltas}
           deltaKey={events.deltaKey}
           selectableTargetIds={targetIds}
@@ -281,7 +340,7 @@ export default function GameBoard({
         />
 
         {/* Jogada em andamento (informação; não bloqueia a mesa) */}
-        {inReaction && <ClaimPlate view={view} secondsLeft={secondsLeft} />}
+        {inReaction && <ClaimCard view={view} secondsLeft={secondsLeft} />}
 
         {/* Tempo do turno / revelação / troca (as janelas têm a barra na placa) */}
         {decisionTimer && (
@@ -318,6 +377,8 @@ export default function GameBoard({
         {/* Retorno rápido de regra (some sozinho) */}
         {error && <div style={toast}>{error}</div>}
       </div>
+
+      {drag && <DragGhost character={drag.char} x={drag.x} y={drag.y} />}
 
       {/* Selo de cera — acima de tudo */}
       <WaxSeal seal={seal} />

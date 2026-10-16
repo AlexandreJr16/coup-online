@@ -290,3 +290,24 @@ body {
     transition: none;
   }
 }
+
+/* Halo de lampião atrás do assento da vez. */
+.lamp {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 190px;
+  height: 190px;
+  transform: translate(-50%, -18px);
+  background: radial-gradient(circle, rgba(255, 205, 110, 0.34) 0%, rgba(255, 170, 60, 0.12) 45%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+  animation: lamp-flicker 3.2s ease-in-out infinite;
+}
+@keyframes lamp-flicker {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lamp { animation: none; }
+}

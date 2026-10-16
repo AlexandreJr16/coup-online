@@ -220,6 +220,47 @@ test("passar automático: com o interruptor ligado a jogada alheia resolve sem a
   noErrors(a, b);
 });
 
+// ── A jogada na mesa e o arrastar (4.3) ─────────────────────────────────────
+test("arrastar: o poder vai até o oponente (assassinar) e a carta jogada aparece na mesa", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await a.click('[data-zone="basicas"] .seal', "Renda");
+  await waitCoins(a, "Ana", 3);
+  await b.click('[data-zone="basicas"] .seal', "Renda");
+  await waitCoins(b, "Bia", 3);
+
+  // Ana arrasta a carta do Capoeira até o assento da Bia. Durante o arrasto o fantasma existe.
+  await a.drag('[data-zone="centro"] [title="Capoeira"]', '[data-seat="Bia"]');
+  await b.waitFor(`document.querySelector('[data-testid="claim-plate"]')?.innerText.includes("Ana · Assassinar → Bia")`, "carta jogada na mesa");
+  // a carta jogada é uma carta VIRADA (verso) com anel de tempo e o lacre da ação
+  assert.equal(await b.eval<number>(`document.querySelectorAll('[data-testid="claim-plate"] svg rect').length`), 2);
+  assert.ok(await b.eval<boolean>(`!!document.querySelector('[data-testid="claim-plate"] img[src*="verso"]')`), "verso da carta");
+  await a.waitFor(`!document.querySelector('[data-testid="drag-ghost"]') && !document.querySelector('[data-target="sim"]')`, "arrasto encerrado");
+  noErrors(a, b);
+});
+
+test("arrastar: poder sem alvo é declarado soltando na mesa; soltar no dock cancela", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  // soltar de volta no dock: nada acontece
+  await a.drag('[data-zone="centro"] [title="Barão do Café"]', '[data-zone="basicas"]');
+  await new Promise((r) => setTimeout(r, 300));
+  assert.equal(await a.eval<boolean>(`!!document.querySelector('[data-testid="claim-plate"]')`), false);
+  assert.equal(await a.eval<boolean>(`!document.querySelector('[data-testid="drag-ghost"]')`), true);
+  // soltar sobre a mesa: declara Taxas
+  await a.drag('[data-zone="centro"] [title="Barão do Café"]', '[data-erario]');
+  await b.waitFor(`document.querySelector('[data-testid="claim-plate"]')?.innerText.includes("Ana · Taxas")`, "Taxas declarada");
+  noErrors(a, b);
+});
+
+test("mesa: Erário e baralho têm lugar fixo e a contagem do baralho é a real", async () => {
+  const { ps } = await game(["Ana", "Bia", "Caio"]);
+  await ps[0].waitFor(`document.querySelector('[data-erario]') && document.querySelector('[data-deck]')`, "Erário e baralho");
+  const deck = await ps[0].eval<string>(`document.querySelector('[data-deck]').innerText`);
+  assert.match(deck, /Corte · 19/); // 25 − 3×2
+  noErrors(...ps);
+});
+
 // ── Fim de partida (4.8) ─────────────────────────────────────────────────────
 test("tela de vitória: vencedor, prêmios corretos e botão de revanche (página de revisão)", async () => {
   const p = await open("/dev/mesa?fase=fim&n=4");

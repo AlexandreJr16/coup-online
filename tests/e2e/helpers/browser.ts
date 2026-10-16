@@ -232,6 +232,32 @@ export class Page {
     }
   }
 
+  /** Arrasta com o mouse: pressiona no centro de `from`, move em passos e solta no centro de `to`. */
+  async drag(from: string, to: string): Promise<void> {
+    // Eventos contínuos (pointermove) só são entregues a cada quadro renderizado: numa aba
+    // em segundo plano cada um leva segundos (o arrasto estourava o turno). Traz para a frente.
+    await this.cdp.send("Page.bringToFront");
+    const center = (sel: string) =>
+      this.eval<{ x: number; y: number } | null>(`(() => {
+        const el = document.querySelector(${JSON.stringify(sel)});
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      })()`);
+    await this.waitFor(`document.querySelector(${JSON.stringify(from)}) && document.querySelector(${JSON.stringify(to)})`, `arrastar ${from} → ${to}`);
+    const a = (await center(from))!;
+    const b = (await center(to))!;
+    const mouse = (type: string, x: number, y: number) =>
+      this.cdp.send("Input.dispatchMouseEvent", { type, x, y, button: type === "mouseMoved" ? "none" : "left", buttons: type === "mouseReleased" ? 0 : 1, clickCount: type === "mouseMoved" ? 0 : 1 });
+    await mouse("mouseMoved", a.x, a.y);
+    await mouse("mousePressed", a.x, a.y);
+    for (let i = 1; i <= 12; i++) {
+      await mouse("mouseMoved", a.x + ((b.x - a.x) * i) / 12, a.y + ((b.y - a.y) * i) / 12);
+      await sleep(16);
+    }
+    await mouse("mouseReleased", b.x, b.y);
+  }
+
   /** Tecla de verdade (keyDown+keyUp). Aceita "Escape", " " (Espaço) ou uma letra. */
   async key(key: string): Promise<void> {
     const special: Record<string, { code: string; vk: number; text?: string }> = {

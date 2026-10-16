@@ -42,6 +42,7 @@ export default function Card({
   style,
   hint,
   className,
+  onPointerDown,
 }: {
   character?: Character | null;
   faceDown?: boolean;
@@ -55,6 +56,7 @@ export default function Card({
   style?: CSSProperties;
   hint?: ReactNode; // texto auxiliar (ação) — só no size="lg"
   className?: string; // classe na carta (ex.: hand-card para o hover da mão)
+  onPointerDown?: (e: React.PointerEvent) => void; // início de arrasto (mão)
 }) {
   const d = DIMS[size];
   const outer: CSSProperties = {
@@ -104,6 +106,7 @@ export default function Card({
   return (
     <div
       onClick={onClick}
+      onPointerDown={onPointerDown}
       title={character ? CHAR_LABEL[character] : undefined}
       className={className}
       style={outer}

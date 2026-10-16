@@ -15,12 +15,16 @@ export default function HandView({
   armed,
   canAct,
   onUse,
+  onPress,
+  dragging,
 }: {
   view: GameView;
   myId: string;
   armed: Character | null; // carta com ação pendente de alvo (levantada)
   canAct: boolean; // é a minha vez de agir
   onUse: (character: Character) => void;
+  onPress: (character: Character, e: React.PointerEvent) => void; // início de arrasto
+  dragging: Character | null; // carta que está sendo arrastada (fica esmaecida)
 }) {
   const owned = myFaceDownChars(view, myId);
   return (
@@ -38,6 +42,7 @@ export default function HandView({
             hint={CARD_BY_ID[char].dica}
             className={canAct ? "hand-card can-act" : "hand-card"}
             onClick={canAct ? () => onUse(char) : undefined}
+            onPointerDown={canAct ? (e) => onPress(char, e) : undefined}
             style={
               {
                 marginLeft: i === 0 ? 0 : -16,
@@ -46,7 +51,8 @@ export default function HandView({
                 transform: `rotate(${(i - 2) * 5}deg) translateY(var(--lift, 0px)) scale(${isArmed ? 1.1 : 1})`,
                 transformOrigin: "bottom center",
                 zIndex: isArmed ? 10 : i,
-                opacity: canAct || isArmed ? 1 : 0.92,
+                opacity: dragging === char ? 0.35 : canAct || isArmed ? 1 : 0.92,
+                touchAction: "none",
               } as React.CSSProperties
             }
           />

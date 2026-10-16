@@ -45,6 +45,17 @@ export const CHAR_VISUAL = Object.fromEntries(
   CARDS.map((c) => [c.id, { color: c.cor, icon: c.icone }]),
 ) as Record<Character, { color: string; icon: string }>;
 
+// Ícone (e emoji de reserva) de cada ação, para selos e para a carta jogada na mesa.
+export const ACTION_ICON: Record<ActionType, { icon: IconName; emoji: string }> = {
+  renda: { icon: "renda", emoji: "🪙" },
+  ajuda_externa: { icon: "ajuda_externa", emoji: "👝" },
+  golpe: { icon: "golpe", emoji: "💥" },
+  taxas: { icon: "taxas", emoji: "📒" },
+  assassinar: { icon: "assassinar", emoji: "🗡️" },
+  extorquir: { icon: "extorquir", emoji: "💰" },
+  trocar: { icon: "trocar", emoji: "🔄" },
+};
+
 // O que ESTE jogador pode fazer na janela de reação atual (usado pela bandeja e pelos
 // atalhos de teclado, para os dois sempre concordarem).
 export interface ReactionOptions {

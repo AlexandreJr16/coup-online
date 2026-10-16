@@ -41,6 +41,7 @@ export default function Seat({
   return (
     <div
       data-seat={name}
+      data-seat-id={player.id}
       data-coins={coins}
       data-target={selectable ? "sim" : undefined}
       onClick={selectable ? onSelect : undefined}
@@ -59,6 +60,9 @@ export default function Seat({
         ...style,
       }}
     >
+      {/* Lampião: halo quente atrás de quem está na vez */}
+      {isCurrent && !eliminated && <div aria-hidden className="lamp" />}
+
       {/* Avatar — pulsa no turno (classe turn-pulse); anel vermelho quando é alvo */}
       <div
         className={
