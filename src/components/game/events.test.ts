@@ -57,6 +57,10 @@ test("contestação pública: todos derivam o mesmo selo e o veredito (verdade x
   assert.match(verdade.challenge!.verdict, /^Tinha/);
   const blefe = deriveEvents(prev, makeView({ lastChallenge: { ...lc, accusedHadCard: false } }), ids());
   assert.match(blefe.challenge!.verdict, /^Era blefe/);
+  // a carta alegada e o veredito vão para a revelação na mesa
+  assert.equal(blefe.challenge!.claimed, "duque");
+  assert.equal(blefe.challenge!.hadCard, false);
+  assert.equal(verdade.challenge!.hadCard, true);
   assert.ok(blefe.log.some((l) => l.kind === "challenge"));
 });
 

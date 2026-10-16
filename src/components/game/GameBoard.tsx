@@ -14,8 +14,11 @@ import type { GameActionAck } from "@/src/types/socket";
 import AutoPassToggle from "./AutoPassToggle";
 import BasicActions from "./BasicActions";
 import Card from "./Card";
+import ChallengeReveal from "./ChallengeReveal";
 import ClaimCard from "./ClaimCard";
+import CoinFlights from "./CoinFlights";
 import DragGhost from "./DragGhost";
+import FlyFromDeck from "./FlyFromDeck";
 import HandView from "./HandView";
 import IntrigueFeed from "./IntrigueFeed";
 import VictoryPanel from "./VictoryPanel";
@@ -82,6 +85,16 @@ export default function GameBoard({
   const events = useGameEvents(view);
   const [seal, setSeal] = useState<SealData | null>(null);
   const sealCounter = useRef(0);
+  const [shaking, setShaking] = useState(false);
+  useEffect(() => {
+    if (!events.challenge || events.challenge.hadCard) return; // blefe desmascarado: a mesa treme
+    const on = setTimeout(() => setShaking(true), 0);
+    const off = setTimeout(() => setShaking(false), 520);
+    return () => {
+      clearTimeout(on);
+      clearTimeout(off);
+    };
+  }, [events.challenge]);
   useEffect(() => {
     if (!events.challenge) return; // contestação de QUALQUER jogador → todos veem o selo
     setSeal({
@@ -285,23 +298,32 @@ export default function GameBoard({
     const pool = view.exchange.pool;
     center = (
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        {pool.map((c, i) => (
-          <Card
-            key={i}
-            size="lg"
-            character={c}
-            selected={keepSel.includes(i)}
-            onClick={() =>
-              setKeepSel((cur) =>
-                cur.includes(i) ? cur.filter((x) => x !== i) : cur.length < keepCount ? [...cur, i] : cur,
-              )
-            }
-            style={{
-              transform: keepSel.includes(i) ? "translateY(-12px)" : undefined,
-              transition: "transform 120ms ease",
-            }}
-          />
-        ))}
+        {pool.map((c, i) => {
+          const card = (
+            <Card
+              size="lg"
+              character={c}
+              selected={keepSel.includes(i)}
+              onClick={() =>
+                setKeepSel((cur) =>
+                  cur.includes(i) ? cur.filter((x) => x !== i) : cur.length < keepCount ? [...cur, i] : cur,
+                )
+              }
+              style={{
+                transform: keepSel.includes(i) ? "translateY(-12px)" : undefined,
+                transition: "transform 120ms ease",
+              }}
+            />
+          );
+          // As cartas depois das minhas (keepCount) acabaram de ser compradas da Corte.
+          return i >= keepCount ? (
+            <FlyFromDeck key={i} delay={(i - keepCount) * 140}>
+              {card}
+            </FlyFromDeck>
+          ) : (
+            <div key={i} style={{ display: "flex" }}>{card}</div>
+          );
+        })}
         <button
           onClick={() => {
             setError("");
@@ -323,7 +345,7 @@ export default function GameBoard({
   return (
     <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", color: COLORS.text }}>
       {/* Mesa — ocupa todo o espaço acima do dock */}
-      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+      <div className={shaking ? "shake" : undefined} style={{ position: "relative", flex: 1, minHeight: 0 }}>
         <Table
           players={view.players}
           currentPlayerId={view.currentPlayerId}
@@ -335,12 +357,15 @@ export default function GameBoard({
           selectableTargetIds={targetIds}
           onSelectTarget={selectTarget}
           dimOthers={view.phase === "aguardando_acao"}
+          dealIn={view.phase === "aguardando_acao" && view.deckCount === 25 - 2 * view.players.length && view.players.every((p) => p.coins === 2 && p.cards.every((c) => !c.revealed))}
           urgentIds={urgentIds}
           passedIds={view.pending?.passedIds ?? []}
         />
 
         {/* Jogada em andamento (informação; não bloqueia a mesa) */}
         {inReaction && <ClaimCard view={view} secondsLeft={secondsLeft} />}
+        <ChallengeReveal challenge={events.challenge} />
+        <CoinFlights deltas={events.coinDeltas} deltaKey={events.deltaKey} />
 
         {/* Tempo do turno / revelação / troca (as janelas têm a barra na placa) */}
         {decisionTimer && (

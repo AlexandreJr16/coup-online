@@ -102,12 +102,17 @@ export class Browser {
   }
 
   /** Abre uma aba NOVA (sessionStorage próprio — cada aba é um jogador). */
-  async open(url: string, size: { w: number; h: number } = { w: 1280, h: 720 }): Promise<Page> {
+  async open(
+    url: string,
+    size: { w: number; h: number } = { w: 1280, h: 720 },
+    opts: { reducedMotion?: boolean } = {},
+  ): Promise<Page> {
     const res = await fetch(`http://127.0.0.1:${this.port}/json/new?about:blank`, { method: "PUT" });
     const target = (await res.json()) as { webSocketDebuggerUrl: string };
     const cdp = await Cdp.connect(target.webSocketDebuggerUrl);
     const page = new Page(cdp);
     await page.init(size);
+    if (opts.reducedMotion) await page.emulateReducedMotion();
     await page.goto(url);
     return page;
   }
@@ -156,6 +161,11 @@ export class Page {
       deviceScaleFactor: 1,
       mobile: false,
     });
+  }
+
+  /** Liga prefers-reduced-motion: reduce (as animações decorativas devem sumir). */
+  async emulateReducedMotion(): Promise<void> {
+    await this.cdp.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
   }
 
   async goto(url: string): Promise<void> {

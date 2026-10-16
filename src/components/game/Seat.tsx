@@ -111,7 +111,7 @@ export default function Seat({
         {isMe ? " (você)" : ""}
       </div>
 
-      <div style={{ position: "relative", color: COLORS.gold, fontWeight: 600 }}>
+      <div data-seat-coin style={{ position: "relative", color: COLORS.gold, fontWeight: 600 }}>
         🪙 {shownCoins}
         <CoinDelta delta={coinDelta} deltaKey={deltaKey} />
       </div>
@@ -120,13 +120,9 @@ export default function Seat({
           carta vira em 3D mostrando o personagem dessaturado. */}
       <div style={{ display: "flex", gap: 5, minHeight: 56 }}>
         {cards.map((c, i) => (
-          <Card
-            key={i}
-            flip
-            size="sm"
-            character={c.revealed ? c.character : null}
-            revealed={c.revealed}
-          />
+          <div key={i} data-card style={{ display: "flex" }}>
+            <Card flip size="sm" character={c.revealed ? c.character : null} revealed={c.revealed} />
+          </div>
         ))}
       </div>
     </div>

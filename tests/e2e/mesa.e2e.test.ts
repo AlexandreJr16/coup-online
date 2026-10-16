@@ -25,18 +25,22 @@ after(async () => {
 let seq = 0;
 const room = () => `E${Date.now().toString(36).slice(-3).toUpperCase()}${seq++}`;
 
-async function open(path: string, size?: { w: number; h: number }): Promise<Page> {
-  const p = await browser.open(`${server.url}${path}`, size);
+async function open(path: string, size?: { w: number; h: number }, opts?: { reducedMotion?: boolean }): Promise<Page> {
+  const p = await browser.open(`${server.url}${path}`, size, opts);
   pages.push(p);
   return p;
 }
 
 /** Cria a sala com os jogadores (o 1º é o host), inicia a partida e espera o dock. */
-async function game(names: string[], size?: { w: number; h: number }): Promise<{ id: string; ps: Page[] }> {
+async function game(
+  names: string[],
+  size?: { w: number; h: number },
+  opts?: { reducedMotion?: boolean },
+): Promise<{ id: string; ps: Page[] }> {
   const id = room();
   const ps: Page[] = [];
   for (const n of names) {
-    const p = await open(`/room/${id}?name=${n}`, size);
+    const p = await open(`/room/${id}?name=${n}`, size, opts);
     await p.waitText(`${n} (você)`);
     ps.push(p);
   }
@@ -259,6 +263,74 @@ test("mesa: Erário e baralho têm lugar fixo e a contagem do baralho é a real"
   const deck = await ps[0].eval<string>(`document.querySelector('[data-deck]').innerText`);
   assert.match(deck, /Corte · 19/); // 25 − 3×2
   noErrors(...ps);
+});
+
+// ── Animações de baralho (4.4) ───────────────────────────────────────────────
+/** Conta quantas moedas voadoras já foram criadas na camada (e quantas ainda estão no ar). */
+const espiarMoedas = (p: Page) =>
+  p.eval(`(() => {
+    window.__voos = 0;
+    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1 && n.hasAttribute('data-coin-fly')) window.__voos++; })))
+      .observe(document.querySelector('[data-testid="coin-layer"]'), { childList: true });
+  })()`);
+
+test("distribuição: as cartas dos assentos voam do baralho quando a partida começa", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  for (const p of ps) await p.waitFor(`document.querySelector('[data-dealt="1"]')`, "animação de distribuir");
+  noErrors(...ps);
+});
+
+test("moedas: ao ganhar moedas voam do Erário até o jogador e a camada volta a ficar vazia", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await espiarMoedas(b); // quem ASSISTE também vê as moedas voando
+  await a.click('[data-zone="basicas"] .seal', "Renda");
+  await b.waitFor(`window.__voos >= 1`, "moeda voando");
+  await b.waitFor(`document.querySelectorAll('[data-testid="coin-layer"] [data-coin-fly]').length === 0`, "camada limpa");
+  noErrors(a, b);
+});
+
+test("contestação: a carta alegada é revelada na mesa para todos, com o veredito, e some sozinha", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await a.click('[data-zone="centro"] [title="Barão do Café"]'); // Taxas
+  await b.waitFor(`document.querySelectorAll('[data-zone="reacoes"] .seal').length === 2`, "bandeja");
+  await b.key("c");
+  for (const p of [a, b]) {
+    await p.waitFor(`document.querySelector('[data-testid="challenge-reveal"]')`, "revelação");
+    const r = await p.eval<{ had: string; txt: string }>(`(() => { const e = document.querySelector('[data-testid="challenge-reveal"]'); return { had: e.getAttribute('data-had-card'), txt: e.innerText }; })()`);
+    assert.ok(r.had === "true" || r.had === "false");
+    assert.match(r.txt, r.had === "true" ? /Tinha a carta/ : /Era blefe/);
+  }
+  await a.waitFor(`!document.querySelector('[data-testid="challenge-reveal"]')`, "revelação some", 6000);
+  noErrors(a, b);
+});
+
+test("troca: as cartas compradas saem do baralho e o fluxo escolher→confirmar fecha a troca", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await a.click('[data-zone="centro"] [title="Regatão"]'); // Trocar
+  await b.waitFor(`document.querySelectorAll('[data-zone="reacoes"] .seal').length === 2`, "bandeja da Bia");
+  await b.key(" "); // Bia deixa passar
+  await a.waitFor(`document.querySelectorAll('[data-zone="centro"] [title]').length === 4`, "4 cartas para escolher");
+  assert.equal(await a.eval<number>(`document.querySelectorAll('[data-fly-from-deck]').length`), 2); // as 2 compradas
+  await a.click('[data-zone="centro"] > div > div:nth-child(1) [title]');
+  await a.click('[data-zone="centro"] > div > div:nth-child(2) [title]');
+  await a.click('[data-zone="centro"] button', "Manter 2");
+  await a.waitFor(`document.querySelectorAll('[data-zone="centro"] [title]').length === 5`, "volta à mão normal");
+  noErrors(a, b);
+});
+
+test("reduced-motion: sem distribuição nem moedas voando", async () => {
+  const { ps } = await game(["Ana", "Bia"], undefined, { reducedMotion: true });
+  const [a, b] = ps;
+  await espiarMoedas(b);
+  await a.click('[data-zone="basicas"] .seal', "Renda");
+  await waitCoins(b, "Ana", 3);
+  await new Promise((r) => setTimeout(r, 800));
+  assert.equal(await b.eval<number>(`window.__voos`), 0);
+  assert.equal(await a.eval<boolean>(`!document.querySelector('[data-dealt]')`), true);
+  noErrors(a, b);
 });
 
 // ── Fim de partida (4.8) ─────────────────────────────────────────────────────

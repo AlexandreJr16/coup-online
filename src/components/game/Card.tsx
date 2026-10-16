@@ -43,6 +43,7 @@ export default function Card({
   hint,
   className,
   onPointerDown,
+  flipLost = true,
 }: {
   character?: Character | null;
   faceDown?: boolean;
@@ -57,6 +58,7 @@ export default function Card({
   hint?: ReactNode; // texto auxiliar (ação) — só no size="lg"
   className?: string; // classe na carta (ex.: hand-card para o hover da mão)
   onPointerDown?: (e: React.PointerEvent) => void; // início de arrasto (mão)
+  flipLost?: boolean; // no modo flip, a face aparece como "perdida" (dessaturada); false = viva
 }) {
   const d = DIMS[size];
   const outer: CSSProperties = {
@@ -93,7 +95,7 @@ export default function Card({
           {/* Face revelada (perdida) — só ganha personagem no instante da virada,
               então a carta oculta de outro jogador nunca fica no DOM. */}
           {character ? (
-            <FrontFace d={d} character={character} size={size} lost transform="rotateY(180deg)" />
+            <FrontFace d={d} character={character} size={size} lost={flipLost} transform="rotateY(180deg)" />
           ) : (
             <BackFace d={d} size={size} transform="rotateY(180deg)" />
           )}

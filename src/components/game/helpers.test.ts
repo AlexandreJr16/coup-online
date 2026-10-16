@@ -254,3 +254,30 @@ test("ringOffset: cheio = 0, vazio = perímetro, limitado a 0–100%", () => {
   assert.equal(ringOffset(250), 0); // acima de 100 não passa do cheio
   assert.equal(ringOffset(-5), RING_PERIMETER);
 });
+
+// ── Voos de moeda (4.4) ──────────────────────────────────────────────────────
+import { MAX_FLYING_COINS, planCoinFlights } from "./motion";
+
+test("planCoinFlights: ganhar vem do Erário; perder vai para o Erário", () => {
+  assert.deepEqual(planCoinFlights({ p1: 3 }), [{ from: "erario", to: "p1", count: 3 }]);
+  assert.deepEqual(planCoinFlights({ p1: -7 }), [{ from: "p1", to: "erario", count: MAX_FLYING_COINS }]); // limitado
+});
+
+test("planCoinFlights: roubo (soma zero, um perde e um ganha) voa direto entre os jogadores", () => {
+  assert.deepEqual(planCoinFlights({ p1: 2, p2: -2 }), [{ from: "p2", to: "p1", count: 2 }]);
+  // vítima só tinha 1 moeda: leva 1
+  assert.deepEqual(planCoinFlights({ p1: 1, p2: -1 }), [{ from: "p2", to: "p1", count: 1 }]);
+});
+
+test("planCoinFlights: assassinato devolvido/eliminação (vários perdendo) vai tudo ao Erário", () => {
+  const f = planCoinFlights({ p1: 3, p2: -4 }); // soma ≠ 0: Erário absorve
+  assert.deepEqual(f.sort((a, b) => a.to.localeCompare(b.to)), [
+    { from: "p2", to: "erario", count: 4 },
+    { from: "erario", to: "p1", count: 3 },
+  ]);
+});
+
+test("planCoinFlights: sem variação não há voo", () => {
+  assert.deepEqual(planCoinFlights({}), []);
+  assert.deepEqual(planCoinFlights({ p1: 0 }), []);
+});

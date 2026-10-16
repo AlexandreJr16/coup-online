@@ -21,6 +21,8 @@ export interface ChallengeEvent {
   id: number;
   title: string; // ex.: "Bia contestou Ana"
   verdict: string; // ex.: "Era blefe!" / "Tinha a carta"
+  claimed: Character; // personagem alegado (vai ser revelado na mesa)
+  hadCard: boolean; // true = o acusado dizia a verdade
 }
 
 export interface DerivedEvents {
@@ -72,7 +74,13 @@ export function deriveEvents(prev: GameView, view: GameView, nextId: () => numbe
       ? `tinha ${CHAR_LABEL[lc.claimed]}`
       : `era blefe (sem ${CHAR_LABEL[lc.claimed]})`;
     push("challenge", `${who}: ${verdict}`);
-    challenge = { id: nextId(), title: who, verdict: verdict[0].toUpperCase() + verdict.slice(1) };
+    challenge = {
+      id: nextId(),
+      title: who,
+      verdict: verdict[0].toUpperCase() + verdict.slice(1),
+      claimed: lc.claimed,
+      hadCard: lc.accusedHadCard,
+    };
   }
   // 3. Cartas reveladas (perda de influência) e eliminação
   for (const cur of view.players) {

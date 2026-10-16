@@ -3,9 +3,12 @@
 // e acende os alvos selecionáveis quando uma ação targeted pede alvo.
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import type { PublicPlayer } from "@/src/types/game";
 import { useCountUp } from "./CoinFx";
 import Card from "./Card";
+import { centerOf, flyIn, reducedMotion } from "./motion";
 import { CINZEL, COLORS, seatLayout, seatStyle } from "./helpers";
 import Seat from "./Seat";
 
@@ -20,6 +23,7 @@ export default function Table({
   selectableTargetIds = [],
   onSelectTarget,
   dimOthers = false,
+  dealIn = false,
   urgentIds = [],
   passedIds = [],
 }: {
@@ -33,6 +37,7 @@ export default function Table({
   selectableTargetIds?: string[];
   onSelectTarget?: (id: string) => void;
   dimOthers?: boolean; // turno de alguém: escurece os demais assentos
+  dealIn?: boolean; // partida nova: as cartas dos assentos voam do baralho ao montar
   urgentIds?: string[]; // jogadores que a mesa está esperando
   passedIds?: string[]; // quem já passou na janela de reação
 }) {
@@ -42,8 +47,23 @@ export default function Table({
   const layout = seatLayout(ordered.length);
   const shownTreasury = useCountUp(treasury ?? 0);
 
+  // Distribuição inicial: cada carta dos assentos voa do baralho até o seu lugar.
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!dealIn || reducedMotion()) return;
+    const el = root.current;
+    const deck = el?.querySelector("[data-deck]");
+    if (!el || !deck) return;
+    const from = centerOf(deck);
+    el.querySelectorAll<HTMLElement>("[data-seat] [data-card]").forEach((c, i) => flyIn(c, from, { delay: i * 85 }));
+    el.setAttribute("data-dealt", "1");
+    // só na montagem: cada partida nova remonta o tabuleiro (key={matchNumber}).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div
+      ref={root}
       style={{
         position: "relative",
         width: "100%",
