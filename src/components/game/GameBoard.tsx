@@ -2,7 +2,8 @@
 // FIXAS (DESIGN_MESA_V2): a mesa ocupa o espaço de cima; o DOCK de baixo tem altura
 // fixa e três zonas que nunca mudam de lugar — ações básicas (esq.), mão ou escolha
 // da hora (centro) e reações (dir.). O estado do jogo aparece na própria mesa
-// (brilho no turno, mira nos alvos, ✔ em quem passou), não em banners de texto.
+// (brilho no turno, mira nos alvos, ✔ em quem passou) e, em texto, na faixa de status
+// do cabeçalho (TurnBanner: de quem é a vez e o que a mesa espera).
 "use client";
 
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
@@ -24,6 +25,7 @@ import IntrigueFeed from "./IntrigueFeed";
 import VictoryPanel from "./VictoryPanel";
 import ReactionTray from "./ReactionTray";
 import Table from "./Table";
+import TurnBanner from "./TurnBanner";
 import WaxSeal, { type SealData } from "./WaxSeal";
 import {
   ACTION_META,
@@ -415,6 +417,9 @@ export default function GameBoard({
         {/* Retorno rápido de regra (some sozinho) */}
         {error && <div style={toast}>{error}</div>}
       </div>
+
+      {/* Faixa de status da rodada (portal no cabeçalho da sala) */}
+      <TurnBanner view={view} myId={myId} />
 
       {drag && <DragGhost character={drag.char} x={drag.x} y={drag.y} />}
 

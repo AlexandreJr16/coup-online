@@ -707,6 +707,120 @@ test("colinha: na mesa, Esc com o painel aberto NÃO cancela a mira por baixo; d
   noErrors(...ps);
 });
 
+// ── Faixa de status da rodada (retrato da vez + o que a mesa espera) ─────────
+const headIs = (p: Page, text: string) =>
+  p.waitFor(`document.querySelector('[data-testid="round-status-headline"]')?.innerText === ${JSON.stringify(text)}`, `faixa: "${text}"`);
+const detailIs = (p: Page, text: string) =>
+  p.waitFor(`document.querySelector('[data-testid="round-status-detail"]')?.innerText === ${JSON.stringify(text)}`, `detalhe: "${text}"`);
+const statusText = (p: Page) =>
+  p.eval<{ head: string; detail: string }>(`({
+    head: document.querySelector('[data-testid="round-status-headline"]')?.innerText ?? '',
+    detail: document.querySelector('[data-testid="round-status-detail"]')?.innerText ?? '',
+  })`);
+
+// /dev/mesa (n=4): eu sou a Ana (p1). Cada fase tem o texto certo, dentro do cabeçalho.
+const FASES_STATUS: Array<[fase: string, head: string, detail: string]> = [
+  ["turno", "Sua vez", "Escolha uma ação"],
+  ["reacao", "Bia declarou Taxas (Barão do Café)", "Aguardando você e Davi: contestar ou passar"],
+  ["contestar", "Caio bloqueou Ajuda Externa com Barão do Café", "Aguardando você, Bia e Davi: contestar o bloqueio ou passar"],
+  ["revelar", "Você perdeu uma influência", "Escolha qual carta revelar"],
+  ["troca", "Você está trocando cartas", "Escolha quais cartas manter"],
+  ["fim", "Você venceu!", "Partida encerrada"],
+];
+for (const [fase, head, detail] of FASES_STATUS) {
+  test(`faixa de status: fase "${fase}" mostra "${head}"`, async () => {
+    const p = await open(`/dev/mesa?fase=${fase}&n=4`, { w: 1280, h: 720 });
+    await headIs(p, head);
+    await detailIs(p, detail);
+    // A faixa vive no miolo do cabeçalho (portal), com o retrato de quem tem a vez.
+    const dom = await p.eval<{ inSlot: boolean; phase: string; turn: string; portrait: boolean }>(`(() => {
+      const b = document.querySelector('[data-testid="round-status"]');
+      return {
+        inSlot: !!document.querySelector('[data-testid="round-status-slot"] [data-testid="round-status"]'),
+        phase: b.getAttribute('data-phase'), turn: b.getAttribute('data-turn-id'),
+        portrait: !!b.querySelector('[data-testid="round-status-portrait"]'),
+      };
+    })()`);
+    assert.equal(dom.inSlot, true, "faixa fora do slot do cabeçalho");
+    assert.equal(dom.portrait, fase !== "fim", fase === "fim" ? "no fim ninguém tem a vez" : "falta o retrato de quem tem a vez");
+    if (fase === "turno") assert.equal(dom.turn, "p1");
+    if (fase === "reacao") assert.equal(dom.turn, "p2");
+    noErrors(p);
+  });
+}
+
+test("faixa de status: partida real — turno, declaração, passar, contestação e layout intacto", async () => {
+  const { ps } = await game(["Ana", "Bia", "Caio"], { w: 1280, h: 720 });
+  const [a, b, c] = ps;
+
+  // Turno: Ana "Sua vez"; os outros "Vez de Ana". O retrato é o de quem tem a vez.
+  await headIs(a, "Sua vez");
+  await headIs(b, "Vez de Ana");
+  await headIs(c, "Vez de Ana");
+  await detailIs(b, "Escolhendo uma ação");
+  const anaId = await a.eval<string>(`document.querySelector('[data-seat="Ana"]').getAttribute('data-seat-id')`);
+  assert.equal(await b.eval<string>(`document.querySelector('[data-testid="round-status"]').getAttribute('data-turn-id')`), anaId);
+
+  // Ana declara Taxas: cada um vê a frase do seu ponto de vista.
+  await a.click('[data-zone="centro"] [title="Barão do Café"]');
+  await headIs(a, "Você declarou Taxas (Barão do Café)");
+  await detailIs(a, "Aguardando Bia e Caio: contestar ou passar");
+  await headIs(b, "Ana declarou Taxas (Barão do Café)");
+  await detailIs(b, "Aguardando você e Caio: contestar ou passar");
+
+  // A faixa não invade os botões do cabeçalho nem mexe no layout da mesa.
+  const geo = await b.eval<{ bannerInHeader: boolean; clearOfButtons: boolean; headerH: number }>(`(() => {
+    const ban = document.querySelector('[data-testid="round-status"]').getBoundingClientRect();
+    const hdr = document.querySelector('header').getBoundingClientRect();
+    const btn = document.querySelector('[data-testid="cheatsheet-toggle"]').getBoundingClientRect();
+    return { bannerInHeader: ban.top >= hdr.top && ban.bottom <= hdr.bottom + 0.5, clearOfButtons: ban.right <= btn.left, headerH: hdr.height };
+  })()`);
+  assert.equal(geo.bannerInHeader, true, "faixa vaza do cabeçalho");
+  assert.equal(geo.clearOfButtons, true, "faixa sobre os botões do cabeçalho");
+  assert.ok(geo.headerH <= 64, `cabeçalho cresceu demais: ${geo.headerH}px`);
+  assert.deepEqual(await layoutIssues(b), []);
+
+  // Bia passa: sai da espera e a mesa só espera o Caio.
+  await b.key(" ");
+  await detailIs(b, "Aguardando Caio: contestar ou passar");
+  await detailIs(a, "Aguardando Caio: contestar ou passar");
+  await detailIs(c, "Aguardando você: contestar ou passar");
+
+  // Caio contesta: alguém perde influência; quem perdeu vê "Você perdeu", os outros veem o nome.
+  await c.key("c");
+  for (const p of ps) await p.waitFor(`/perdeu uma influência$/.test(document.querySelector('[data-testid="round-status-headline"]')?.innerText ?? '')`, "alguém perdeu influência");
+  const heads = await Promise.all(ps.map(async (p) => (await statusText(p)).head));
+  assert.equal(heads.filter((h) => h === "Você perdeu uma influência").length, 1, `só o perdedor vê 'Você': ${heads.join(" | ")}`);
+  const loser = ["Ana", "Bia", "Caio"][heads.indexOf("Você perdeu uma influência")];
+  for (const [i, p] of ps.entries()) {
+    const esperado = heads[i] === "Você perdeu uma influência" ? "Escolha qual carta revelar" : "Escolhendo qual carta revelar";
+    await detailIs(p, esperado);
+    if (heads[i] !== "Você perdeu uma influência") assert.equal(heads[i], `${loser} perdeu uma influência`);
+  }
+  noErrors(...ps);
+});
+
+test("faixa de status: bloqueio da Ajuda Externa e volta ao turno ao passar", async () => {
+  const { ps } = await game(["Ana", "Bia"], { w: 1280, h: 720 });
+  const [a, b] = ps;
+  await a.click('[data-zone="basicas"] .seal', "Ajuda");
+  await headIs(b, "Ana declarou Ajuda Externa");
+  await detailIs(b, "Aguardando você: bloquear ou passar");
+
+  // Bia bloqueia com o Barão (atalho B): a janela vira "contestar o bloqueio".
+  await b.key("b");
+  await headIs(b, "Você bloqueou Ajuda Externa com Barão do Café");
+  await detailIs(b, "Aguardando Ana: contestar o bloqueio ou passar");
+  await headIs(a, "Bia bloqueou Ajuda Externa com Barão do Café");
+  await detailIs(a, "Aguardando você: contestar o bloqueio ou passar");
+
+  // Ana deixa passar: o bloqueio vale e a vez é da Bia.
+  await a.key(" ");
+  await headIs(b, "Sua vez");
+  await headIs(a, "Vez de Bia");
+  noErrors(...ps);
+});
+
 // ── Páginas de revisão não podem quebrar ─────────────────────────────────────
 for (const path of ["/dev/cartas", "/dev/colinha", "/dev/mesa", "/dev/mesa?fase=reacao&n=6", "/dev/mesa?fase=revelar&n=3", "/dev/mesa?fase=troca&n=2", "/dev/mesa?fase=fim&n=4", "/dev/mesa?fase=contestar&n=4"]) {
   test(`página de revisão ${path} renderiza sem erros`, async () => {

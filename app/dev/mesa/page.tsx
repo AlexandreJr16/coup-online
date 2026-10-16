@@ -8,6 +8,7 @@ import { Suspense } from "react";
 
 import GameBoard from "@/src/components/game/GameBoard";
 import TableBackdrop from "@/src/components/game/TableBackdrop";
+import { RoundStatusSlot } from "@/src/components/game/TurnBanner";
 import { COLORS } from "@/src/components/game/helpers";
 import type { Character, GameView } from "@/src/types/game";
 
@@ -103,6 +104,10 @@ function Mesa() {
   // Em "reacao"/"contestar" quem age é o p2; eu (p1) sou espectador/reator.
   return (
     <main style={{ height: "100vh", display: "flex", flexDirection: "column", background: COLORS.bg }}>
+      {/* Faixa do topo como a da sala: só o slot da faixa de status da rodada */}
+      <header style={{ flex: "none", display: "flex", alignItems: "center", padding: "10px 16px", background: "linear-gradient(#2b1f1c, #1a1214)", borderBottom: "2px solid rgba(240,165,0,0.6)" }}>
+        <RoundStatusSlot />
+      </header>
       <TableBackdrop>
         <GameBoard view={view} myId="p1" />
       </TableBackdrop>

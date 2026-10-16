@@ -7,6 +7,7 @@ import { CheatSheetButton } from "@/src/components/game/CheatSheet";
 import GameBoard from "@/src/components/game/GameBoard";
 import { assignAvatars, avatarColor, avatarUrl, CINZEL, COLORS } from "@/src/components/game/helpers";
 import TableBackdrop, { SalonBg } from "@/src/components/game/TableBackdrop";
+import { RoundStatusSlot } from "@/src/components/game/TurnBanner";
 import TimerSettings, { DEFAULT_TIMERS } from "@/src/components/game/TimerSettings";
 import { clearToken, readCrt, readToken, saveCrt, saveToken, subscribeCrt } from "@/src/lib/session";
 import { usePrefs } from "@/src/lib/audio/usePrefs";
@@ -122,6 +123,9 @@ export default function RoomPage() {
           </span>
           <span style={roomChip}>Sala {roomId}</span>
         </div>
+
+        {/* Miolo do cabeçalho: a faixa de status da rodada entra aqui (portal do TurnBanner) */}
+        <RoundStatusSlot />
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <CheatSheetButton />
