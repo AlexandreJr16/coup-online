@@ -20,7 +20,8 @@ O jogo funciona e os amigos gostaram. O incômodo do Alexandre tem **uma causa p
 | 1 | "Cara de IA", botões que destoam, colinha e tela final feias | **Duas linguagens visuais brigando**: arte em pixel art + interface de web app (gradiente liso, brilho, pílulas, chips, emojis do sistema, Cinzel liso) | **A** (kit de UI), **D**, **E** |
 | 2 | Não fica "na cara" o que está acontecendo | **Hierarquia da mesa**: a informação está espalhada pelos cantos, moeda é número, centro vazio, tamanhos fixos em px (tudo pequeno no monitor 1920) | **B** |
 | 3 | A barra de baixo é feia e tira imersão | Barra sólida de largura total, com cara de app | **C** |
-| 4 | Não dá vontade de jogar "mais uma" | Nada passa de uma partida para a outra; a tela final é um beco; 2 jogadores é o pior modo de Coup | **F** |
+| 4 | O jogo é "seco": não reage ao que acontece | Falta de animação e de estados visíveis (moldura que racha, duelo na contestação, exílio) | **H** (`docs/VIDA_E_BLEFE.md`) |
+| 5 | Não dá vontade de jogar "mais uma" | Nada passa de uma partida para a outra; a tela final é um beco; 2 jogadores é o pior modo de Coup | **F** |
 
 O núcleo já é bom (cenário, retratos, cartas). **Não vamos refazer a arte que agradou**, só tirar o que destoa dela.
 
@@ -44,6 +45,7 @@ colinha "?", faixa de status no cabeçalho, aviso dos últimos 5s, espectador, l
 11. **A interface escala com a tela.** Testar em 1280×720, 1600×900, 1920×1080 e 2560×1440.
 12. **Revisão visual antes do código.** UI nova passa por mockup aprovado (Fase 0).
 13. **Imagem antes de número e de texto.** Onde hoje há um número ou uma frase, o jogo mostra uma pixel art própria (fichas, baralho, cofre, expressões). O número fica só como apoio para leitura exata. A imagem **nunca é a mesma repetida N vezes**: tem variantes. Ver B3 e a lista de candidatas na Fase 0.
+14. **Nenhuma animação vaza informação.** Num jogo de blefe, a mesma animação vale para verdade e blefe até o instante da revelação. Há teste automático para isso (`docs/VIDA_E_BLEFE.md`, seção 16.3).
 
 > **Tensão a resolver (de propósito):** em 15/10 o Alexandre disse que **não gosta de banners de texto** ("Vez de X", "Aguardando reações…"). Em 16/10 pediu mais informação de rodada, e eu entreguei justamente um banner de texto no cabeçalho, que ele achou "estranho". A saída da v3 é **mostrar na mesa** (anel no assento, balão da jogada, legenda curta no centro) e **tirar o texto do cabeçalho**. Ver Fase B.
 
@@ -54,6 +56,7 @@ colinha "?", faixa de status no cabeçalho, aviso dos últimos 5s, espectador, l
 **Objetivo:** aprovar a direção visual no papel. Barato, e evita refazer código.
 
 **Tarefas**
+0. **Protótipos de movimento (H0, ver `docs/VIDA_E_BLEFE.md`)**: uma jogada animada (Assassinar) e o duelo da contestação, em `/dev/cenas`, para sentir o ritmo antes de decidir; e, opcional, o teste de uma tarde de expressões em 2 avatares.
 1. Fazer mockups em **HTML estático** (páginas em `app/dev/v3/*`, sem socket) de: (a) kit de UI e header, (b) mesa nova com 2 e 4 jogadores, (c) dock imersivo (3 variações), (d) tela de vitória, (e) colinha. Cada um em 1280×720 e 1920×1080.
 2. O Alexandre escolhe uma opção por tela. **Congelar**: depois da aprovação, mudanças viram Backlog pós-v3.
 
@@ -186,6 +189,29 @@ Cada quantidade de fichas tem a **sua própria pixel art**: 1 ficha, 2 fichas, 3
 
 ---
 
+## Fase H: Vida e blefe (animação e efeitos)
+
+> **Especificação completa em [`docs/VIDA_E_BLEFE.md`](./VIDA_E_BLEFE.md).** Este bloco é só o resumo.
+
+**Objetivo:** o jogo **reage a tudo que acontece**, de forma curta e legível, **sem nunca revelar o que está escondido**. Não é luta literal: é a vida dos jogos de luta (quem perde aparece machucado), mais o suspense de um programa de TV na hora de revelar um blefe.
+
+**Três tipos de vida:** **memória** (a moldura de quem apanhou fica rachada), **espetáculo** (duelo da contestação, exílio de barco, vitória) e **intuição** (medalhão da vez, mira com linha, ampulheta).
+
+**Decisões já tomadas**
+- Os retratos **continuam neutros**: dano e reações vêm de **camadas por cima** (moldura rachada, curativo, emote). Rostos novos ficam como etapa opcional (H8).
+- **Gramática visual única:** dourado (verdade, ganho, vez), vermelho (perigo), máscara (blefe), rachadura (dano), lacre (decisão), escudo (bloqueio), ampulheta (espera), cinza (fora).
+- **Diretor de cena puro e testável** (eventos do jogo viram uma lista de "beats"), com fila, prioridade, coalescência e botão de pular.
+- A animação é **só apresentação no cliente**; o servidor e as regras não mudam.
+- A **troca visível da carta provada** (hoje invisível) é derivável de dado público (`lastChallenge.accusedHadCard`), sem mexer no servidor.
+
+**Etapas** (detalhe, "pronto quando" e esforço no documento): **H0** protótipos e teste de expressões; **H1** infraestrutura; **H2** estados persistentes; **H3** intuição; **H4** o blefe (duelo, desmascarado, verdade provada, troca visível, bloqueio); **H5** perda, exílio e vitória; **H6** assinaturas das ações; **H7** ambiente e plateia; **H8** rostos novos (opcional).
+
+**Escopo da v3 (a aprovar na Fase 0):** H0 a H5, mais Assassinar, Golpe e Taxas do H6 e a plateia do H7. O resto vai ao backlog.
+
+**Pronto quando:** alguém que nunca viu o jogo diz em 3 s quem está machucado e de quem é a vez; a contestação é o momento de que mais se fala; o teste de "não vazar informação" está verde; o drama alto por partida fica dentro de ~25 s.
+
+---
+
 ## Fase D: Tela de fim de partida
 
 **Objetivo:** consertar o que está fora da arte e transformar o "beco" em ponte para a próxima partida.
@@ -266,14 +292,15 @@ Cada quantidade de fichas tem a **sua própria pixel art**: 1 ficha, 2 fichas, 3
 
 | Ordem | Fase | Esforço | Depende de | Observação |
 |---|---|---|---|---|
-| 1 | **0** Mockups e decisões | P | nada | Sem isto, não começar |
+| 1 | **0** Mockups, protótipos e decisões | P a M | nada | Sem isto, não começar |
 | 2 | **A** Kit de UI | G | 0 (+ arte de ícones) | Destrava todas |
 | 3 | **B** Hierarquia da mesa | G | A (+ arte das fichas) | Maior ganho; as fichas são a maior parte da arte nova |
 | 4 | **C** Dock imersivo | M | A, B1 (escala) | |
-| 5 | **D** Fim de partida | M | A (+ arte de prêmios) | Usa F1 se já existir |
-| 6 | **E** Colinha | P | A | Só apresentação |
-| 7 | **F** Retenção | M | A (F1 a F3 independem do visual) | Pode andar em paralelo às B a E |
-| 8 | **G** Fechamento | M | todas | |
+| 5 | **H** Vida e blefe | G | A, B (assento, escala, fichas) | Uma das partes mais importantes do jogo; detalhada em `docs/VIDA_E_BLEFE.md` |
+| 6 | **D** Fim de partida | M | A (+ arte de prêmios), H5 (vitória) | Usa F1 se já existir |
+| 7 | **E** Colinha | P | A | Só apresentação |
+| 8 | **F** Retenção | M | A (F1 a F3 independem do visual) | Pode andar em paralelo às B a E |
+| 9 | **G** Fechamento | M | todas | |
 
 P = poucas horas, M = uma sessão, G = mais de uma sessão.
 
@@ -281,6 +308,7 @@ P = poucas horas, M = uma sessão, G = mais de uma sessão.
 
 - Trabalhar **uma fase por vez**, na ordem. Commit por entrega, mensagem descritiva, **sem atribuição a Claude/Anthropic**.
 - **Mockup aprovado antes de UI nova** (Fase 0). Não pular.
+- Para a Fase H, **ler `docs/VIDA_E_BLEFE.md` inteiro** antes de começar. É a especificação.
 - **Não mexer em regra de jogo** nas Fases A a E (a engine está testada). A Fase F mexe no servidor só para o placar e o log.
 - **Testes:** escrever os três níveis quando a mudança pedir (política do `CLAUDE.md`), mas **rodar o E2E só quando o Alexandre pedir, e na Fase G**. No dia a dia: `npm test`, `npx tsc --noEmit`, `npx eslint .`.
 - Funções puras novas ganham teste unitário. Seletores de E2E novos usam `data-testid`.
@@ -298,11 +326,13 @@ P = poucas horas, M = uma sessão, G = mais de uma sessão.
 | Ícones gerados por IA saem inconsistentes | Para UI pequena, desenhar por script/à mão e padronizar na paleta mestra |
 | Refazer layout quebra os testes de layout | Rodar `layoutIssues` nas 4 resoluções ao fim das Fases B e C |
 | Volume de arte das fichas (36+ sprites) e parecer cópia | Gerador procedural com seed e variação em pixels inteiros; curar 3 por quantidade; hash por jogador |
+| Animação vazar informação num jogo de blefe | Projeção pública + teste de propriedade obrigatório (`docs/VIDA_E_BLEFE.md`, 16.3) |
 | Retenção é subjetiva | Fase F7: medir revanches por sala antes e depois |
 
 ## Backlog pós-v3 (ideias que NÃO entram agora)
 
 - Ciclo de luz da mesa (Fase 7 do `docs/ROADMAP.md`).
 - Trilha de música por IA e troca de temas (Fase 8 do `docs/ROADMAP.md`).
+- Rostos novos para os 12 avatares (H8) e assinaturas restantes das ações, se a medição mostrar ganho (ver `docs/VIDA_E_BLEFE.md`, seção 18).
 - Versão para celular (adiada para a v4).
 - _(coloque aqui qualquer ideia nova que surgir durante a v3)_
