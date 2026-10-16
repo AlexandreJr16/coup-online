@@ -13,6 +13,7 @@ import { type CSSProperties, type ReactNode, useState } from "react";
 
 import type { Expressao } from "@/src/lib/game/cards";
 import type { Character } from "@/src/types/game";
+import { Pic } from "./ActionSeal";
 import { artUrl, backUrl, CHAR_LABEL, CHAR_SHORT, CHAR_VISUAL, CINZEL, COLORS } from "./helpers";
 
 type Size = "sm" | "lg";
@@ -285,7 +286,11 @@ function FrontFace({
       )}
 
       {lost && <Corner size={size}>❌</Corner>}
-      {bluff && !lost && <Corner size={size}>🎭</Corner>}
+      {bluff && !lost && (
+        <Corner size={size}>
+          <Pic name="mascara" emoji="🎭" size={size === "sm" ? 16 : 16} />
+        </Corner>
+      )}
     </div>
   );
 }

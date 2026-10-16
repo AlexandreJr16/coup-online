@@ -148,9 +148,51 @@ test("ações do dock ficam desabilitadas fora da vez (e o clique falha de prop�
   noErrors(b);
 });
 
+// ── Selos de ação (4.2) ──────────────────────────────────────────────────────
+const estados = (p: Page) =>
+  p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-zone="basicas"] .seal')].map(e => e.getAttribute('data-state')))`);
+
+test("selos: estados certos para quem joga e para quem espera; nenhuma imagem quebrada", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  // Ana (da vez, 2 moedas): Renda e Ajuda prontas, Golpe travado (custa 7). Bia: tudo apagado.
+  await a.waitFor(`document.querySelectorAll('[data-zone="basicas"] .seal').length === 3`, "3 selos");
+  assert.deepEqual(JSON.parse(await estados(a)), ["ready", "ready", "locked"]);
+  assert.deepEqual(JSON.parse(await estados(b)), ["off", "off", "off"]);
+  for (const p of [a, b]) {
+    await p.waitFor(
+      `[...document.querySelectorAll('[data-zone="basicas"] .seal img')].length >= 3 && [...document.querySelectorAll('img')].every(i => i.complete && i.naturalWidth > 0)`,
+      "todas as imagens carregadas",
+    );
+  }
+  // Selo apagado/travado não aceita clique.
+  await assert.rejects(() => a.click('[data-zone="basicas"] .seal', "Golpe"), /desabilitado/);
+  noErrors(a, b);
+});
+
+test("reação: a bandeja usa selos (Contestar/Passar) e some depois de passar", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await a.click('[data-zone="centro"] [title="Barão do Café"]'); // Taxas
+  await b.waitFor(`document.querySelectorAll('[data-zone="reacoes"] .seal').length === 2`, "Contestar e Passar");
+  await b.click('[data-zone="reacoes"] .seal', "Passar");
+  await b.waitFor(`document.querySelectorAll('[data-zone="reacoes"] .seal').length === 0`, "bandeja vazia");
+  noErrors(a, b);
+});
+
+test("página /dev/selos: 5 estados × 4 selos, ícones e fallback de emoji sem erros", async () => {
+  const p = await open("/dev/selos");
+  await p.waitFor(`document.querySelectorAll('[data-testid="selos"] .seal').length === 20`, "20 selos");
+  // contestar/assassinar ainda não têm arte → emoji; os 10 existentes carregam.
+  await p.waitFor(`[...document.querySelectorAll('[data-testid="icones"] img')].every(i => i.complete && i.naturalWidth > 0)`, "ícones carregados");
+  const semArte = await p.eval<number>(`[...document.querySelectorAll('[data-testid="icones"] > div')].filter(d => d.innerText.includes("(emoji)")).length`);
+  assert.equal(semArte, 2);
+  noErrors(p);
+});
+
 // ── F5 e blefe ───────────────────────────────────────────────────────────────
 const mao = (p: Page) =>
-  p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-zone="centro"] [title]')].map(e => e.getAttribute('title') + (e.innerText.includes('🎭') ? ':blefe' : ':minha')))`);
+  p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-zone="centro"] [title]')].map(e => e.getAttribute('title') + ((e.innerText.includes('🎭') || !!e.querySelector('img[src*="mascara"]')) ? ':blefe' : ':minha')))`);
 
 test("F5 no meio da partida mantém o assento e a mesma mão", async () => {
   const { ps } = await game(["Ana", "Bia"]);

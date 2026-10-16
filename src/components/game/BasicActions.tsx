@@ -1,16 +1,16 @@
-// Ações básicas (sem personagem): botões FIXOS, sempre no mesmo lugar do dock — o
-// jogador cria memória muscular. Apagam quando não é a vez ou faltam moedas.
+// Ações básicas (sem personagem): selos FIXOS, sempre no mesmo lugar do dock — o jogador
+// cria memória muscular. Fora da vez ficam apagados; sem moedas ganham cadeado; com 10+
+// moedas só o Golpe de Estado fica aceso (obrigatório).
 "use client";
 
-import type { CSSProperties } from "react";
-
 import type { ActionType, GameView } from "@/src/types/game";
-import { ACTION_META, actionBlockedReason, COLORS } from "./helpers";
+import ActionSeal from "./ActionSeal";
+import { ACTION_META, basicSealState, COLORS, type IconName } from "./helpers";
 
-const BASICS: Array<{ action: ActionType; sub: string; color: string; dark?: boolean }> = [
-  { action: "renda", sub: "+1", color: COLORS.gold, dark: true },
-  { action: "ajuda_externa", sub: "+2", color: COLORS.gold, dark: true },
-  { action: "golpe", sub: "−7", color: COLORS.coup },
+const BASICS: Array<{ action: ActionType; icon: IconName; emoji: string; sub: string; color: string }> = [
+  { action: "renda", icon: "renda", emoji: "🪙", sub: "+1", color: COLORS.gold },
+  { action: "ajuda_externa", icon: "ajuda_externa", emoji: "👝", sub: "+2", color: COLORS.gold },
+  { action: "golpe", icon: "golpe", emoji: "💥", sub: "−7", color: "#b3392b" },
 ];
 
 export default function BasicActions({
@@ -26,34 +26,19 @@ export default function BasicActions({
 }) {
   const coins = view.players.find((p) => p.id === myId)?.coins ?? 0;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, width: 208 }}>
-      {BASICS.map(({ action, sub, color, dark }) => {
-        const blocked = actionBlockedReason(coins, action) !== null;
-        return (
-          <button
-            key={action}
-            onClick={() => onAction(action)}
-            disabled={!canAct || blocked}
-            className="game-btn"
-            style={
-              {
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 10,
-                padding: "9px 14px",
-                fontSize: 14,
-                whiteSpace: "nowrap",
-                color: dark ? "#1a1a2e" : COLORS.text,
-                "--c": color,
-              } as CSSProperties
-            }
-          >
-            <span>{ACTION_META[action].label}</span>
-            <b style={{ fontVariantNumeric: "tabular-nums" }}>🪙 {sub}</b>
-          </button>
-        );
-      })}
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, width: 208 }}>
+      {BASICS.map(({ action, icon, emoji, sub, color }) => (
+        <ActionSeal
+          key={action}
+          icon={icon}
+          emoji={emoji}
+          label={ACTION_META[action].label}
+          sub={sub}
+          color={color}
+          state={basicSealState(coins, action, canAct)}
+          onClick={() => onAction(action)}
+        />
+      ))}
     </div>
   );
 }

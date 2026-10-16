@@ -178,3 +178,46 @@ body {
     transition: none;
   }
 }
+
+/* ── Selo de ação (ActionSeal): moldura de lacre com ícone pixel art ──────────── */
+.seal {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 8px;
+  min-height: 46px;
+  color: #f6ecd6;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  background: linear-gradient(#3b2b1f, #2a1d14);
+  border: 2px solid var(--c, #d9a028);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -3px 0 rgba(0, 0, 0, 0.35), 0 3px 0 rgba(0, 0, 0, 0.45);
+  transition: transform 110ms ease, box-shadow 110ms ease, filter 160ms ease;
+}
+.seal:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -3px 0 rgba(0, 0, 0, 0.35), 0 5px 0 rgba(0, 0, 0, 0.45), 0 0 14px var(--c);
+}
+.seal:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(0, 0, 0, 0.45);
+}
+.seal:disabled {
+  cursor: not-allowed;
+}
+.seal[data-state="off"] {
+  filter: grayscale(0.7) brightness(0.7);
+  opacity: 0.55;
+}
+.seal[data-state="locked"] {
+  filter: grayscale(0.35) brightness(0.8);
+  opacity: 0.8;
+}
+@media (prefers-reduced-motion: reduce) {
+  .seal {
+    transition: none;
+  }
+}

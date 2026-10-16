@@ -45,6 +45,33 @@ export const CHAR_VISUAL = Object.fromEntries(
   CARDS.map((c) => [c.id, { color: c.cor, icon: c.icone }]),
 ) as Record<Character, { color: string; icon: string }>;
 
+// ── Ícones dos selos de ação (public/art/<tema>/icones/) ─────────────────────
+export type IconName =
+  | "renda" | "ajuda_externa" | "golpe" | "taxas" | "assassinar" | "extorquir"
+  | "trocar" | "contestar" | "bloquear" | "passar" | "mascara" | "cadeado";
+
+// Ícones que JÁ existem como arquivo; os demais caem no emoji do selo (contestar e
+// assassinar entram quando a 2ª leva de geração for curada).
+export const ICONS_AVAILABLE: readonly IconName[] = [
+  "renda", "ajuda_externa", "golpe", "taxas", "extorquir", "trocar",
+  "bloquear", "passar", "mascara", "cadeado",
+];
+
+export function iconUrl(name: IconName, size: "sm" | "lg" = "sm"): string | null {
+  if (!ICONS_AVAILABLE.includes(name)) return null;
+  return `/art/${ART_THEME}/icones/${name}${size === "sm" ? ".sm" : ""}.png`;
+}
+
+// Estado de um selo de ação básica: apagado (fora da vez), travado (cadeado: moedas
+// insuficientes ou golpe obrigatório), obrigatório (a única jogada permitida) ou pronto.
+export type SealState = "ready" | "off" | "locked" | "mandatory";
+
+export function basicSealState(coins: number, action: ActionType, canAct: boolean): SealState {
+  if (!canAct) return "off";
+  if (coins >= 10) return action === "golpe" ? "mandatory" : "locked";
+  return actionBlockedReason(coins, action) ? "locked" : "ready";
+}
+
 // Quem pode reagir (bloquear/contestar/passar) na janela atual: todo jogador vivo
 // exceto quem fez a jogada julgada (ator na ação; bloqueador no bloqueio). Espelha
 // reactorIds da engine — a engine continua sendo quem valida de fato.

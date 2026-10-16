@@ -3,6 +3,8 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 import {
   actionBlockedReason,
@@ -10,6 +12,9 @@ import {
   avatarColor,
   avatarInitials,
   backUrl,
+  basicSealState,
+  ICONS_AVAILABLE,
+  iconUrl,
   CHAR_SHORT,
   CHARACTER_ACTION,
   isBluff,
@@ -163,4 +168,31 @@ test("avatarColor: determinística por nome", () => {
   assert.equal(avatarColor("Ana"), avatarColor("Ana"));
   assert.notEqual(avatarColor("Ana"), avatarColor("Bia"));
   assert.match(avatarColor("Ana"), /^hsl\(\d+ 60% 45%\)$/);
+});
+
+// ── Selos de ação (4.2) ──────────────────────────────────────────────────────
+test("basicSealState: fora da vez apaga; sem moedas trava; 10+ só libera o Golpe", () => {
+  assert.equal(basicSealState(5, "renda", false), "off"); // não é a vez
+  assert.equal(basicSealState(2, "renda", true), "ready");
+  assert.equal(basicSealState(2, "ajuda_externa", true), "ready");
+  assert.equal(basicSealState(2, "golpe", true), "locked"); // custa 7
+  assert.equal(basicSealState(7, "golpe", true), "ready");
+  assert.equal(basicSealState(10, "golpe", true), "mandatory"); // golpe obrigatório
+  assert.equal(basicSealState(10, "renda", true), "locked");
+  assert.equal(basicSealState(12, "ajuda_externa", true), "locked");
+});
+
+test("iconUrl: sm/lg e ícone sem arquivo devolve null (o selo cai no emoji)", () => {
+  assert.equal(iconUrl("renda", "sm"), "/art/imperio/icones/renda.sm.png");
+  assert.equal(iconUrl("renda", "lg"), "/art/imperio/icones/renda.png");
+  assert.equal(iconUrl("contestar", "sm"), null); // ainda sem arte
+});
+
+test("guarda: todo ícone declarado em ICONS_AVAILABLE existe em public/art (nos 2 tamanhos)", () => {
+  for (const name of ICONS_AVAILABLE) {
+    for (const size of ["sm", "lg"] as const) {
+      const url = iconUrl(name, size)!;
+      assert.ok(existsSync(join(process.cwd(), "public", url)), `faltando arquivo: ${url}`);
+    }
+  }
 });
