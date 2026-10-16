@@ -80,8 +80,9 @@ test("meta: o driver captura console.error e exceções (os 'zero erros' dos out
   await p.eval(`console.error("falha-de-teste"); setTimeout(() => { throw new Error("excecao-de-teste"); }, 0);`);
   await p.waitFor(`true`, "assentar");
   await new Promise((r) => setTimeout(r, 300));
-  assert.ok(p.errors.some((e) => e.includes("falha-de-teste")), "console.error não foi capturado");
-  assert.ok(p.errors.some((e) => e.includes("excecao-de-teste")), "exceção não foi capturada");
+  const capturados: string[] = [...p.errors]; // cópia tipada (o deepEqual acima estreita o tipo)
+  assert.ok(capturados.some((e) => e.includes("falha-de-teste")), "console.error não foi capturado");
+  assert.ok(capturados.some((e) => e.includes("excecao-de-teste")), "exceção não foi capturada");
 });
 
 // ── Lobby ────────────────────────────────────────────────────────────────────
