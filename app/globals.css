@@ -178,3 +178,249 @@ body {
     transition: none;
   }
 }
+
+/* ── Selo de ação (ActionSeal): moldura de lacre com ícone pixel art ──────────── */
+.seal {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 8px;
+  min-height: 46px;
+  color: #f6ecd6;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  background: linear-gradient(#3b2b1f, #2a1d14);
+  border: 2px solid var(--c, #d9a028);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -3px 0 rgba(0, 0, 0, 0.35), 0 3px 0 rgba(0, 0, 0, 0.45);
+  transition: transform 110ms ease, box-shadow 110ms ease, filter 160ms ease;
+}
+.seal:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -3px 0 rgba(0, 0, 0, 0.35), 0 5px 0 rgba(0, 0, 0, 0.45), 0 0 14px var(--c);
+}
+.seal:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(0, 0, 0, 0.45);
+}
+.seal:disabled {
+  cursor: not-allowed;
+}
+.seal[data-state="off"] {
+  filter: grayscale(0.7) brightness(0.7);
+  opacity: 0.55;
+}
+.seal[data-state="locked"] {
+  filter: grayscale(0.35) brightness(0.8);
+  opacity: 0.8;
+}
+@media (prefers-reduced-motion: reduce) {
+  .seal {
+    transition: none;
+  }
+}
+
+/* Tecla de atalho no canto do selo e interruptor de "passar automático". */
+.seal-key {
+  position: absolute;
+  top: -9px;
+  left: 10px;
+  padding: 1px 6px;
+  font: 700 10px/14px var(--font-geist-sans), sans-serif;
+  color: #1a1a2e;
+  background: #e8dcc0;
+  border: 1px solid #14101a;
+  border-radius: 4px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 208px;
+  font-size: 13px;
+  color: #bdb0a6;
+  cursor: pointer;
+  user-select: none;
+}
+.toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.toggle-track {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  background: #2b2236;
+  border: 2px solid #4a3d5c;
+  border-radius: 999px;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.toggle-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background: #bdb0a6;
+  border-radius: 50%;
+  transition: transform 140ms ease, background 140ms ease;
+}
+.toggle input:checked + .toggle-track {
+  background: #2f6b45;
+  border-color: #6aa84f;
+}
+.toggle input:checked + .toggle-track::after {
+  transform: translateX(16px);
+  background: #f6ecd6;
+}
+.toggle input:focus-visible + .toggle-track {
+  outline: 2px solid #f7d56a;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .toggle-track,
+  .toggle-track::after {
+    transition: none;
+  }
+}
+
+/* Halo de lampião atrás do assento da vez. */
+.lamp {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 190px;
+  height: 190px;
+  transform: translate(-50%, -18px);
+  background: radial-gradient(circle, rgba(255, 205, 110, 0.34) 0%, rgba(255, 170, 60, 0.12) 45%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+  animation: lamp-flicker 3.2s ease-in-out infinite;
+}
+@keyframes lamp-flicker {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lamp { animation: none; }
+}
+
+/* Tremor da mesa quando um blefe é desmascarado. */
+@keyframes table-shake {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-6px, 2px); }
+  30% { transform: translate(5px, -3px); }
+  45% { transform: translate(-4px, -2px); }
+  60% { transform: translate(4px, 3px); }
+  80% { transform: translate(-2px, 1px); }
+}
+.shake { animation: table-shake 0.5s ease-in-out; }
+@media (prefers-reduced-motion: reduce) {
+  .shake { animation: none; }
+}
+
+/* ── Juice: foil/holo nas cartas suas, contador que pula, CRT opcional ───────── */
+.foil {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.55;
+  mix-blend-mode: color-dodge;
+  background: linear-gradient(
+    115deg,
+    transparent 18%,
+    rgba(255, 255, 255, 0.22) 36%,
+    rgba(120, 210, 255, 0.2) 46%,
+    rgba(255, 170, 230, 0.2) 56%,
+    rgba(255, 235, 140, 0.18) 66%,
+    transparent 82%
+  );
+  background-size: 260% 100%;
+  background-position: var(--shine, 0%) 0;
+  animation: foil-drift 5.5s ease-in-out infinite alternate;
+}
+.hand-card:hover .foil {
+  opacity: 0.95;
+  animation: none;
+}
+@keyframes foil-drift {
+  from { background-position: 0% 0; }
+  to { background-position: 100% 0; }
+}
+@keyframes pop {
+  0% { transform: scale(1.5); }
+  60% { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+.pop { animation: pop 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+
+html[data-crt="1"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0) 0 2px, rgba(0, 0, 0, 0.2) 3px 3px),
+    radial-gradient(ellipse at center, transparent 62%, rgba(0, 0, 0, 0.38) 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .foil { animation: none; }
+  .pop { animation: none; }
+}
+
+/* ── Mesa de veludo: aro de madeira, filete dourado, trama e luz do lampião ─────── */
+.table-rim,
+.table-velvet {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.table-rim {
+  width: calc(62% + 44px);
+  height: calc(58% + 44px);
+  background:
+    linear-gradient(180deg, rgba(255, 225, 160, 0.28), transparent 18%),
+    repeating-linear-gradient(92deg, rgba(0, 0, 0, 0.12) 0 3px, transparent 3px 9px),
+    linear-gradient(180deg, #7a4d27, #4a2c17 55%, #6a4121);
+  box-shadow:
+    0 22px 46px rgba(0, 0, 0, 0.65),
+    inset 0 3px 0 rgba(255, 225, 160, 0.35),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.55);
+}
+.table-velvet {
+  width: 62%;
+  height: 58%;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(255, 205, 130, 0.2), transparent 62%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.06) 0 2px, transparent 2px 4px),
+    radial-gradient(ellipse at 50% 42%, #8c2335 0%, #6b1727 48%, #3f0f1b 100%);
+  box-shadow:
+    0 0 0 3px rgba(240, 165, 0, 0.7),
+    0 0 0 5px rgba(20, 12, 8, 0.8),
+    inset 0 0 70px rgba(0, 0, 0, 0.6),
+    inset 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+/* Painel do salão (menu e sala de espera): madeira escura, filete dourado, luz por cima. */
+.panel-salon {
+  background: linear-gradient(#2b1f1c, #1a1214 70%, #140d10);
+  border: 2px solid rgba(240, 165, 0, 0.6);
+  border-radius: 16px;
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 225, 160, 0.2),
+    inset 0 0 40px rgba(0, 0, 0, 0.35);
+}

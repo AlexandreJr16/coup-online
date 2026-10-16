@@ -102,12 +102,17 @@ export class Browser {
   }
 
   /** Abre uma aba NOVA (sessionStorage próprio — cada aba é um jogador). */
-  async open(url: string, size: { w: number; h: number } = { w: 1280, h: 720 }): Promise<Page> {
+  async open(
+    url: string,
+    size: { w: number; h: number } = { w: 1280, h: 720 },
+    opts: { reducedMotion?: boolean } = {},
+  ): Promise<Page> {
     const res = await fetch(`http://127.0.0.1:${this.port}/json/new?about:blank`, { method: "PUT" });
     const target = (await res.json()) as { webSocketDebuggerUrl: string };
     const cdp = await Cdp.connect(target.webSocketDebuggerUrl);
     const page = new Page(cdp);
     await page.init(size);
+    if (opts.reducedMotion) await page.emulateReducedMotion();
     await page.goto(url);
     return page;
   }
@@ -156,6 +161,11 @@ export class Page {
       deviceScaleFactor: 1,
       mobile: false,
     });
+  }
+
+  /** Liga prefers-reduced-motion: reduce (as animações decorativas devem sumir). */
+  async emulateReducedMotion(): Promise<void> {
+    await this.cdp.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
   }
 
   async goto(url: string): Promise<void> {
@@ -232,10 +242,57 @@ export class Page {
     }
   }
 
-  async key(key: string): Promise<void> {
-    for (const type of ["keyDown", "keyUp"]) {
-      await this.cdp.send("Input.dispatchKeyEvent", { type, key, code: key, windowsVirtualKeyCode: key === "Escape" ? 27 : 0 });
+  /** Arrasta com o mouse: pressiona no centro de `from`, move em passos e solta no centro de `to`. */
+  async drag(from: string, to: string): Promise<void> {
+    // Eventos contínuos (pointermove) só são entregues a cada quadro renderizado: numa aba
+    // em segundo plano cada um leva segundos (o arrasto estourava o turno). Traz para a frente.
+    await this.cdp.send("Page.bringToFront");
+    const center = (sel: string) =>
+      this.eval<{ x: number; y: number } | null>(`(() => {
+        const el = document.querySelector(${JSON.stringify(sel)});
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      })()`);
+    await this.waitFor(`document.querySelector(${JSON.stringify(from)}) && document.querySelector(${JSON.stringify(to)})`, `arrastar ${from} → ${to}`);
+    const a = (await center(from))!;
+    const b = (await center(to))!;
+    const mouse = (type: string, x: number, y: number) =>
+      this.cdp.send("Input.dispatchMouseEvent", { type, x, y, button: type === "mouseMoved" ? "none" : "left", buttons: type === "mouseReleased" ? 0 : 1, clickCount: type === "mouseMoved" ? 0 : 1 });
+    await mouse("mouseMoved", a.x, a.y);
+    await mouse("mousePressed", a.x, a.y);
+    for (let i = 1; i <= 12; i++) {
+      await mouse("mouseMoved", a.x + ((b.x - a.x) * i) / 12, a.y + ((b.y - a.y) * i) / 12);
+      await sleep(16);
     }
+    await mouse("mouseReleased", b.x, b.y);
+  }
+
+  /** Move o mouse (sem clicar) para a posição relativa (fx, fy ∈ [0,1]) do elemento. */
+  async mouseTo(selector: string, fx = 0.5, fy = 0.5): Promise<void> {
+    await this.cdp.send("Page.bringToFront"); // pointermove só chega a aba visível
+    const p = await this.eval<{ x: number; y: number }>(`(() => {
+      const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+      return { x: r.left + r.width * ${fx}, y: r.top + r.height * ${fy} };
+    })()`);
+    await this.cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y, button: "none" });
+  }
+
+  /** Tecla de verdade (keyDown+keyUp). Aceita "Escape", " " (Espaço) ou uma letra. */
+  async key(key: string): Promise<void> {
+    const special: Record<string, { code: string; vk: number; text?: string }> = {
+      Escape: { code: "Escape", vk: 27 },
+      " ": { code: "Space", vk: 32, text: " " },
+    };
+    const sp = special[key];
+    const base = {
+      key,
+      code: sp?.code ?? `Key${key.toUpperCase()}`,
+      windowsVirtualKeyCode: sp?.vk ?? key.toUpperCase().charCodeAt(0),
+    };
+    const text = sp ? sp.text : key;
+    await this.cdp.send("Input.dispatchKeyEvent", { type: text ? "keyDown" : "rawKeyDown", ...base, ...(text ? { text } : {}) });
+    await this.cdp.send("Input.dispatchKeyEvent", { type: "keyUp", ...base });
   }
 
   async screenshot(): Promise<Buffer> {

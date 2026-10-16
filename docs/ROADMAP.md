@@ -90,35 +90,35 @@ Detalhes de design em `docs/DESIGN_MESA_V2.md`. Nasceu do playtest da Fase 3 (ar
 - [x] **4.1 Layout limpo e uma zona para cada coisa** ✅ 🤖
   Só modo mão (remove `ActionBar` e o toggle A/B); zonas fixas (topo só menus, mesa, dock fixo embaixo com mão + ações básicas); sem banners de texto ("Vez de…", "Escolha o alvo…", "Aguardando…"); alvo escolhido clicando no assento (anel/mira pulsando, Esc cancela); reação deixa de ser modal e vira bandeja junto da mão; timer vira anel; assentos nunca cortados.
   **DoD:** em 1280×720 e 1920×1080 nada se sobrepõe nem é cortado (prints em `/dev/mesa`); zero banners de texto; a partida inteira jogável por 2 abas; testes/lint/build verdes.
-- [ ] **4.2 Selos de ação** 🤝 (precisa dos ícones: `tools/art/prompts/icones.json`)
+- [x] **4.2 Selos de ação** 🤝 (precisa dos ícones: `tools/art/prompts/icones.json`)
   Componente `ActionSeal` (moldura + ícone + palavra + custo) com estados: verdadeiro (brilho de vela), blefe (máscara no canto), sem moedas (cadeado), obrigatório (só o Golpe aceso); pré-visualização do efeito ao passar o mouse; ações básicas fixas e poderes pela carta (clicar; arrastar entra em 4.3); galeria `/dev/selos`.
   **DoD:** todo botão do jogo é imagem + palavra; estados corretos para quem tem/não tem a carta (sem vazar nada para os outros); fallback para texto se faltar ícone.
-- [ ] **4.3 A jogada acontece na mesa** 🤖 🎮
+- [x] **4.3 A jogada acontece na mesa** 🤖 🎮
   Carta declarada sobe da mão e fica no centro virada, com lacre da ação e anel de tempo; ✔ no retrato de quem passou; assento ativo com brilho de lampião e os outros levemente escurecidos; arrastar o poder até o oponente (e clicar continua valendo); reações como selos (Contestar/Bloquear/Passar) perto da mão.
   **DoD:** dá pra jogar uma rodada inteira sem ler nenhum texto de instrução; efeito nunca bloqueia clique.
   🎮 **Primeiro teste de "está intuitivo?"**
-- [ ] **4.4 Animações de baralho** 🤖 🎮
+- [x] **4.4 Animações de baralho** 🤖 🎮
   Distribuição inicial a partir do baralho visível (com contagem); moedas voando entre Erário e jogadores, em pilhas que crescem; Trocar (2 cartas voam do baralho e as escolhidas voltam); Contestar (carta vira + tremor + selo); perder influência (vira e vai para a pilha de descarte do jogador). Pergunto antes de instalar lib de animação (sugestão: `motion`); sem ela dá com WAAPI/CSS.
   **DoD:** 60 fps com 6 jogadores; `prefers-reduced-motion` desliga o que balança; animação nunca atrasa o turno.
   🎮 **Teste de "sensação de baralho".**
-- [ ] **4.5 Retratos, molduras e falas** 🤝
+- [ ] **4.5 Retratos, molduras e falas** 🤝 _(parcial: 12 retratos de convidados com moldura dourada, sorteados sem repetição e iguais no lobby e na mesa; falta a escolha no lobby, persistência na reconexão por escolha e os balões de fala)_
   Conjunto de ~12 retratos de convidados do baile (pipeline `tools/art`), moldura, escolha no lobby; balões de fala estilo Undertale com o bordão do personagem ao declarar.
   **DoD:** nenhum círculo com iniciais restante; avatar escolhido persiste na reconexão; fala não atrasa o turno.
-- [ ] **4.6 Coerência visual do site inteiro** 🤝 🎮
+- [ ] **4.6 Coerência visual do site inteiro** 🤝 🎮 _(parcial: mesa de veludo bordô com aro de madeira e filete dourado, dock/header/painéis de madeira escura com ouro, menu e lobby sobre o salão com o leque dos 5 personagens, feed de Intrigas em faixa própria; falta favicon/título, `prefers-reduced-motion` global e o teste de coerência 🎮)_
   Mesa em veludo imperial com bordado (some a elipse verde); menu, lobby, botões, feed e painéis no mesmo vocabulário (papel, lacre, ouro, Cinzel); favicon e título.
   **DoD:** nenhuma tela com visual do v1; contraste legível; um `prefers-reduced-motion` global.
   🎮 **Teste de coerência.**
-- [ ] **4.7 Rapidez** 🤖
+- [x] **4.7 Rapidez** 🤖
   Atalhos (`Espaço` passar, `C` contestar, `B` bloquear); "passar automático" opcional por jogador (servidor registra e emite o `pass`); TDD onde tocar a engine.
   **DoD:** com todos em passar automático uma rodada de Renda/Taxas não pede nenhum clique de reação; testes cobrindo a preferência.
-- [ ] **4.8 Fim de partida** 🤖
+- [x] **4.8 Fim de partida** 🤖
   Tela de vitória dedicada e prêmios ("Mentiroso do ano", "Maior desconfiado") calculados da partida (estatísticas na engine, com TDD).
   **DoD:** prêmios corretos em partidas simuladas; revanche continua funcionando.
-- [ ] **4.9 Juice estilo Balatro** 🤖
+- [x] **4.9 Juice estilo Balatro** 🤖
   Tilt 3D das cartas no hover, brilho foil/holo no selecionado, números que pulam, screen shake e hit-stop curtos, CRT leve (liga/desliga).
   **DoD:** tudo ≤ ~400 ms e não bloqueante; reduced-motion respeitado.
 
-### Fase 5 — SFX e trilha procedural 🤖
+### Fase 5 — SFX e trilha procedural ✅ (feita na branch `noite/mesa-v2`; falta afinar de ouvido)
 - [ ] `src/lib/audio/`: sintetizadores (moeda, flip, selo, contestar, eliminação, vitória, tick de timer)
 - [ ] `useGameAudio` escutando o mesmo diff do `useGameEvents.ts` (zero mudança no servidor)
 - [ ] Trilha placeholder por código (loop de choro/lundu sintetizado), troca por fase do jogo

@@ -25,18 +25,22 @@ after(async () => {
 let seq = 0;
 const room = () => `E${Date.now().toString(36).slice(-3).toUpperCase()}${seq++}`;
 
-async function open(path: string, size?: { w: number; h: number }): Promise<Page> {
-  const p = await browser.open(`${server.url}${path}`, size);
+async function open(path: string, size?: { w: number; h: number }, opts?: { reducedMotion?: boolean }): Promise<Page> {
+  const p = await browser.open(`${server.url}${path}`, size, opts);
   pages.push(p);
   return p;
 }
 
 /** Cria a sala com os jogadores (o 1º é o host), inicia a partida e espera o dock. */
-async function game(names: string[], size?: { w: number; h: number }): Promise<{ id: string; ps: Page[] }> {
+async function game(
+  names: string[],
+  size?: { w: number; h: number },
+  opts?: { reducedMotion?: boolean },
+): Promise<{ id: string; ps: Page[] }> {
   const id = room();
   const ps: Page[] = [];
   for (const n of names) {
-    const p = await open(`/room/${id}?name=${n}`, size);
+    const p = await open(`/room/${id}?name=${n}`, size, opts);
     await p.waitText(`${n} (você)`);
     ps.push(p);
   }
@@ -66,6 +70,13 @@ async function layoutIssues(p: Page): Promise<string[]> {
     for (let i = 0; i < seats.length; i++) for (let j = i + 1; j < seats.length; j++) {
       const a = seats[i].r, b = seats[j].r;
       if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) issues.push(seats[i].n + ' sobrepõe ' + seats[j].n);
+    }
+    const feed = document.querySelector('[data-feed]');
+    if (feed) {
+      const f = feed.getBoundingClientRect();
+      for (const s of seats) {
+        if (s.r.left < f.right && f.left < s.r.right && s.r.top < f.bottom && f.top < s.r.bottom) issues.push('feed de Intrigas cobre ' + s.n);
+      }
     }
     if (dock.bottom > innerHeight + 0.5) issues.push('dock cortado');
     return issues;
@@ -148,9 +159,288 @@ test("ações do dock ficam desabilitadas fora da vez (e o clique falha de prop�
   noErrors(b);
 });
 
+// ── Selos de ação (4.2) ──────────────────────────────────────────────────────
+const estados = (p: Page) =>
+  p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-zone="basicas"] .seal')].map(e => e.getAttribute('data-state')))`);
+
+test("selos: estados certos para quem joga e para quem espera; nenhuma imagem quebrada", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  // Ana (da vez, 2 moedas): Renda e Ajuda prontas, Golpe travado (custa 7). Bia: tudo apagado.
+  await a.waitFor(`document.querySelectorAll('[data-zone="basicas"] .seal').length === 3`, "3 selos");
+  assert.deepEqual(JSON.parse(await estados(a)), ["ready", "ready", "locked"]);
+  assert.deepEqual(JSON.parse(await estados(b)), ["off", "off", "off"]);
+  for (const p of [a, b]) {
+    await p.waitFor(
+      `[...document.querySelectorAll('[data-zone="basicas"] .seal img')].length >= 3 && [...document.querySelectorAll('img')].every(i => i.complete && i.naturalWidth > 0)`,
+      "todas as imagens carregadas",
+    );
+  }
+  // Selo apagado/travado não aceita clique.
+  await assert.rejects(() => a.click('[data-zone="basicas"] .seal', "Golpe"), /desabilitado/);
+  noErrors(a, b);
+});
+
+test("reação: a bandeja usa selos (Contestar/Passar) e some depois de passar", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await a.click('[data-zone="centro"] [title="Barão do Café"]'); // Taxas
+  await b.waitFor(`document.querySelectorAll('[data-zone="reacoes"] .seal').length === 2`, "Contestar e Passar");
+  await b.click('[data-zone="reacoes"] .seal', "Passar");
+  await b.waitFor(`document.querySelectorAll('[data-zone="reacoes"] .seal').length === 0`, "bandeja vazia");
+  noErrors(a, b);
+});
+
+test("página /dev/selos: 5 estados × 4 selos, ícones e fallback de emoji sem erros", async () => {
+  const p = await open("/dev/selos");
+  await p.waitFor(`document.querySelectorAll('[data-testid="selos"] .seal').length === 20`, "20 selos");
+  // só contestar ainda não tem arte → emoji; os 11 existentes carregam.
+  await p.waitFor(`[...document.querySelectorAll('[data-testid="icones"] img')].every(i => i.complete && i.naturalWidth > 0)`, "ícones carregados");
+  const semArte = await p.eval<number>(`[...document.querySelectorAll('[data-testid="icones"] > div')].filter(d => d.innerText.includes("(emoji)")).length`);
+  assert.equal(semArte, 1);
+  noErrors(p);
+});
+
+// ── Rapidez (4.7) ────────────────────────────────────────────────────────────
+test("atalhos: Espaço passa e C contesta (teclado real, sem clicar)", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await a.click('[data-zone="centro"] [title="Barão do Café"]'); // Taxas
+  await b.waitFor(`document.querySelectorAll('[data-zone="reacoes"] .seal').length === 2`, "bandeja da Bia");
+  // os selos mostram a tecla de atalho
+  assert.match(await b.eval<string>(`document.querySelector('[data-zone="reacoes"]').innerText`), /Espaço/);
+  await b.key(" ");
+  await waitCoins(a, "Ana", 5); // a Taxas resolveu porque a Bia passou pelo teclado
+
+  // espera a mão da Bia ficar ativa (a vez chega pelo servidor): clicar antes não faz nada
+  await b.waitFor(`document.querySelector('[data-zone="centro"] .hand-card.can-act')`, "vez da Bia");
+  await b.click('[data-zone="centro"] [title="Barão do Café"]'); // vez da Bia: Taxas
+  await a.waitFor(`document.querySelectorAll('[data-zone="reacoes"] .seal').length === 2`, "bandeja da Ana");
+  await a.key("c"); // Ana contesta pelo teclado
+  await a.waitFor(`document.body.innerText.includes("CONTESTADO!")`, "selo de contestação");
+  await b.waitFor(`document.body.innerText.includes("CONTESTADO!")`, "selo para todos");
+  noErrors(a, b);
+});
+
+test("passar automático: com o interruptor ligado a jogada alheia resolve sem a pessoa agir", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await b.click('[data-testid="autopass"]'); // liga o interruptor da Bia
+  await b.waitFor(`document.querySelector('[data-testid="autopass"] input').checked`, "interruptor ligado");
+  await a.click('[data-zone="centro"] [title="Barão do Café"]'); // Taxas
+  await waitCoins(a, "Ana", 5); // resolveu sozinho: a Bia não clicou em nada
+  assert.ok(!(await b.text()).includes("CONTESTADO!"));
+  noErrors(a, b);
+});
+
+// ── A jogada na mesa e o arrastar (4.3) ─────────────────────────────────────
+test("arrastar: o poder vai até o oponente (assassinar) e a carta jogada aparece na mesa", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await a.click('[data-zone="basicas"] .seal', "Renda");
+  await waitCoins(a, "Ana", 3);
+  await b.click('[data-zone="basicas"] .seal', "Renda");
+  await waitCoins(b, "Bia", 3);
+
+  // Ana arrasta a carta do Capoeira até o assento da Bia. Durante o arrasto o fantasma existe.
+  await a.drag('[data-zone="centro"] [title="Capoeira"]', '[data-seat="Bia"]');
+  await b.waitFor(`document.querySelector('[data-testid="claim-plate"]')?.innerText.includes("Ana · Assassinar → Bia")`, "carta jogada na mesa");
+  // a carta jogada é uma carta VIRADA (verso) com anel de tempo e o lacre da ação
+  assert.equal(await b.eval<number>(`document.querySelectorAll('[data-testid="claim-plate"] svg rect').length`), 2);
+  assert.ok(await b.eval<boolean>(`!!document.querySelector('[data-testid="claim-plate"] img[src*="verso"]')`), "verso da carta");
+  await a.waitFor(`!document.querySelector('[data-testid="drag-ghost"]') && !document.querySelector('[data-target="sim"]')`, "arrasto encerrado");
+  noErrors(a, b);
+});
+
+test("arrastar: poder sem alvo é declarado soltando na mesa; soltar no dock cancela", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  // soltar de volta no dock: nada acontece
+  await a.drag('[data-zone="centro"] [title="Barão do Café"]', '[data-zone="basicas"]');
+  await new Promise((r) => setTimeout(r, 300));
+  assert.equal(await a.eval<boolean>(`!!document.querySelector('[data-testid="claim-plate"]')`), false);
+  assert.equal(await a.eval<boolean>(`!document.querySelector('[data-testid="drag-ghost"]')`), true);
+  // soltar sobre a mesa: declara Taxas
+  await a.drag('[data-zone="centro"] [title="Barão do Café"]', '[data-erario]');
+  await b.waitFor(`document.querySelector('[data-testid="claim-plate"]')?.innerText.includes("Ana · Taxas")`, "Taxas declarada");
+  noErrors(a, b);
+});
+
+test("mesa: Erário e baralho têm lugar fixo e a contagem do baralho é a real", async () => {
+  const { ps } = await game(["Ana", "Bia", "Caio"]);
+  await ps[0].waitFor(`document.querySelector('[data-erario]') && document.querySelector('[data-deck]')`, "Erário e baralho");
+  const deck = await ps[0].eval<string>(`document.querySelector('[data-deck]').innerText`);
+  assert.match(deck, /Corte · 19/); // 25 − 3×2
+  noErrors(...ps);
+});
+
+// ── Animações de baralho (4.4) ───────────────────────────────────────────────
+/** Conta quantas moedas voadoras já foram criadas na camada (e quantas ainda estão no ar). */
+const espiarMoedas = (p: Page) =>
+  p.eval(`(() => {
+    window.__voos = 0;
+    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1 && n.hasAttribute('data-coin-fly')) window.__voos++; })))
+      .observe(document.querySelector('[data-testid="coin-layer"]'), { childList: true });
+  })()`);
+
+test("distribuição: as cartas dos assentos voam do baralho quando a partida começa", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  for (const p of ps) await p.waitFor(`document.querySelector('[data-dealt="1"]')`, "animação de distribuir");
+  noErrors(...ps);
+});
+
+test("moedas: ao ganhar moedas voam do Erário até o jogador e a camada volta a ficar vazia", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await espiarMoedas(b); // quem ASSISTE também vê as moedas voando
+  await a.click('[data-zone="basicas"] .seal', "Renda");
+  await b.waitFor(`window.__voos >= 1`, "moeda voando");
+  await b.waitFor(`document.querySelectorAll('[data-testid="coin-layer"] [data-coin-fly]').length === 0`, "camada limpa");
+  noErrors(a, b);
+});
+
+test("contestação: a carta alegada é revelada na mesa para todos, com o veredito, e some sozinha", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await a.click('[data-zone="centro"] [title="Barão do Café"]'); // Taxas
+  await b.waitFor(`document.querySelectorAll('[data-zone="reacoes"] .seal').length === 2`, "bandeja");
+  await b.key("c");
+  for (const p of [a, b]) {
+    await p.waitFor(`document.querySelector('[data-testid="challenge-reveal"]')`, "revelação");
+    const r = await p.eval<{ had: string; txt: string }>(`(() => { const e = document.querySelector('[data-testid="challenge-reveal"]'); return { had: e.getAttribute('data-had-card'), txt: e.innerText }; })()`);
+    assert.ok(r.had === "true" || r.had === "false");
+    assert.match(r.txt, r.had === "true" ? /Tinha/ : /Era blefe/); // a mão é sorteada: os dois casos valem
+  }
+  await a.waitFor(`!document.querySelector('[data-testid="challenge-reveal"]')`, "revelação some", 6000);
+  noErrors(a, b);
+});
+
+test("troca: as cartas compradas saem do baralho e o fluxo escolher→confirmar fecha a troca", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await a.click('[data-zone="centro"] [title="Regatão"]'); // Trocar
+  await b.waitFor(`document.querySelectorAll('[data-zone="reacoes"] .seal').length === 2`, "bandeja da Bia");
+  await b.key(" "); // Bia deixa passar
+  await a.waitFor(`document.querySelectorAll('[data-zone="centro"] [title]').length === 4`, "4 cartas para escolher");
+  assert.equal(await a.eval<number>(`document.querySelectorAll('[data-fly-from-deck]').length`), 2); // as 2 compradas
+  await a.click('[data-zone="centro"] > div > div:nth-child(1) [title]');
+  await a.click('[data-zone="centro"] > div > div:nth-child(2) [title]');
+  await a.click('[data-zone="centro"] button', "Manter 2");
+  await a.waitFor(`document.querySelectorAll('[data-zone="centro"] [title]').length === 5`, "volta à mão normal");
+  noErrors(a, b);
+});
+
+test("reduced-motion: sem distribuição nem moedas voando", async () => {
+  const { ps } = await game(["Ana", "Bia"], undefined, { reducedMotion: true });
+  const [a, b] = ps;
+  await espiarMoedas(b);
+  await a.click('[data-zone="basicas"] .seal', "Renda");
+  await waitCoins(b, "Ana", 3);
+  await new Promise((r) => setTimeout(r, 800));
+  assert.equal(await b.eval<number>(`window.__voos`), 0);
+  assert.equal(await a.eval<boolean>(`!document.querySelector('[data-dealt]')`), true);
+  noErrors(a, b);
+});
+
+// ── Juice (4.9) ──────────────────────────────────────────────────────────────
+test("tilt: o mouse sobre a carta inclina em 3D e ao sair volta ao normal", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [, b] = ps; // Bia não está na vez: a inclinação vale mesmo assim (é só visual)
+  await b.waitFor(`document.querySelectorAll('[data-zone="centro"] .hand-card').length === 5`, "mão");
+  const alvo = '[data-zone="centro"] .hand-card:nth-child(3)';
+  // A borda direita é coberta pela carta vizinha do leque: mira a parte VISÍVEL (até ~80%).
+  await b.mouseTo(alvo, 0.78, 0.5);
+  await b.waitFor(`parseFloat(document.querySelector('${alvo}').style.getPropertyValue('--ry')) > 3`, "inclinou para a direita");
+  await b.mouseTo(alvo, 0.1, 0.5);
+  await b.waitFor(`parseFloat(document.querySelector('${alvo}').style.getPropertyValue('--ry')) < -3`, "inclinou para a esquerda");
+  await b.mouseTo('[data-testid="dock"]', 0.02, 0.02); // fora da mão
+  await b.waitFor(`document.querySelector('${alvo}').style.getPropertyValue('--ry') === ''`, "voltou ao normal");
+  noErrors(b);
+});
+
+test("foil: só as cartas que são minhas brilham (1 ou 2), nunca as de blefe", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  await ps[0].waitFor(`document.querySelectorAll('[data-zone="centro"] [data-foil]').length >= 1`, "foil");
+  const n = await ps[0].eval<number>(`document.querySelectorAll('[data-zone="centro"] [data-foil]').length`);
+  assert.ok(n >= 1 && n <= 2, `foil em ${n} cartas`);
+  noErrors(ps[0]);
+});
+
+test("moedas: o contador 'pula' quando muda (para quem joga e para quem assiste)", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a, b] = ps;
+  await a.click('[data-zone="basicas"] .seal', "Renda");
+  await b.waitFor(`document.querySelector('[data-seat="Ana"] .pop')`, "contador com animação pop");
+  noErrors(a, b);
+});
+
+test("CRT: liga/desliga sem bloquear nenhum clique e persiste ao recarregar", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a] = ps;
+  assert.equal(await a.eval<string>(`document.documentElement.dataset.crt`), "0");
+  await a.click('[data-testid="crt-toggle"]');
+  await a.waitFor(`document.documentElement.dataset.crt === "1"`, "CRT ligado");
+  // com o filtro ligado ainda dá para jogar: o overlay não captura cliques
+  await a.click('[data-zone="basicas"] .seal', "Renda");
+  await waitCoins(a, "Ana", 3);
+  await a.reload();
+  await a.waitFor(`document.documentElement.dataset.crt === "1"`, "CRT persistiu");
+  await a.click('[data-testid="crt-toggle"]'); // desliga
+  await a.waitFor(`document.documentElement.dataset.crt === "0"`, "CRT desligado");
+  noErrors(a);
+});
+
+// ── Áudio (Fase 5) ───────────────────────────────────────────────────────────
+test("áudio: cada efeito e a trilha renderizam offline sem silêncio, sem estourar e curtos", async () => {
+  const p = await open("/dev/audio");
+  await p.waitFor(`document.querySelectorAll('[data-sfx][data-peak]').length >= 14`, "medições concluídas", 20000);
+  const linhas = await p.eval<Array<{ n: string; peak: number; rms: number; s: number; f: string }>>(
+    `[...document.querySelectorAll('[data-sfx][data-peak]')].map(e => ({ n: e.getAttribute('data-sfx'), peak: +e.getAttribute('data-peak'), rms: +e.getAttribute('data-rms'), s: +e.getAttribute('data-seconds'), f: e.getAttribute('data-finite') }))`,
+  );
+  for (const l of linhas) {
+    assert.equal(l.f, "true", `${l.n}: amostra não finita`);
+    assert.ok(l.peak > 0.01, `${l.n}: mudo demais (pico ${l.peak})`);
+    assert.ok(l.peak < 0.9, `${l.n}: perto de estourar (pico ${l.peak})`);
+    assert.ok(l.rms > 0.001, `${l.n}: rms ${l.rms}`);
+    assert.ok(l.s < 6, `${l.n}: longo demais`);
+  }
+  noErrors(p);
+});
+
+test("áudio: o contexto nasce no primeiro gesto e o botão de mudo persiste", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const [a] = ps;
+  await a.click('[data-zone="basicas"] .seal', "Renda"); // 1º gesto: desbloqueia o áudio
+  await a.waitFor(`document.documentElement.dataset.audio === "running" || document.documentElement.dataset.audio === "pending"`, "áudio desbloqueado");
+  assert.equal(await a.eval<string>(`document.querySelector('[data-testid="mute-toggle"]').getAttribute('aria-pressed')`), "false");
+  await a.click('[data-testid="mute-toggle"]');
+  await a.waitFor(`document.querySelector('[data-testid="mute-toggle"]').getAttribute('aria-pressed') === "true"`, "mudo ligado");
+  await a.reload();
+  await a.waitFor(`document.querySelector('[data-testid="mute-toggle"]')?.getAttribute('aria-pressed') === "true"`, "mudo persistiu");
+  await a.click('[data-testid="mute-toggle"]');
+  noErrors(a);
+});
+
+// ── Fim de partida (4.8) ─────────────────────────────────────────────────────
+test("tela de vitória: vencedor, prêmios corretos e botão de revanche (página de revisão)", async () => {
+  const p = await open("/dev/mesa?fase=fim&n=4");
+  await p.waitFor(`document.querySelector('[data-testid="victory"]')`, "tela de vitória");
+  const txt = await p.eval<string>(`document.querySelector('[data-testid="victory"]').innerText`);
+  assert.match(txt, /Ana vence!/);
+  const premios = await p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-award]')].map(e => e.getAttribute('data-award') + ':' + e.innerText.replace(/\\s+/g,' ')))`);
+  const lista = JSON.parse(premios) as string[];
+  assert.ok(lista.some((l) => l.startsWith("mentiroso:") && l.includes("Bia") && l.includes("3 vezes")), premios);
+  assert.ok(lista.some((l) => l.startsWith("desconfiado:") && l.includes("Ana")), premios);
+  assert.ok(lista.some((l) => l.startsWith("olho_de_lince:") && l.includes("Ana") && l.includes("3 de 4")), premios);
+  assert.ok(lista.some((l) => l.startsWith("carrasco:") && l.includes("Ana")), premios);
+  assert.ok(lista.some((l) => l.startsWith("ricaco:") && l.includes("11")), premios);
+  await p.click('[data-testid="victory"] .seal', "Jogar de novo"); // o clique não pode estar coberto
+  noErrors(p);
+});
+
 // ── F5 e blefe ───────────────────────────────────────────────────────────────
 const mao = (p: Page) =>
-  p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-zone="centro"] [title]')].map(e => e.getAttribute('title') + (e.innerText.includes('🎭') ? ':blefe' : ':minha')))`);
+  p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-zone="centro"] [title]')].map(e => e.getAttribute('title') + ((e.innerText.includes('🎭') || !!e.querySelector('img[src*="mascara"]')) ? ':blefe' : ':minha')))`);
 
 test("F5 no meio da partida mantém o assento e a mesma mão", async () => {
   const { ps } = await game(["Ana", "Bia"]);
@@ -190,6 +480,68 @@ test("layout 1920×1080 com 6 jogadores", async () => {
   await ps[0].waitFor(`document.querySelectorAll('[data-seat]').length === 6`, "6 assentos");
   assert.deepEqual(await layoutIssues(ps[0]), []);
   noErrors(...ps);
+});
+
+test("layout 1600×900 com 6 jogadores: o feed de Intrigas aberto não cobre nenhum assento", async () => {
+  const { ps } = await game(["Ana", "Bia", "Caio", "Davi", "Eva", "Fábio"], { w: 1600, h: 900 });
+  await ps[0].waitFor(`document.querySelectorAll('[data-seat]').length === 6 && document.querySelector('[data-feed]')`, "assentos e feed");
+  assert.deepEqual(await layoutIssues(ps[0]), []);
+  // recolher o feed devolve a faixa à mesa e continua sem sobreposição
+  await ps[0].click('[data-feed] button[title="Recolher"]');
+  await ps[0].waitFor(`document.querySelector('button[data-feed]')`, "feed recolhido");
+  assert.deepEqual(await layoutIssues(ps[0]), []);
+  noErrors(...ps);
+});
+
+test("retratos: o mesmo jogador tem o mesmo retrato no lobby e na mesa, sem repetir, e todos carregam", async () => {
+  const id = room();
+  const ps: Page[] = [];
+  for (const n of ["Ana", "Bia", "Caio"]) {
+    const p = await open(`/room/${id}?name=${n}`);
+    await p.waitText(`${n} (você)`);
+    ps.push(p);
+  }
+  await ps[0].waitFor(`document.querySelectorAll('li[data-avatar]').length === 3`, "3 jogadores no lobby");
+  const lobby = await ps[0].eval<Record<string, string>>(`Object.fromEntries([...document.querySelectorAll('li[data-avatar]')].map(e => [e.getAttribute('data-player'), e.getAttribute('data-avatar')]))`);
+  assert.equal(new Set(Object.values(lobby)).size, 3, "retratos repetidos no lobby");
+  const imgsOk = `[...document.querySelectorAll('li[data-avatar] img')].every(i => i.complete && i.naturalWidth > 0)`;
+  await ps[0].waitFor(imgsOk, "retratos do lobby carregados");
+  await ps[0].click("button", "Iniciar jogo");
+  for (const p of ps) await p.waitFor(`document.querySelector('[data-testid="dock"]')`, "dock da mesa");
+  for (const p of ps) {
+    const mesa = await p.eval<Record<string, string>>(`Object.fromEntries([...document.querySelectorAll('[data-seat]')].map(e => [e.getAttribute('data-seat'), e.querySelector('[data-avatar]')?.getAttribute('data-avatar')]))`);
+    assert.deepEqual(mesa, lobby, "retrato da mesa difere do lobby (ou difere entre clientes)");
+    await p.waitFor(`[...document.querySelectorAll('[data-seat] [data-avatar] img')].every(i => i.complete && i.naturalWidth > 0)`, "retratos da mesa carregados");
+  }
+  noErrors(...ps);
+});
+
+test("mão: o nome e o poder de cada carta ficam visíveis (nenhuma carta cobre a legenda da vizinha)", async () => {
+  const { ps } = await game(["Ana", "Bia"], { w: 1600, h: 900 });
+  const covered = await ps[0].eval<string[]>(`(() => {
+    const out = [];
+    for (const card of document.querySelectorAll('[data-zone="centro"] .hand-card')) {
+      const cap = card.querySelector('[data-caption] span');
+      if (!cap) { out.push((card.getAttribute('title') || '?') + ' sem legenda'); continue; }
+      const r = cap.getBoundingClientRect();
+      for (const fx of [0.15, 0.5, 0.85]) {
+        const top = document.elementFromPoint(r.left + r.width * fx, r.top + r.height / 2);
+        if (!top || !card.contains(top)) out.push(card.getAttribute('title') + ' coberta em ' + fx);
+      }
+    }
+    return out;
+  })()`);
+  assert.deepEqual(covered, []);
+  noErrors(...ps);
+});
+
+test("menu: o leque dos 5 personagens carrega e o painel tem fundo próprio (não transparente)", async () => {
+  const p = await open("/");
+  await p.waitFor(`document.querySelectorAll('[data-testid="home-fan"] img').length === 5`, "5 retratos no menu");
+  await p.waitFor(`[...document.querySelectorAll('[data-testid="home-fan"] img')].every(i => i.complete && i.naturalWidth > 0)`, "retratos carregados");
+  const bg = await p.eval<string>(`getComputedStyle(document.querySelector('.panel-salon')).backgroundImage`);
+  assert.ok(bg.includes("gradient"), "painel sem fundo: " + bg);
+  noErrors(p);
 });
 
 // ── Páginas de revisão não podem quebrar ─────────────────────────────────────

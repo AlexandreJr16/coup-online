@@ -99,7 +99,7 @@ export type Effect =
   | { kind: "gain"; playerId: string; amount: number } // do Tesouro
   | { kind: "pay"; playerId: string; amount: number } // ao Tesouro
   | { kind: "steal"; fromId: string; toId: string; amount: number }
-  | { kind: "lose_influence"; playerId: string }
+  | { kind: "lose_influence"; playerId: string; by?: string } // `by`: autor (conta como "kill")
   | { kind: "replace_card"; playerId: string; character: Character }
   | { kind: "exchange"; playerId: string };
 
@@ -112,6 +112,17 @@ export interface LastChallenge {
   claimed: Character; // personagem alegado
   accusedHadCard: boolean; // true = estava falando a verdade
   kind: "action" | "block";
+}
+
+// Estatísticas da partida por jogador (públicas): alimentam os prêmios do fim de jogo.
+export interface PlayerStats {
+  challengesMade: number; // vezes que contestou
+  challengesRight: number; // contestações em que o acusado realmente blefava
+  bluffsCaught: number; // vezes que foi pego blefando
+  blocks: number; // bloqueios declarados
+  kills: number; // Golpes e assassinatos que de fato derrubaram uma influência
+  maxCoins: number; // recorde de moedas
+  influenceLost: number; // cartas que perdeu
 }
 
 // Cartas em jogo durante uma Troca (Embaixador). Privadas ao ator.
@@ -129,6 +140,7 @@ export interface GameState {
   phaseSeq: number;
   matchNumber: number; // nº da partida na sala (sobe a cada revanche)
   lastChallenge: LastChallenge | null; // última contestação (pública)
+  stats: Record<string, PlayerStats>; // por playerId
   players: PlayerState[];
   order: string[]; // ordem de turno (ids)
   currentPlayerIndex: number; // índice em `order` do jogador da vez
@@ -175,6 +187,7 @@ export interface GameView {
   phase: Phase;
   matchNumber: number;
   lastChallenge: LastChallenge | null;
+  stats: Record<string, PlayerStats>;
   players: PublicPlayer[];
   currentPlayerId: string | null;
   deckCount: number; // tamanho do baralho, sem revelar as cartas

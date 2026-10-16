@@ -5,6 +5,7 @@ import type { Server, Socket } from "socket.io";
 
 import {
   applyEvent,
+  autoPassTargets,
   createGame,
   currentTimer,
   decisionPlayerId,
@@ -132,8 +133,21 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
 
   // Persiste o novo estado, atualiza o relógio e propaga a view a cada jogador.
   // Rearmar ANTES de transmitir: a view precisa do tempo restante da fase nova.
+  // Aplica os "passar automático" até não sobrar nenhum (fechar uma janela pode abrir outra).
+  function settle(room: ServerRoom, state: GameState): GameState {
+    let s = state;
+    for (let i = 0; i < 40; i++) {
+      const [id] = autoPassTargets(s, room.autoPass);
+      if (!id) break;
+      const r = applyEvent(s, { type: "pass", playerId: id });
+      if (r.error) break;
+      s = r.state;
+    }
+    return s;
+  }
+
   function commit(room: ServerRoom, state: GameState): void {
-    room.game = state;
+    room.game = settle(room, state);
     rearmTimer(room);
     broadcastState(room);
   }
@@ -333,6 +347,18 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
     socket.on("game_challenge", (cb) =>
       handleGameEvent(cb, (id) => ({ type: "challenge", playerId: id })),
     );
+    socket.on("game_autopass", (payload, cb) => {
+      const { roomId, playerId } = socket.data;
+      const room = roomId ? getRoom(roomId) : undefined;
+      if (!room || !playerId) return cb({ ok: false, error: "Sala não encontrada." });
+      if (typeof payload?.enabled !== "boolean") return cb({ ok: false, error: "Valor inválido." });
+      if (payload.enabled) room.autoPass.add(playerId);
+      else room.autoPass.delete(playerId);
+      cb({ ok: true });
+      // Ligou no meio de uma janela aberta? Já vale agora.
+      if (room.game) commit(room, room.game);
+    });
+
     socket.on("game_pass", (cb) =>
       handleGameEvent(cb, (id) => ({ type: "pass", playerId: id })),
     );

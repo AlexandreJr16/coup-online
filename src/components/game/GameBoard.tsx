@@ -7,14 +7,21 @@
 
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 
+import { readAutoPass, saveAutoPass } from "@/src/lib/session";
 import { getSocket } from "@/src/lib/socket";
 import type { ActionType, Character, GameView } from "@/src/types/game";
 import type { GameActionAck } from "@/src/types/socket";
+import AutoPassToggle from "./AutoPassToggle";
 import BasicActions from "./BasicActions";
 import Card from "./Card";
-import ClaimPlate from "./ClaimPlate";
+import ChallengeReveal from "./ChallengeReveal";
+import ClaimCard from "./ClaimCard";
+import CoinFlights from "./CoinFlights";
+import DragGhost from "./DragGhost";
+import FlyFromDeck from "./FlyFromDeck";
 import HandView from "./HandView";
 import IntrigueFeed from "./IntrigueFeed";
+import VictoryPanel from "./VictoryPanel";
 import ReactionTray from "./ReactionTray";
 import Table from "./Table";
 import WaxSeal, { type SealData } from "./WaxSeal";
@@ -23,10 +30,11 @@ import {
   actionBlockedReason,
   CHAR_LABEL,
   CHARACTER_ACTION,
-  CINZEL,
   COLORS,
+  reactionOptions,
   requiredCharacter,
 } from "./helpers";
+import { useGameAudio } from "./useGameAudio";
 import { useGameEvents } from "./useGameEvents";
 
 const REACTION_PHASES = new Set<GameView["phase"]>([
@@ -36,6 +44,7 @@ const REACTION_PHASES = new Set<GameView["phase"]>([
 ]);
 
 const DOCK_HEIGHT = 214;
+const FEED_LANE = 232; // largura reservada ao feed de Intrigas aberto (painel 216 + folga)
 
 export default function GameBoard({
   view,
@@ -48,11 +57,11 @@ export default function GameBoard({
 }) {
   const socket = getSocket();
   const [error, setError] = useState("");
+  const [feedOpen, setFeedOpen] = useState(true);
   const [targetingAction, setTargetingAction] = useState<ActionType | null>(null);
   const [keepSel, setKeepSel] = useState<number[]>([]);
 
   const me = view.players.find((p) => p.id === myId);
-  const name = (id: string | null) => view.players.find((p) => p.id === id)?.name ?? "?";
   const canAct = view.phase === "aguardando_acao" && view.currentPlayerId === myId && !me?.eliminated;
 
   // ── Countdown: o servidor manda quanto FALTA (view.timer.remainingMs) e o cliente
@@ -77,8 +86,23 @@ export default function GameBoard({
 
   // ── Eventos derivados (Feed/Economia) + selo de cera ──────────────────────
   const events = useGameEvents(view);
+  const dealIn =
+    view.phase === "aguardando_acao" &&
+    view.deckCount === 25 - 2 * view.players.length &&
+    view.players.every((p) => p.coins === 2 && p.cards.every((c) => !c.revealed));
+  useGameAudio({ view, myId, events, secondsLeft, error, dealIn });
   const [seal, setSeal] = useState<SealData | null>(null);
   const sealCounter = useRef(0);
+  const [shaking, setShaking] = useState(false);
+  useEffect(() => {
+    if (!events.challenge || events.challenge.hadCard) return; // blefe desmascarado: a mesa treme
+    const on = setTimeout(() => setShaking(true), 0);
+    const off = setTimeout(() => setShaking(false), 520);
+    return () => {
+      clearTimeout(on);
+      clearTimeout(off);
+    };
+  }, [events.challenge]);
   useEffect(() => {
     if (!events.challenge) return; // contestação de QUALQUER jogador → todos veem o selo
     setSeal({
@@ -95,6 +119,44 @@ export default function GameBoard({
       subtitle: CHAR_LABEL[events.block.character],
     });
   }, [events.block]);
+
+  // ── Passar automático: o servidor guarda; aqui só o interruptor (reenviado ao montar) ──
+  const [autoPass, setAutoPass] = useState(readAutoPass);
+  useEffect(() => {
+    socket.emit("game_autopass", { enabled: autoPass }, () => {});
+  }, [socket, autoPass]);
+  const toggleAutoPass = (enabled: boolean) => {
+    setAutoPass(enabled);
+    saveAutoPass(enabled);
+  };
+
+  // ── Atalhos de teclado nas janelas de reação: Espaço passa, C contesta, B bloqueia ──
+  const reaction = reactionOptions(view, myId);
+  useEffect(() => {
+    if (!reaction.canReact || reaction.passed) return;
+    const done = (a: GameActionAck) => setError(a.ok ? "" : a.error);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      const act =
+        e.code === "Space" || k === " "
+          ? () => socket.emit("game_pass", done)
+          : k === "c" && reaction.canChallenge
+            ? () => socket.emit("game_challenge", done)
+            : k === "b" && reaction.blocks.length > 0
+              ? () => socket.emit("game_block", { character: reaction.blocks[0] }, done)
+              : null;
+      if (!act) return;
+      e.preventDefault();
+      (document.activeElement as HTMLElement | null)?.blur(); // Espaço não reativa o botão focado
+      setError("");
+      act();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // `blocks` entra como string estável (a lista é recriada a cada render).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reaction.canReact, reaction.passed, reaction.canChallenge, reaction.blocks.join(","), socket]);
 
   // Mensagens de erro somem sozinhas; Esc cancela a escolha de alvo.
   useEffect(() => {
@@ -132,6 +194,7 @@ export default function GameBoard({
   }
   // Clicar numa carta da mão = usar o poder dela (clicar de novo cancela a mira).
   function onUse(char: Character) {
+    if (suppressClick.current) return;
     const action = CHARACTER_ACTION[char];
     if (!action) return setError(`${CHAR_LABEL[char]} não tem ação de turno: só reage.`);
     if (targetingAction === action) return setTargetingAction(null);
@@ -142,6 +205,62 @@ export default function GameBoard({
     emitAction(targetingAction, id);
     setTargetingAction(null);
   }
+
+  // ── Arrastar um poder da mão: até um oponente (ações com alvo) ou para a mesa (as demais).
+  // Soltar no dock, ou fora de um alvo válido, cancela. O clique simples continua valendo.
+  const [drag, setDrag] = useState<{ char: Character; x: number; y: number } | null>(null);
+  const press = useRef<{ char: Character; x: number; y: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
+  function onPressCard(char: Character, e: React.PointerEvent) {
+    if (!canAct || e.button !== 0 || !CHARACTER_ACTION[char]) return;
+    press.current = { char, x: e.clientX, y: e.clientY, moved: false };
+  }
+  const coinsNow = me?.coins ?? 0;
+  useEffect(() => {
+    const move = (e: PointerEvent) => {
+      const p = press.current;
+      if (!p) return;
+      if (!p.moved) {
+        if (Math.hypot(e.clientX - p.x, e.clientY - p.y) < 8) return; // ainda é clique
+        const action = CHARACTER_ACTION[p.char]!;
+        const why = actionBlockedReason(coinsNow, action);
+        if (why) {
+          press.current = null;
+          setError(why);
+          return;
+        }
+        p.moved = true;
+        if (ACTION_META[action].needsTarget) setTargetingAction(action);
+      }
+      setDrag({ char: p.char, x: e.clientX, y: e.clientY });
+    };
+    const up = (e: PointerEvent) => {
+      const p = press.current;
+      press.current = null;
+      if (!p?.moved) return;
+      suppressClick.current = true; // o click que vem depois do arrasto não vale
+      setTimeout(() => (suppressClick.current = false), 150);
+      setDrag(null);
+      const action = CHARACTER_ACTION[p.char]!;
+      const hits = document.elementsFromPoint(e.clientX, e.clientY) as HTMLElement[];
+      if (ACTION_META[action].needsTarget) {
+        const id = hits.find((el) => el.dataset?.target === "sim")?.dataset.seatId;
+        setTargetingAction(null);
+        if (id) emitAction(action, id);
+      } else {
+        const noDock = !hits.some((el) => el.dataset?.testid === "dock");
+        if (noDock) emitAction(action);
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    // emitAction só usa o socket (singleton) e setError.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coinsNow, socket]);
 
   const targetIds =
     targetingAction != null
@@ -159,27 +278,7 @@ export default function GameBoard({
 
   // ── Zona central do dock: o que o jogador faz AGORA ───────────────────────
   let center: ReactNode;
-  if (view.phase === "fim_de_jogo") {
-    center = (
-      <div style={{ textAlign: "center" }}>
-        <h2 style={{ margin: "0 0 10px", color: COLORS.gold, fontFamily: CINZEL, letterSpacing: 0.5 }}>
-          🏆 {name(view.winnerId)}
-        </h2>
-        {me && (
-          <button
-            onClick={() => {
-              setError("");
-              socket.emit("game_rematch", ack);
-            }}
-            className="game-btn"
-            style={{ padding: "10px 20px", fontSize: 15, color: "#1a1a2e", "--c": COLORS.gold } as CSSProperties}
-          >
-            Jogar de novo
-          </button>
-        )}
-      </div>
-    );
-  } else if (me?.eliminated) {
+  if (me?.eliminated && view.phase !== "fim_de_jogo") {
     center = <span style={{ color: COLORS.dim }}>☠ Você foi exilado</span>;
   } else if (view.phase === "aguardando_revelacao" && view.mustRevealPlayerId === myId) {
     // Só as MINHAS cartas ocultas, pulsando: clicar numa revela (perde a influência).
@@ -207,23 +306,32 @@ export default function GameBoard({
     const pool = view.exchange.pool;
     center = (
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        {pool.map((c, i) => (
-          <Card
-            key={i}
-            size="lg"
-            character={c}
-            selected={keepSel.includes(i)}
-            onClick={() =>
-              setKeepSel((cur) =>
-                cur.includes(i) ? cur.filter((x) => x !== i) : cur.length < keepCount ? [...cur, i] : cur,
-              )
-            }
-            style={{
-              transform: keepSel.includes(i) ? "translateY(-12px)" : undefined,
-              transition: "transform 120ms ease",
-            }}
-          />
-        ))}
+        {pool.map((c, i) => {
+          const card = (
+            <Card
+              size="lg"
+              character={c}
+              selected={keepSel.includes(i)}
+              onClick={() =>
+                setKeepSel((cur) =>
+                  cur.includes(i) ? cur.filter((x) => x !== i) : cur.length < keepCount ? [...cur, i] : cur,
+                )
+              }
+              style={{
+                transform: keepSel.includes(i) ? "translateY(-12px)" : undefined,
+                transition: "transform 120ms ease",
+              }}
+            />
+          );
+          // As cartas depois das minhas (keepCount) acabaram de ser compradas da Corte.
+          return i >= keepCount ? (
+            <FlyFromDeck key={i} delay={(i - keepCount) * 140}>
+              {card}
+            </FlyFromDeck>
+          ) : (
+            <div key={i} style={{ display: "flex" }}>{card}</div>
+          );
+        })}
         <button
           onClick={() => {
             setError("");
@@ -239,29 +347,36 @@ export default function GameBoard({
       </div>
     );
   } else {
-    center = <HandView view={view} myId={myId} armed={armedChar} canAct={canAct} onUse={onUse} />;
+    center = <HandView view={view} myId={myId} armed={armedChar} canAct={canAct} onUse={onUse} onPress={onPressCard} dragging={drag?.char ?? null} />;
   }
 
   return (
     <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", color: COLORS.text }}>
       {/* Mesa — ocupa todo o espaço acima do dock */}
-      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+      <div className={shaking ? "shake" : undefined} style={{ position: "relative", flex: 1, minHeight: 0 }}>
+       {/* Palco: a mesa e tudo que se ancora nela. Com o feed de Intrigas aberto, ele
+           ganha uma faixa própria à direita em vez de cobrir os assentos. */}
+       <div data-stage style={{ position: "absolute", inset: 0, right: feedOpen ? FEED_LANE : 0, transition: "right 200ms ease" }}>
         <Table
           players={view.players}
           currentPlayerId={view.currentPlayerId}
           myId={myId}
           treasury={view.treasury}
+          deckCount={view.deckCount}
           coinDeltas={events.coinDeltas}
           deltaKey={events.deltaKey}
           selectableTargetIds={targetIds}
           onSelectTarget={selectTarget}
           dimOthers={view.phase === "aguardando_acao"}
+          dealIn={dealIn}
           urgentIds={urgentIds}
           passedIds={view.pending?.passedIds ?? []}
         />
 
         {/* Jogada em andamento (informação; não bloqueia a mesa) */}
-        {inReaction && <ClaimPlate view={view} secondsLeft={secondsLeft} />}
+        {inReaction && <ClaimCard view={view} secondsLeft={secondsLeft} />}
+        <ChallengeReveal challenge={events.challenge} />
+        <CoinFlights deltas={events.coinDeltas} deltaKey={events.deltaKey} />
 
         {/* Tempo do turno / revelação / troca (as janelas têm a barra na placa) */}
         {decisionTimer && (
@@ -283,11 +398,25 @@ export default function GameBoard({
           </div>
         )}
 
-        <IntrigueFeed log={events.log} />
+       </div>
+
+        <IntrigueFeed log={events.log} open={feedOpen} onOpenChange={setFeedOpen} />
+
+        {view.phase === "fim_de_jogo" && (
+          <VictoryPanel
+            view={view}
+            onRematch={() => {
+              setError("");
+              socket.emit("game_rematch", ack);
+            }}
+          />
+        )}
 
         {/* Retorno rápido de regra (some sozinho) */}
         {error && <div style={toast}>{error}</div>}
       </div>
+
+      {drag && <DragGhost character={drag.char} x={drag.x} y={drag.y} />}
 
       {/* Selo de cera — acima de tudo */}
       <WaxSeal seal={seal} />
@@ -300,7 +429,7 @@ export default function GameBoard({
         <div data-zone="centro" style={{ display: "flex", justifyContent: "center", minWidth: 380 }}>
           {center}
         </div>
-        <div data-zone="reacoes" style={{ justifySelf: "start" }}>
+        <div data-zone="reacoes" style={{ justifySelf: "start", display: "flex", flexDirection: "column", gap: 12 }}>
           <ReactionTray
             view={view}
             myId={myId}
@@ -317,6 +446,7 @@ export default function GameBoard({
               socket.emit("game_pass", ack);
             }}
           />
+          <AutoPassToggle enabled={autoPass} onChange={toggleAutoPass} />
         </div>
       </div>
     </div>
@@ -356,6 +486,8 @@ const dock: CSSProperties = {
   alignItems: "center",
   gap: 20,
   padding: "0 20px",
-  background: "linear-gradient(#15152b, #101022)",
-  borderTop: "1px solid rgba(255,255,255,0.08)",
+  // Balcão de madeira escura com filete dourado em cima (mesmo vocabulário da mesa).
+  background: "linear-gradient(#2b1f1c, #1a1214 70%, #120c0f)",
+  borderTop: "2px solid rgba(240,165,0,0.6)",
+  boxShadow: "inset 0 1px 0 rgba(255,225,160,0.18), 0 -10px 24px rgba(0,0,0,0.45)",
 };

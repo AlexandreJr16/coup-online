@@ -13,6 +13,7 @@ import { type CSSProperties, type ReactNode, useState } from "react";
 
 import type { Expressao } from "@/src/lib/game/cards";
 import type { Character } from "@/src/types/game";
+import { Pic } from "./ActionSeal";
 import { artUrl, backUrl, CHAR_LABEL, CHAR_SHORT, CHAR_VISUAL, CINZEL, COLORS } from "./helpers";
 
 type Size = "sm" | "lg";
@@ -25,7 +26,7 @@ interface Dim {
 }
 const DIMS: Record<Size, Dim> = {
   sm: { w: 40, h: 56, icon: 22, label: 0, radius: 6 },
-  lg: { w: 88, h: 124, icon: 34, label: 13, radius: 10 },
+  lg: { w: 88, h: 124, icon: 34, label: 12, radius: 10 },
 };
 
 export default function Card({
@@ -41,6 +42,11 @@ export default function Card({
   style,
   hint,
   className,
+  onPointerDown,
+  flipLost = true,
+  foil = false,
+  onPointerMove,
+  onPointerLeave,
 }: {
   character?: Character | null;
   faceDown?: boolean;
@@ -54,6 +60,11 @@ export default function Card({
   style?: CSSProperties;
   hint?: ReactNode; // texto auxiliar (ação) — só no size="lg"
   className?: string; // classe na carta (ex.: hand-card para o hover da mão)
+  onPointerDown?: (e: React.PointerEvent) => void; // início de arrasto (mão)
+  foil?: boolean; // brilho holográfico (cartas que são suas)
+  onPointerMove?: (e: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerLeave?: (e: React.PointerEvent<HTMLDivElement>) => void;
+  flipLost?: boolean; // no modo flip, a face aparece como "perdida" (dessaturada); false = viva
 }) {
   const d = DIMS[size];
   const outer: CSSProperties = {
@@ -90,7 +101,7 @@ export default function Card({
           {/* Face revelada (perdida) — só ganha personagem no instante da virada,
               então a carta oculta de outro jogador nunca fica no DOM. */}
           {character ? (
-            <FrontFace d={d} character={character} size={size} lost transform="rotateY(180deg)" />
+            <FrontFace d={d} character={character} size={size} lost={flipLost} transform="rotateY(180deg)" />
           ) : (
             <BackFace d={d} size={size} transform="rotateY(180deg)" />
           )}
@@ -103,6 +114,9 @@ export default function Card({
   return (
     <div
       onClick={onClick}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
       title={character ? CHAR_LABEL[character] : undefined}
       className={className}
       style={outer}
@@ -118,6 +132,7 @@ export default function Card({
           bluff={bluff}
           selected={selected}
           hint={hint}
+          foil={foil}
         />
       )}
     </div>
@@ -188,6 +203,7 @@ function FrontFace({
   selected,
   hint,
   transform,
+  foil,
 }: {
   d: Dim;
   character: Character;
@@ -197,6 +213,7 @@ function FrontFace({
   selected?: boolean;
   hint?: ReactNode;
   transform?: string;
+  foil?: boolean;
 }) {
   const v = CHAR_VISUAL[character];
   const muted = lost || bluff;
@@ -258,13 +275,13 @@ function FrontFace({
             }}
           />
           {size === "lg" && (
-            <div style={caption}>
+            <div data-caption style={caption}>
               <span
-                style={{ fontFamily: CINZEL, fontWeight: 700, fontSize: d.label, letterSpacing: 0.5 }}
+                style={{ fontFamily: CINZEL, fontWeight: 800, fontSize: d.label, letterSpacing: 0.3, textShadow: "0 1px 2px #000, 0 0 6px #000" }}
               >
                 {CHAR_SHORT[character]}
               </span>
-              {hint && <span style={{ fontSize: 10, color: "rgba(255,255,255,0.78)" }}>{hint}</span>}
+              {hint && <span style={{ fontSize: 10, color: "rgba(255,240,210,0.92)", textShadow: "0 1px 2px #000" }}>{hint}</span>}
             </div>
           )}
         </>
@@ -284,8 +301,13 @@ function FrontFace({
         </>
       )}
 
+      {foil && !muted && <div data-foil className="foil" aria-hidden />}
       {lost && <Corner size={size}>❌</Corner>}
-      {bluff && !lost && <Corner size={size}>🎭</Corner>}
+      {bluff && !lost && (
+        <Corner size={size}>
+          <Pic name="mascara" emoji="🎭" size={size === "sm" ? 16 : 16} />
+        </Corner>
+      )}
     </div>
   );
 }

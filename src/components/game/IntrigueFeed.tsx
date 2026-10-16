@@ -1,10 +1,10 @@
 // Feed de Intrigas: registro em "pergaminho" das últimas jogadas/contestações,
 // derivado do stream de game_state (ver useGameEvents). Ajuda a dedução — memória
-// de quem alegou o quê, o núcleo do Coup. Overlay recolhível à direita da mesa
-// (não encolhe o tabuleiro).
+// de quem alegou o quê, o núcleo do Coup. Painel recolhível numa faixa à direita
+// da mesa (o GameBoard desloca o palco para os assentos não ficarem cobertos).
 "use client";
 
-import { type CSSProperties, useState } from "react";
+import type { CSSProperties } from "react";
 
 import { CINZEL } from "./helpers";
 import type { GameLogEntry } from "./useGameEvents";
@@ -18,14 +18,22 @@ const ICON: Record<GameLogEntry["kind"], string> = {
   winner: "🏆",
 };
 
-export default function IntrigueFeed({ log }: { log: GameLogEntry[] }) {
-  const [open, setOpen] = useState(true);
+export default function IntrigueFeed({
+  log,
+  open,
+  onOpenChange,
+}: {
+  log: GameLogEntry[];
+  open: boolean; // o GameBoard reserva uma faixa para o painel quando aberto
+  onOpenChange: (open: boolean) => void;
+}) {
   const entries = [...log].slice(-14).reverse(); // mais recentes no topo
 
   if (!open) {
     return (
       <button
-        onClick={() => setOpen(true)}
+        data-feed
+        onClick={() => onOpenChange(true)}
         title="Mostrar intrigas"
         style={collapsedBtn}
       >
@@ -35,12 +43,12 @@ export default function IntrigueFeed({ log }: { log: GameLogEntry[] }) {
   }
 
   return (
-    <div style={panel}>
+    <div data-feed style={panel}>
       <div style={header}>
         <span style={{ fontFamily: CINZEL, fontWeight: 700, letterSpacing: 0.5 }}>
           📜 Intrigas
         </span>
-        <button onClick={() => setOpen(false)} title="Recolher" style={closeBtn}>
+        <button onClick={() => onOpenChange(false)} title="Recolher" style={closeBtn}>
           ×
         </button>
       </div>

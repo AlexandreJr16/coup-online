@@ -7,10 +7,16 @@ import { TABLE_BG_URL } from "./helpers";
 export default function TableBackdrop({ children }: { children: ReactNode }) {
   return (
     <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "hidden" }}>
-      <div aria-hidden style={backdrop} />
+      <SalonBg />
       <div style={{ position: "relative", height: "100%" }}>{children}</div>
     </div>
   );
+}
+
+// Só o cenário (preenche o pai `position: relative; overflow: hidden`). Usado também
+// no menu e na sala de espera, para o site inteiro falar o mesmo idioma visual.
+export function SalonBg() {
+  return <div aria-hidden style={backdrop} />;
 }
 
 // O cenário tem só 168×96 px: ampliado "pixelado" vira mosaico ilegível. Aqui ele é

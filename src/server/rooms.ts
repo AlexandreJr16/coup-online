@@ -23,6 +23,7 @@ export interface ServerRoom extends Room {
   timerSeq: number | null;
   timerEndsAt: number | null;
   tokens: Map<string, string>; // token (segredo) → playerId
+  autoPass: Set<string>; // jogadores com "passar automático" ligado
   graceTimers: Map<string, NodeJS.Timeout>; // lobby: remoção pendente após desconexão
   cleanupTimer: NodeJS.Timeout | null; // sala sem ninguém online: apagar depois
 }
@@ -101,6 +102,7 @@ export function joinRoom(roomId: string, name: string, token?: string): JoinResu
       timerSeq: null,
       timerEndsAt: null,
       tokens: new Map(),
+      autoPass: new Set(),
       graceTimers: new Map(),
       cleanupTimer: null,
     };
@@ -133,6 +135,7 @@ export function removePlayer(roomId: string, playerId: string): ServerRoom | nul
   if (!room) return null;
   room.players = room.players.filter((p) => p.id !== playerId);
   for (const [token, id] of room.tokens) if (id === playerId) room.tokens.delete(token);
+  room.autoPass.delete(playerId);
   const grace = room.graceTimers.get(playerId);
   if (grace) clearTimeout(grace);
   room.graceTimers.delete(playerId);

@@ -12,6 +12,7 @@ import type { AddressInfo } from "node:net";
 import { Server } from "socket.io";
 import { io as connect, type Socket } from "socket.io-client";
 
+import { computeAwards } from "../lib/game/awards";
 import { attachGameSocket, type GameIO } from "./socket";
 import type { ActionType, Character, GameConfig, GameView } from "../types/game";
 import type {
@@ -57,6 +58,7 @@ interface Client {
   block(character: Character): Promise<GameActionAck>;
   challenge(): Promise<GameActionAck>;
   pass(): Promise<GameActionAck>;
+  autopass(enabled: boolean): Promise<GameActionAck>;
   reveal(cardIndex: number): Promise<GameActionAck>;
   rematch(): Promise<GameActionAck>;
 }
@@ -86,6 +88,7 @@ function client(name: string): Client {
     block: (character) => new Promise((res) => socket.emit("game_block", { character }, res)),
     challenge: () => new Promise((res) => socket.emit("game_challenge", res)),
     pass: () => new Promise((res) => socket.emit("game_pass", res)),
+    autopass: (enabled) => new Promise((res) => socket.emit("game_autopass", { enabled }, res)),
     reveal: (cardIndex) => new Promise((res) => socket.emit("game_reveal", { cardIndex }, res)),
     rematch: () => new Promise((res) => socket.emit("game_rematch", res)),
   };
@@ -341,6 +344,19 @@ async function playToEnd(cs: Client[]): Promise<void> {
   assert.equal(cs[0].view!.phase, "fim_de_jogo", "a partida deveria terminar");
 }
 
+test("fim de partida: estatísticas refletem o que aconteceu (golpes = kills, perdas, recorde de moedas)", async () => {
+  const { cs } = await startedGame(["Ana", "Bia"]);
+  await playToEnd(cs);
+  const v = cs[0].view!;
+  const vencedor = v.stats[v.winnerId!];
+  const perdedor = v.stats[cs.find((c) => c.id !== v.winnerId)!.id];
+  assert.ok(vencedor.kills >= 2, "o vencedor deu os golpes que eliminaram o rival");
+  assert.equal(perdedor.influenceLost, 2); // eliminado = perdeu as 2 cartas
+  assert.ok(vencedor.maxCoins >= 7);
+  const nomes = Object.fromEntries(v.players.map((p) => [p.id, p.name]));
+  assert.ok(computeAwards(v.stats, nomes).some((a) => a.id === "carrasco"));
+});
+
 test("revanche: recusada antes do fim; depois, o vencedor começa e mantém os timers", async () => {
   const { cs } = await startedGame(["Ana", "Bia", "Caio"], { globalReactionTime: 3 });
   assert.equal((await cs[0].rematch()).ok, false);
@@ -354,6 +370,9 @@ test("revanche: recusada antes do fim; depois, o vencedor começa e mantém os t
   assert.ok(v.players.every((p) => p.coins === 2 && p.cards.every((k) => !k.revealed)));
   assert.equal(v.config.globalReactionTime, 3);
   assert.equal(v.lastChallenge, null);
+  // estatísticas públicas chegaram a todos e a nova partida zera tudo
+  assert.ok(v.stats[cs[0].id] && v.stats[cs[1].id] && v.stats[cs[2].id]);
+  assert.ok(Object.values(v.stats).every((st) => st.kills === 0 && st.influenceLost === 0 && st.maxCoins === 2));
   // a revanche continua sem vazar cartas alheias
   assert.ok(cs[1].view!.players.filter((p) => p.id !== cs[1].id).every((p) => p.cards.every((k) => k.character === null)));
 });
@@ -363,5 +382,60 @@ test("ação fora da vez volta erro só para quem agiu", async () => {
   const { cs } = await startedGame(["Ana", "Bia"]);
   const [, b] = cs;
   const ack = await b.action("renda");
+  assert.equal(ack.ok, false);
+});
+
+// ── 4.7: passar automático ───────────────────────────────────────────────────
+test("passar automático: com todos ligados, Taxas resolve na hora, sem esperar o timer da janela", async () => {
+  const { cs } = await startedGame(["Ana", "Bia", "Caio"]);
+  const [a, b, c] = cs;
+  assert.equal((await b.autopass(true)).ok, true);
+  assert.equal((await c.autopass(true)).ok, true);
+  const t0 = Date.now();
+  await a.action("taxas");
+  await waitFor(() => coinsOf(a, a) === 5, 3000, "Taxas resolvida");
+  assert.ok(Date.now() - t0 < 5 * 1000 * TIME_SCALE * 0.5, "deveria fechar bem antes do timer da janela");
+  assert.equal(a.view!.currentPlayerId, b.id);
+});
+
+test("passar automático: o ALVO não é passado sozinho (ele quer decidir)", async () => {
+  const { cs } = await startedGame(["Ana", "Bia", "Caio"]);
+  const [a, b, c] = cs;
+  await b.autopass(true);
+  await c.autopass(true);
+  // Ana precisa de 3 moedas: dois turnos de Renda antes (Ana, Bia, Caio, Ana...)
+  await a.action("renda");
+  await waitFor(() => a.view!.currentPlayerId === b.id);
+  await b.action("renda");
+  await waitFor(() => a.view!.currentPlayerId === c.id);
+  await c.action("renda");
+  await waitFor(() => a.view!.currentPlayerId === a.id);
+  assert.equal((await a.action("assassinar", b.id)).ok, true);
+  // Caio passa sozinho; Bia (alvo) continua com a janela aberta e a escolha na mão.
+  await waitFor(() => a.view!.pending?.passedIds.includes(c.id) === true, 2000, "Caio passou sozinho");
+  assert.equal(a.view!.phase, "janela_reacao_vitima");
+  assert.equal(a.view!.pending!.passedIds.includes(b.id), false);
+});
+
+test("passar automático: ligar no meio da janela já vale, e desligar volta ao normal", async () => {
+  const { cs } = await startedGame(["Ana", "Bia"]);
+  const [a, b] = cs;
+  await a.action("taxas");
+  await waitFor(() => b.view!.phase === "janela_reacao_global");
+  assert.equal((await b.autopass(true)).ok, true);
+  await waitFor(() => a.view!.phase === "aguardando_acao" && coinsOf(a, a) === 5, 2000, "passou ao ligar");
+  assert.equal((await b.autopass(false)).ok, true);
+  await b.action("renda");
+  await a.action("taxas");
+  await waitFor(() => a.view!.phase === "janela_reacao_global");
+  await sleep(150);
+  assert.equal(a.view!.pending!.passedIds.length, 0); // desligado: não passou sozinho
+});
+
+test("passar automático: valor inválido é recusado", async () => {
+  const { cs } = await startedGame(["Ana", "Bia"]);
+  const ack = await new Promise<GameActionAck>((res) =>
+    cs[0].socket.emit("game_autopass", { enabled: "sim" } as never, res),
+  );
   assert.equal(ack.ok, false);
 });

@@ -66,6 +66,9 @@ export interface ClientToServerEvents {
   game_challenge: (cb: (ack: GameActionAck) => void) => void;
   // Revanche (depois de fim_de_jogo): mesma sala, mesmos timers; o vencedor começa.
   game_rematch: (cb: (ack: GameActionAck) => void) => void;
+  // Liga/desliga o "passar automático": o servidor passa por você nas janelas em que você
+  // não é parte envolvida (não é o alvo; nem o ator quando contestam um bloqueio).
+  game_autopass: (payload: { enabled: boolean }, cb: (ack: GameActionAck) => void) => void;
   // "Deixo passar": não bloqueio nem contesto. Fecha a janela antes do timer
   // quando todos os elegíveis passam.
   game_pass: (cb: (ack: GameActionAck) => void) => void;

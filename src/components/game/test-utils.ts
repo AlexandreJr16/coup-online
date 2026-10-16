@@ -23,6 +23,7 @@ export function makeView(over: Partial<GameView> = {}): GameView {
     phase: "aguardando_acao",
     matchNumber: 1,
     lastChallenge: null,
+    stats: {},
     players: [
       player("p1", { name: "Ana", hand: ["duque", "assassino"] }),
       player("p2", { name: "Bia" }),

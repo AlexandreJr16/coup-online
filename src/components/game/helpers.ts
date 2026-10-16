@@ -18,8 +18,6 @@ export const CINZEL = "var(--font-cinzel), Georgia, serif";
 // Paleta (DESIGN.md "Tipografia e Cores"). Inline styles, sem lib de UI.
 export const COLORS = {
   bg: "#1a1a2e", // fundo
-  felt: "#2d5a27", // mesa (feltro)
-  feltEdge: "#21421d",
   gold: "#f0a500", // ações de moeda
   red: "#c0392b", // ações agressivas
   coup: "#1f1f24", // golpe (preto/cinza escuro)
@@ -44,6 +42,70 @@ export const CHAR_SHORT = Object.fromEntries(
 export const CHAR_VISUAL = Object.fromEntries(
   CARDS.map((c) => [c.id, { color: c.cor, icon: c.icone }]),
 ) as Record<Character, { color: string; icon: string }>;
+
+// Ícone (e emoji de reserva) de cada ação, para selos e para a carta jogada na mesa.
+export const ACTION_ICON: Record<ActionType, { icon: IconName; emoji: string }> = {
+  renda: { icon: "renda", emoji: "🪙" },
+  ajuda_externa: { icon: "ajuda_externa", emoji: "👝" },
+  golpe: { icon: "golpe", emoji: "💥" },
+  taxas: { icon: "taxas", emoji: "📒" },
+  assassinar: { icon: "assassinar", emoji: "🗡️" },
+  extorquir: { icon: "extorquir", emoji: "💰" },
+  trocar: { icon: "trocar", emoji: "🔄" },
+};
+
+// O que ESTE jogador pode fazer na janela de reação atual (usado pela bandeja e pelos
+// atalhos de teclado, para os dois sempre concordarem).
+export interface ReactionOptions {
+  canReact: boolean; // há janela aberta e eu posso reagir nela
+  passed: boolean; // já passei (é final)
+  canChallenge: boolean;
+  blocks: Character[]; // personagens com que posso bloquear
+}
+
+export function reactionOptions(view: GameView, myId: string): ReactionOptions {
+  const p = view.pending;
+  const inWindow =
+    p !== null &&
+    (view.phase === "janela_reacao_global" ||
+      view.phase === "janela_reacao_vitima" ||
+      view.phase === "janela_contestar_bloqueio");
+  if (!inWindow || !p) return { canReact: false, passed: false, canChallenge: false, blocks: [] };
+  const canReact = reactorIds(view).includes(myId);
+  return {
+    canReact,
+    passed: p.passedIds.includes(myId),
+    canChallenge: canReact && (view.phase === "janela_contestar_bloqueio" || p.claimedCharacter !== null),
+    blocks: canReact && view.phase !== "janela_contestar_bloqueio" ? legalBlockChars(p.action, p.targetId, myId) : [],
+  };
+}
+
+// ── Ícones dos selos de ação (public/art/<tema>/icones/) ─────────────────────
+export type IconName =
+  | "renda" | "ajuda_externa" | "golpe" | "taxas" | "assassinar" | "extorquir"
+  | "trocar" | "contestar" | "bloquear" | "passar" | "mascara" | "cadeado";
+
+// Ícones que JÁ existem como arquivo; os demais caem no emoji do selo (contestar
+// entra quando a 2ª leva de geração for curada).
+export const ICONS_AVAILABLE: readonly IconName[] = [
+  "renda", "ajuda_externa", "golpe", "taxas", "assassinar", "extorquir", "trocar",
+  "bloquear", "passar", "mascara", "cadeado",
+];
+
+export function iconUrl(name: IconName, size: "sm" | "lg" = "sm"): string | null {
+  if (!ICONS_AVAILABLE.includes(name)) return null;
+  return `/art/${ART_THEME}/icones/${name}${size === "sm" ? ".sm" : ""}.png`;
+}
+
+// Estado de um selo de ação básica: apagado (fora da vez), travado (cadeado: moedas
+// insuficientes ou golpe obrigatório), obrigatório (a única jogada permitida) ou pronto.
+export type SealState = "ready" | "off" | "locked" | "mandatory";
+
+export function basicSealState(coins: number, action: ActionType, canAct: boolean): SealState {
+  if (!canAct) return "off";
+  if (coins >= 10) return action === "golpe" ? "mandatory" : "locked";
+  return actionBlockedReason(coins, action) ? "locked" : "ready";
+}
 
 // Quem pode reagir (bloquear/contestar/passar) na janela atual: todo jogador vivo
 // exceto quem fez a jogada julgada (ator na ação; bloqueador no bloqueio). Espelha
@@ -173,6 +235,26 @@ export function avatarColor(name: string): string {
   let h = 0;
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   return `hsl(${h % 360} 60% 45%)`;
+}
+
+// ── Retratos dos jogadores (public/art/<tema>/avatares/<slug>.png, 64×92) ────
+export const AVATARS = [
+  "ator", "capitao_porto", "colono", "dama_corte", "doceira", "estudante",
+  "frei", "jovem_barao", "medico", "parteira", "professora", "ribeirinho",
+] as const;
+export type AvatarSlug = (typeof AVATARS)[number];
+
+export function avatarUrl(slug: string): string {
+  return `/art/${ART_THEME}/avatares/${slug}.png`;
+}
+
+// Sorteio determinístico e SEM repetição dentro da mesa: parte de um hash dos ids
+// (igual para todos os clientes, pois a lista de jogadores é a mesma) e anda de 5
+// em 5 (coprimo de 12, então até 12 jogadores nunca colidem).
+export function assignAvatars(ids: string[]): AvatarSlug[] {
+  let h = 0;
+  for (const ch of ids[0] ?? "") h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return ids.map((_, i) => AVATARS[(h + i * 5) % AVATARS.length]);
 }
 
 // ── Layout dos assentos em volta da mesa ────────────────────────────────────

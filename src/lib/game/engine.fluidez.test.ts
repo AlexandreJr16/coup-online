@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 
 import {
   applyEvent,
+  autoPassTargets,
   createGame,
   currentTimer,
   decisionPlayerId,
@@ -263,4 +264,32 @@ test("view.timer usa o tempo restante informado pelo servidor", () => {
   assert.equal(v.timer!.remainingMs, 2300);
   assert.equal(v.timer!.seconds, 5);
   assert.equal(viewForPlayer(s, "p2").timer!.remainingMs, 5000); // sem info → janela cheia
+});
+
+// ── 4.7: passar automático ───────────────────────────────────────────────────
+test("autoPassTargets: só quem ligou, pode reagir e não é parte envolvida", () => {
+  let s = newGame(4);
+  setCoins(s, "p1", 3);
+  s = run(s, { type: "action", playerId: "p1", action: "assassinar", targetId: "p2" });
+  const todos = new Set(["p1", "p2", "p3", "p4"]);
+  // p1 é o ator (não reage), p2 é o ALVO (quer decidir) → só p3 e p4 passam sozinhos.
+  assert.deepEqual(autoPassTargets(s, todos), ["p3", "p4"]);
+  assert.deepEqual(autoPassTargets(s, new Set(["p3"])), ["p3"]); // quem não ligou fica de fora
+  assert.deepEqual(autoPassTargets(s, new Set()), []);
+});
+
+test("autoPassTargets: já passou não repete; na janela do bloqueio o ator não passa sozinho", () => {
+  let s = newGame(3);
+  s = run(s, { type: "action", playerId: "p1", action: "ajuda_externa" });
+  s = run(s, { type: "block", playerId: "p2", character: "duque" });
+  assert.equal(s.phase, "janela_contestar_bloqueio");
+  const todos = new Set(["p1", "p2", "p3"]);
+  // p2 bloqueou (excluído) e p1 é o ator: foi a ação dele que travou → só p3.
+  assert.deepEqual(autoPassTargets(s, todos), ["p3"]);
+  s = run(s, { type: "pass", playerId: "p3" });
+  assert.deepEqual(autoPassTargets(s, todos), []);
+});
+
+test("autoPassTargets: fora de janela não há ninguém", () => {
+  assert.deepEqual(autoPassTargets(newGame(3), new Set(["p1", "p2", "p3"])), []);
 });

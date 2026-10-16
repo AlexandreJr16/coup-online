@@ -32,6 +32,7 @@ function build(fase: string, n: number): GameView {
     phase: "aguardando_acao",
     matchNumber: 1,
     lastChallenge: null,
+    stats: {},
     players,
     currentPlayerId: "p1",
     deckCount: 11,
@@ -78,7 +79,19 @@ function build(fase: string, n: number): GameView {
         timer: { phase: "aguardando_troca", seconds: 30, remainingMs: 21000 },
       };
     case "fim":
-      return { ...base, phase: "fim_de_jogo", winnerId: "p1", currentPlayerId: null, timer: null };
+      return {
+        ...base,
+        phase: "fim_de_jogo",
+        winnerId: "p1",
+        currentPlayerId: null,
+        timer: null,
+        stats: {
+          p1: { challengesMade: 4, challengesRight: 3, bluffsCaught: 0, blocks: 1, kills: 2, maxCoins: 11, influenceLost: 1 },
+          p2: { challengesMade: 1, challengesRight: 0, bluffsCaught: 3, blocks: 0, kills: 0, maxCoins: 5, influenceLost: 2 },
+          p3: { challengesMade: 2, challengesRight: 1, bluffsCaught: 1, blocks: 2, kills: 1, maxCoins: 6, influenceLost: 2 },
+          p4: { challengesMade: 0, challengesRight: 0, bluffsCaught: 0, blocks: 0, kills: 0, maxCoins: 4, influenceLost: 2 },
+        },
+      };
     default:
       return base;
   }

@@ -25,6 +25,7 @@ import type {
   PendingAction,
   Phase,
   PlayerState,
+  PlayerStats,
 } from "../../types/game";
 
 const TREASURY_TOTAL = 50; // total de moedas do jogo (Coup base)
@@ -70,6 +71,7 @@ export function createGame(
     phaseSeq: 0,
     matchNumber: opts.matchNumber ?? 1,
     lastChallenge: null,
+    stats: Object.fromEntries(playerStates.map((p) => [p.id, newStats(p.coins)])),
     players: playerStates,
     order,
     currentPlayerIndex: Math.max(0, order.indexOf(opts.firstPlayerId ?? "")),
@@ -82,6 +84,10 @@ export function createGame(
     exchange: null,
     winnerId: null,
   };
+}
+
+function newStats(coins: number): PlayerStats {
+  return { challengesMade: 0, challengesRight: 0, bluffsCaught: 0, blocks: 0, kills: 0, maxCoins: coins, influenceLost: 0 };
 }
 
 // Toda abertura de fase/janela passa por aqui: o phaseSeq novo é o sinal para o
@@ -154,7 +160,7 @@ function handleAction(
       const target = requireTarget(s, e.targetId, actor.id);
       if (actor.coins < 7) throw new EngineError("Golpe de Estado custa 7 moedas.");
       pay(s, actor.id, 7);
-      s.resolution = [{ kind: "lose_influence", playerId: target.id }];
+      s.resolution = [{ kind: "lose_influence", playerId: target.id, by: actor.id }];
       runResolution(s, rng);
       return;
     }
@@ -214,6 +220,7 @@ function handleBlock(
     throw new EngineError("Você já passou nesta janela.");
   }
   p.block = { blockerId: e.playerId, character: e.character };
+  s.stats[e.playerId].blocks += 1;
   p.passedIds = []; // janela nova: a lista de quem passou zera
   setPhase(s, "janela_contestar_bloqueio");
 }
@@ -340,7 +347,7 @@ function handlePass(
   }
   const p = s.pending!;
   byIdAlive(s, e.playerId);
-  const reactors = reactorIds(s);
+  const reactors = pendingReactorIds(s);
   if (!reactors.includes(e.playerId)) {
     throw new EngineError("Você não pode reagir a esta jogada.");
   }
@@ -359,11 +366,26 @@ function isWindowPhase(phase: Phase): boolean {
 
 // Quem pode reagir na janela atual: todo jogador vivo, exceto quem fez a jogada
 // que está sendo julgada (o ator na ação; o bloqueador no bloqueio).
-function reactorIds(s: GameState): string[] {
+export function pendingReactorIds(s: GameState): string[] {
   const p = s.pending!;
   const excluded =
     s.phase === "janela_contestar_bloqueio" ? p.block!.blockerId : p.actorId;
   return s.players.filter((x) => isAlive(x) && x.id !== excluded).map((x) => x.id);
+}
+
+// "Passar automático": quem deve passar sozinho agora. Só jogadores que ligaram a opção,
+// podem reagir e NÃO são parte envolvida: o alvo da ação (ele quer decidir) e, na janela
+// de contestar um bloqueio, o ator (foi a ação dele que travou).
+export function autoPassTargets(s: GameState, enabled: ReadonlySet<string>): string[] {
+  if (!isWindowPhase(s.phase) || !s.pending) return [];
+  const p = s.pending;
+  return pendingReactorIds(s).filter(
+    (id) =>
+      enabled.has(id) &&
+      !p.passedIds.includes(id) &&
+      id !== p.targetId &&
+      !(s.phase === "janela_contestar_bloqueio" && id === p.actorId),
+  );
 }
 
 // Fecha a janela atual sem reação: ação prossegue / bloqueio bem-sucedido.
@@ -395,6 +417,11 @@ function recordChallenge(
   accusedHadCard: boolean,
   kind: "action" | "block",
 ): void {
+  s.stats[challengerId].challengesMade += 1;
+  if (!accusedHadCard) {
+    s.stats[challengerId].challengesRight += 1;
+    s.stats[accusedId].bluffsCaught += 1;
+  }
   s.lastChallenge = {
     n: (s.lastChallenge?.n ?? 0) + 1,
     challengerId,
@@ -457,7 +484,7 @@ function successEffects(p: PendingAction): Effect[] {
     case "trocar":
       return [{ kind: "exchange", playerId: p.actorId }];
     case "assassinar":
-      return [{ kind: "lose_influence", playerId: p.targetId! }];
+      return [{ kind: "lose_influence", playerId: p.targetId!, by: p.actorId }];
     case "extorquir":
       return [{ kind: "steal", fromId: p.targetId!, toId: p.actorId, amount: 2 }];
     default:
@@ -532,6 +559,7 @@ function runResolution(s: GameState, rng: Rng): void {
         s.resolution.shift(); // já eliminado: nada a perder
         continue;
       }
+      if (eff.by) s.stats[eff.by].kills += 1; // o golpe/assassinato derrubou uma influência
       if (faceDown.length === 1) {
         revealCard(s, p, p.cards.findIndex((c) => !c.revealed));
         s.resolution.shift();
@@ -591,6 +619,7 @@ function advanceTurn(s: GameState): void {
   s.resolution = [];
   s.exchange = null;
   s.mustRevealPlayerId = null;
+  for (const pl of s.players) s.stats[pl.id].maxCoins = Math.max(s.stats[pl.id].maxCoins, pl.coins);
 
   const alive = s.players.filter(isAlive);
   if (alive.length <= 1) {
@@ -632,6 +661,7 @@ function steal(s: GameState, fromId: string, toId: string, n: number): void {
 
 function revealCard(s: GameState, p: PlayerState, index: number): void {
   p.cards[index].revealed = true;
+  s.stats[p.id].influenceLost += 1;
   if (p.cards.every((c) => c.revealed)) {
     // Exilado: devolve todas as moedas ao Tesouro.
     s.treasury += p.coins;
@@ -735,6 +765,7 @@ export function viewForPlayer(
     phase: s.phase,
     matchNumber: s.matchNumber,
     lastChallenge: s.lastChallenge ? { ...s.lastChallenge } : null,
+    stats: Object.fromEntries(Object.entries(s.stats).map(([id, st]) => [id, { ...st }])),
     players: s.players.map((p) => ({
       id: p.id,
       name: p.name,
