@@ -23,7 +23,7 @@ export default function ClaimPlate({
 
   const blocked = view.phase === "janela_contestar_bloqueio" && p.block;
   return (
-    <div style={plate}>
+    <div data-testid="claim-plate" style={plate}>
       <div style={{ fontFamily: CINZEL, fontWeight: 700, fontSize: 15, letterSpacing: 0.4 }}>
         {blocked
           ? `🛡️ ${name(p.block!.blockerId)} · ${CHAR_LABEL[p.block!.character]}`

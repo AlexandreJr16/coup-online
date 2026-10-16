@@ -40,6 +40,9 @@ export default function Seat({
 
   return (
     <div
+      data-seat={name}
+      data-coins={coins}
+      data-target={selectable ? "sim" : undefined}
       onClick={selectable ? onSelect : undefined}
       style={{
         position: "absolute",

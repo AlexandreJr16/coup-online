@@ -191,13 +191,15 @@ const SEAT_LAYOUTS: Record<number, SeatPos[]> = {
   3: [{ x: 50, anchor: "bottom" }, { x: 26, anchor: "top" }, { x: 74, anchor: "top" }],
   4: [{ x: 50, anchor: "bottom" }, { x: 9, anchor: "mid" }, { x: 50, anchor: "top" }, { x: 91, anchor: "mid" }],
   5: [{ x: 50, anchor: "bottom" }, { x: 9, anchor: "mid" }, { x: 30, anchor: "top" }, { x: 70, anchor: "top" }, { x: 91, anchor: "mid" }],
+  // 6: cantos. Cada assento tem ~180px de altura; empilhar dois na lateral (33%/67%)
+  // não cabe em telas de 720px e os dois se sobrepunham (pego pelo E2E de layout).
   6: [
     { x: 50, anchor: "bottom" },
-    { x: 9, anchor: "midLow" },
-    { x: 9, anchor: "midHigh" },
+    { x: 9, anchor: "bottom" },
+    { x: 9, anchor: "top" },
     { x: 50, anchor: "top" },
-    { x: 91, anchor: "midHigh" },
-    { x: 91, anchor: "midLow" },
+    { x: 91, anchor: "top" },
+    { x: 91, anchor: "bottom" },
   ],
 };
 

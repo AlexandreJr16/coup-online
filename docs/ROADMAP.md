@@ -2,6 +2,9 @@
 
 Base: tag `v1` (commit `14cfb45`). Este plano substitui o roadmap v1.
 
+## Testes (política no `CLAUDE.md`)
+Unitário + integração (`npm test`, 106 testes) e E2E de navegador (`npm run test:e2e`, 20 cenários) valem como parte do "pronto" de **toda** fase. O E2E já pegou um bug de layout real (6 jogadores em 1280×720) que build, lint e tipos não pegaram.
+
 ## Como executar (regras)
 - O Alexandre diz **"faz a Fase X"**. O Claude implementa, roda `npm test` e `npm run lint`, e apresenta o resumo do diff.
 - **Nada é commitado sem o Alexandre revisar o diff** (AGENTS.md). Depois da aprovação, um commit descritivo por fase (sem atribuição de ferramenta na mensagem).

@@ -293,12 +293,14 @@ export default function GameBoard({
       <WaxSeal seal={seal} />
 
       {/* DOCK fixo: ações básicas · mão/escolha · reações */}
-      <div style={dock}>
-        <div style={{ justifySelf: "end" }}>
+      <div data-testid="dock" style={dock}>
+        <div data-zone="basicas" style={{ justifySelf: "end" }}>
           <BasicActions view={view} myId={myId} canAct={canAct} onAction={onAction} />
         </div>
-        <div style={{ display: "flex", justifyContent: "center", minWidth: 380 }}>{center}</div>
-        <div style={{ justifySelf: "start" }}>
+        <div data-zone="centro" style={{ display: "flex", justifyContent: "center", minWidth: 380 }}>
+          {center}
+        </div>
+        <div data-zone="reacoes" style={{ justifySelf: "start" }}>
           <ReactionTray
             view={view}
             myId={myId}

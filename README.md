@@ -100,6 +100,16 @@ src/
   - **Selo de cera** — estampa dramática em bloqueios e contestações.
   - **Economia viva** — count-up de moedas, "+N/−N" no avatar, Tesouro Central.
 
+## Testes
+Política completa no `CLAUDE.md`: tudo é testado em três níveis, e bug corrigido ganha teste de regressão.
+
+| Comando | O que roda | Tempo |
+|---|---|---|
+| `npm test` | **Unitário + integração**: engine, salas, helpers e derivação de eventos da UI; e o servidor Socket.IO real em memória (sala, reconexão, timers, Passar, revanche, contestação pública, privacidade das cartas) | ~15 s |
+| `npm run test:e2e` | **Navegador real**: faz o build de produção, sobe o servidor e abre o Chrome. Cada aba é um jogador; **clica com mouse real** (falha se algo cobrir o botão), joga rodadas pela interface, dá F5 no meio, confere o layout com 2 a 6 jogadores e reprova qualquer `console.error`/exceção | ~100 s |
+
+Requisitos do E2E: Google Chrome (`CHROME=/caminho` se não for `google-chrome-stable`). Os testes usam portas livres e **nunca** mexem na 3000.
+
 ## Regras do jogo
 
 As regras completas (ações, bloqueios, contestações, timers, casos especiais como

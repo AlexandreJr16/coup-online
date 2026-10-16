@@ -20,13 +20,13 @@ O SERVIDOR é a única fonte da verdade do estado do jogo.
 ## Decisões de Arquitetura Conscientes
 - Estado em memória pura (sem banco de dados): escala de 2-6 jogadores não justifica DB.
   Se o servidor reiniciar, a partida é perdida — isso é aceitável.
-- Sem autenticação: jogador é identificado pelo socket.id + nome digitado.
+- Sem autenticação: jogador = nome digitado + `playerId` estável e token secreto (sessionStorage) gerados pelo servidor, para reconectar sem login.
 - Sem clean architecture / camadas formais: separação mínima funcional
   (lógica de jogo em lib/, transporte em server.ts, UI em components/).
   Não criar abstrações antes de precisar delas.
-- Testes: a engine (`src/lib/game/engine.ts`) tem testes com `node:test`
-  (`npm test`). Mudança de regra = TDD (teste falhando primeiro). UI e
-  transporte seguem com validação manual via duas abas.
+- Testes: política completa (unitário, integração, E2E no navegador, retroativos e
+  regressão) no `CLAUDE.md`. `npm test` = unitário + integração; `npm run test:e2e`
+  = navegador real contra o build de produção.
 
 ## Convenções de código
 - TypeScript estrito, sem `any` salvo justificativa em comentário.
