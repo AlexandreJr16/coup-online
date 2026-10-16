@@ -3,6 +3,7 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { type CSSProperties, useEffect, useState, useSyncExternalStore } from "react";
 
+import { CheatSheetButton } from "@/src/components/game/CheatSheet";
 import GameBoard from "@/src/components/game/GameBoard";
 import { assignAvatars, avatarColor, avatarUrl, CINZEL, COLORS } from "@/src/components/game/helpers";
 import TableBackdrop, { SalonBg } from "@/src/components/game/TableBackdrop";
@@ -123,6 +124,7 @@ export default function RoomPage() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <CheatSheetButton />
           <button
             onClick={() => setAudio({ muted: !audio.muted })}
             className="game-btn"

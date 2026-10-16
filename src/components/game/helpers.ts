@@ -147,17 +147,45 @@ export interface ActionMeta {
   category: ActionCategory;
   needsTarget: boolean;
   coinCost?: number;
+  efeito: string; // o que a ação faz (texto da colinha; fiel ao game-rules.md)
 }
 
-// Metadado de AÇÃO (não de carta): rótulo, categoria de cor, alvo, custo.
+// Metadado de AÇÃO (não de carta): rótulo, categoria de cor, alvo, custo, efeito.
 export const ACTION_META: Record<ActionType, ActionMeta> = {
-  renda: { label: "Renda", category: "coin", needsTarget: false },
-  ajuda_externa: { label: "Ajuda Externa", category: "coin", needsTarget: false },
-  taxas: { label: "Taxas", category: "coin", needsTarget: false },
-  assassinar: { label: "Assassinar", category: "aggressive", needsTarget: true, coinCost: 3 },
-  extorquir: { label: "Extorquir", category: "aggressive", needsTarget: true },
-  golpe: { label: "Golpe de Estado", category: "coup", needsTarget: true, coinCost: 7 },
-  trocar: { label: "Trocar", category: "neutral", needsTarget: false },
+  renda: { label: "Renda", category: "coin", needsTarget: false, efeito: "Pega 1 moeda do Tesouro." },
+  ajuda_externa: {
+    label: "Ajuda Externa",
+    category: "coin",
+    needsTarget: false,
+    efeito: "Pega 2 moedas do Tesouro.",
+  },
+  taxas: { label: "Taxas", category: "coin", needsTarget: false, efeito: "Pega 3 moedas do Tesouro." },
+  assassinar: {
+    label: "Assassinar",
+    category: "aggressive",
+    needsTarget: true,
+    coinCost: 3,
+    efeito: "Paga 3 moedas. O alvo perde 1 influência.",
+  },
+  extorquir: {
+    label: "Extorquir",
+    category: "aggressive",
+    needsTarget: true,
+    efeito: "Pega 2 moedas de um alvo (1, se ele só tiver 1).",
+  },
+  golpe: {
+    label: "Golpe de Estado",
+    category: "coup",
+    needsTarget: true,
+    coinCost: 7,
+    efeito: "Paga 7 moedas. O alvo perde 1 influência. Nunca falha.",
+  },
+  trocar: {
+    label: "Trocar",
+    category: "neutral",
+    needsTarget: false,
+    efeito: "Compra 2 cartas da Corte, escolhe quais manter e devolve o resto.",
+  },
 };
 
 // Personagem exigido por cada ação (inverso de CardDef.acao) — derivado do catálogo.

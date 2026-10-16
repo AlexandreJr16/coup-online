@@ -6,6 +6,7 @@ import { type CSSProperties, Suspense, useState } from "react";
 import { getSocket } from "@/src/lib/socket";
 import type { CreateRoomAck } from "@/src/types/socket";
 import { ALL_CHARACTERS, artUrl, CINZEL, COLORS } from "@/src/components/game/helpers";
+import { CheatSheetButton } from "@/src/components/game/CheatSheet";
 import { GithubLink } from "@/src/components/game/GithubLink";
 import { SalonBg } from "@/src/components/game/TableBackdrop";
 
@@ -148,8 +149,9 @@ function Home() {
           </p>
         )}
       </div>
-      <div style={{ position: "relative", marginTop: 10 }}>
+      <div style={{ position: "relative", marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
         <GithubLink />
+        <CheatSheetButton />
       </div>
     </main>
   );

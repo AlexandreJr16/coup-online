@@ -595,8 +595,120 @@ test("home: link do GitHub aponta para o repositório, abre em outra aba e não 
   }
 });
 
+// ── Colinha (botão "?") ──────────────────────────────────────────────────────
+const NOMES_PERSONAGENS = ["Barão do Café", "Capoeira", "Coronel", "Regatão", "Benzedeira"];
+const dialogAberto = (p: Page) => p.eval<boolean>(`!!document.querySelector('[data-testid="cheatsheet"][role="dialog"]')`);
+
+test("colinha: abre por clique e por '?', mostra os 5 personagens e fecha por X, Esc, '?' e clique fora", async () => {
+  const p = await open("/dev/colinha", { w: 1280, h: 720 });
+  await p.waitFor(`!!document.querySelector('[data-testid="cheatsheet-toggle"]')`, "botão ?");
+  assert.equal(await dialogAberto(p), false);
+
+  // Abre por clique de mouse real; o painel é um diálogo modal acessível e tem o conteúdo.
+  await p.click('[data-testid="cheatsheet-toggle"]');
+  await p.waitFor(`!!document.querySelector('[data-testid="cheatsheet"]')`, "painel aberto");
+  const aria = await p.eval<{ modal: string; labelled: string; title: string; focusInside: boolean; expanded: string }>(`(() => {
+    const d = document.querySelector('[data-testid="cheatsheet"]');
+    const t = document.getElementById(d.getAttribute('aria-labelledby'));
+    return {
+      modal: d.getAttribute('aria-modal'), labelled: d.getAttribute('aria-labelledby') || '',
+      title: t ? t.innerText : '', focusInside: d.contains(document.activeElement),
+      expanded: document.querySelector('[data-testid="cheatsheet-toggle"]').getAttribute('aria-expanded'),
+    };
+  })()`);
+  assert.equal(aria.modal, "true");
+  assert.equal(aria.title, "Colinha");
+  assert.equal(aria.focusInside, true, "foco deve ir para dentro do painel");
+  assert.equal(aria.expanded, "true");
+  const corpo = await p.eval<string>(`document.querySelector('[data-testid="cheatsheet"]').innerText`);
+  for (const n of NOMES_PERSONAGENS) assert.ok(corpo.includes(n), `falta ${n} na colinha`);
+  for (const t of ["Renda", "Ajuda Externa", "Golpe de Estado", "Pode ser contestada", "Bloqueada por", "10 ou mais moedas"]) {
+    assert.ok(corpo.includes(t), `falta "${t}" na colinha`);
+  }
+  assert.ok(!/Duque|Capitão|Condessa|Embaixador|Inquisidor/.test(corpo), "nome original do Coup vazou na UI");
+
+  // Fecha pelo X (foco volta ao botão ?).
+  await p.click('[data-testid="cheatsheet-close"]');
+  await p.waitFor(`!document.querySelector('[data-testid="cheatsheet"]')`, "fechou pelo X");
+  await p.waitFor(`document.activeElement === document.querySelector('[data-testid="cheatsheet-toggle"]')`, "foco devolvido ao botão ?");
+
+  // Abre e fecha pela tecla '?'.
+  await p.key("?");
+  await p.waitFor(`!!document.querySelector('[data-testid="cheatsheet"]')`, "abriu com ?");
+  await p.key("?");
+  await p.waitFor(`!document.querySelector('[data-testid="cheatsheet"]')`, "fechou com ?");
+
+  // Esc fecha.
+  await p.key("?");
+  await p.waitFor(`!!document.querySelector('[data-testid="cheatsheet"]')`, "reabriu");
+  await p.key("Escape");
+  await p.waitFor(`!document.querySelector('[data-testid="cheatsheet"]')`, "fechou com Esc");
+
+  // Clique fora do painel (no fundo escuro) fecha; clique dentro NÃO fecha.
+  await p.key("?");
+  await p.waitFor(`!!document.querySelector('[data-testid="cheatsheet"]')`, "reabriu de novo");
+  const r = await p.eval<{ inX: number; inY: number; outX: number; outY: number }>(`(() => {
+    const d = document.querySelector('[data-testid="cheatsheet"]').getBoundingClientRect();
+    return { inX: d.left + d.width / 2, inY: d.top + 40, outX: Math.max(4, d.left / 2), outY: innerHeight / 2 };
+  })()`);
+  await p.clickAt(r.inX, r.inY);
+  assert.equal(await dialogAberto(p), true, "clique dentro do painel não pode fechar");
+  await p.clickAt(r.outX, r.outY);
+  await p.waitFor(`!document.querySelector('[data-testid="cheatsheet"]')`, "fechou clicando fora");
+
+  noErrors(p);
+});
+
+test("colinha: '?' digitado num campo de texto não abre o painel (home)", async () => {
+  const p = await open("/", { w: 1280, h: 720 });
+  await p.waitFor(`!!document.querySelector('input')`, "campo de nome");
+  await p.click("input");
+  await p.key("?");
+  await new Promise((r) => setTimeout(r, 300));
+  assert.equal(await dialogAberto(p), false, "digitar ? no campo não pode abrir a colinha");
+  const valor = await p.eval<string>(`document.querySelector('input').value`);
+  assert.equal(valor, "?", "o ? deve ter sido digitado no campo");
+  // Fora do campo, abre; o botão ? também existe na home.
+  assert.equal(await p.eval<boolean>(`!!document.querySelector('[data-testid="cheatsheet-toggle"]')`), true);
+  noErrors(p);
+});
+
+test("colinha: na mesa, Esc com o painel aberto NÃO cancela a mira por baixo; depois do painel fechado o Esc cancela", async () => {
+  const { ps } = await game(["Ana", "Bia", "Caio"], { w: 1280, h: 720 });
+  const [a] = ps;
+  // Ana (da vez) arma o Assassinar → mira nos alvos.
+  await a.click('[data-zone="basicas"] button', "Renda"); // 2→3 moedas (precisa de 3 para Assassinar)
+  await waitCoins(a, "Ana", 3);
+  await ps[1].click('[data-zone="basicas"] button', "Renda");
+  await ps[2].click('[data-zone="basicas"] button', "Renda");
+  await a.waitFor(`document.querySelector('[data-testid="dock"]') && document.querySelector('[data-seat="Ana"]')?.getAttribute('data-coins') === "3"`, "volta a vez da Ana");
+  await a.click('[data-zone="centro"] [title="Capoeira"]');
+  await a.waitFor(`document.querySelector('[data-seat="Bia"][data-target="sim"]')`, "mira em Bia");
+
+  // Abre a colinha pelo botão do cabeçalho (a mira continua armada por baixo).
+  await a.click('[data-testid="cheatsheet-toggle"]');
+  await a.waitFor(`!!document.querySelector('[data-testid="cheatsheet"]')`, "colinha aberta na mesa");
+  assert.equal(await a.eval<boolean>(`!!document.querySelector('[data-seat="Bia"][data-target="sim"]')`), true, "mira some ao abrir a colinha");
+
+  // O jogo segue vivo e o relógio do servidor continua correndo com o painel aberto.
+  const t1 = await a.eval<string>(`document.body.innerText.match(/⏱\\s*(\\d+)/)?.[1] ?? ''`);
+  await new Promise((r) => setTimeout(r, 2200));
+  const t2 = await a.eval<string>(`document.body.innerText.match(/⏱\\s*(\\d+)/)?.[1] ?? ''`);
+  if (t1 && t2) assert.ok(Number(t2) < Number(t1), `timer parado com a colinha aberta: ${t1} → ${t2}`);
+
+  // Esc fecha SÓ a colinha: a mira segue armada.
+  await a.key("Escape");
+  await a.waitFor(`!document.querySelector('[data-testid="cheatsheet"]')`, "Esc fechou a colinha");
+  assert.equal(await a.eval<boolean>(`!!document.querySelector('[data-seat="Bia"][data-target="sim"]')`), true, "Esc com a colinha aberta cancelou a mira");
+
+  // Com a colinha fechada, o Esc volta a cancelar a mira.
+  await a.key("Escape");
+  await a.waitFor(`!document.querySelector('[data-target="sim"]')`, "Esc cancelou a mira com a colinha fechada");
+  noErrors(...ps);
+});
+
 // ── Páginas de revisão não podem quebrar ─────────────────────────────────────
-for (const path of ["/dev/cartas", "/dev/mesa", "/dev/mesa?fase=reacao&n=6", "/dev/mesa?fase=revelar&n=3", "/dev/mesa?fase=troca&n=2", "/dev/mesa?fase=fim&n=4", "/dev/mesa?fase=contestar&n=4"]) {
+for (const path of ["/dev/cartas", "/dev/colinha", "/dev/mesa", "/dev/mesa?fase=reacao&n=6", "/dev/mesa?fase=revelar&n=3", "/dev/mesa?fase=troca&n=2", "/dev/mesa?fase=fim&n=4", "/dev/mesa?fase=contestar&n=4"]) {
   test(`página de revisão ${path} renderiza sem erros`, async () => {
     const p = await open(path);
     await p.waitFor(`document.body.innerText.length > 40`, "conteúdo");

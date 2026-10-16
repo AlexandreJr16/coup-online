@@ -268,6 +268,19 @@ export class Page {
     await mouse("mouseReleased", b.x, b.y);
   }
 
+  /** Clique de mouse real numa coordenada da viewport (ex.: fora de um painel). */
+  async clickAt(x: number, y: number): Promise<void> {
+    for (const type of ["mouseMoved", "mousePressed", "mouseReleased"]) {
+      await this.cdp.send("Input.dispatchMouseEvent", {
+        type,
+        x,
+        y,
+        button: type === "mouseMoved" ? "none" : "left",
+        clickCount: type === "mouseMoved" ? 0 : 1,
+      });
+    }
+  }
+
   /** Move o mouse (sem clicar) para a posição relativa (fx, fy ∈ [0,1]) do elemento. */
   async mouseTo(selector: string, fx = 0.5, fy = 0.5): Promise<void> {
     await this.cdp.send("Page.bringToFront"); // pointermove só chega a aba visível
@@ -278,11 +291,12 @@ export class Page {
     await this.cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y, button: "none" });
   }
 
-  /** Tecla de verdade (keyDown+keyUp). Aceita "Escape", " " (Espaço) ou uma letra. */
+  /** Tecla de verdade (keyDown+keyUp). Aceita "Escape", " " (Espaço), "?" ou uma letra. */
   async key(key: string): Promise<void> {
     const special: Record<string, { code: string; vk: number; text?: string }> = {
       Escape: { code: "Escape", vk: 27 },
       " ": { code: "Space", vk: 32, text: " " },
+      "?": { code: "Slash", vk: 191, text: "?" },
     };
     const sp = special[key];
     const base = {
