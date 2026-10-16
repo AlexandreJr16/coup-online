@@ -17,6 +17,7 @@ import Card from "./Card";
 import ClaimPlate from "./ClaimPlate";
 import HandView from "./HandView";
 import IntrigueFeed from "./IntrigueFeed";
+import VictoryPanel from "./VictoryPanel";
 import ReactionTray from "./ReactionTray";
 import Table from "./Table";
 import WaxSeal, { type SealData } from "./WaxSeal";
@@ -25,7 +26,6 @@ import {
   actionBlockedReason,
   CHAR_LABEL,
   CHARACTER_ACTION,
-  CINZEL,
   COLORS,
   reactionOptions,
   requiredCharacter,
@@ -55,7 +55,6 @@ export default function GameBoard({
   const [keepSel, setKeepSel] = useState<number[]>([]);
 
   const me = view.players.find((p) => p.id === myId);
-  const name = (id: string | null) => view.players.find((p) => p.id === id)?.name ?? "?";
   const canAct = view.phase === "aguardando_acao" && view.currentPlayerId === myId && !me?.eliminated;
 
   // ── Countdown: o servidor manda quanto FALTA (view.timer.remainingMs) e o cliente
@@ -200,27 +199,7 @@ export default function GameBoard({
 
   // ── Zona central do dock: o que o jogador faz AGORA ───────────────────────
   let center: ReactNode;
-  if (view.phase === "fim_de_jogo") {
-    center = (
-      <div style={{ textAlign: "center" }}>
-        <h2 style={{ margin: "0 0 10px", color: COLORS.gold, fontFamily: CINZEL, letterSpacing: 0.5 }}>
-          🏆 {name(view.winnerId)}
-        </h2>
-        {me && (
-          <button
-            onClick={() => {
-              setError("");
-              socket.emit("game_rematch", ack);
-            }}
-            className="game-btn"
-            style={{ padding: "10px 20px", fontSize: 15, color: "#1a1a2e", "--c": COLORS.gold } as CSSProperties}
-          >
-            Jogar de novo
-          </button>
-        )}
-      </div>
-    );
-  } else if (me?.eliminated) {
+  if (me?.eliminated && view.phase !== "fim_de_jogo") {
     center = <span style={{ color: COLORS.dim }}>☠ Você foi exilado</span>;
   } else if (view.phase === "aguardando_revelacao" && view.mustRevealPlayerId === myId) {
     // Só as MINHAS cartas ocultas, pulsando: clicar numa revela (perde a influência).
@@ -325,6 +304,16 @@ export default function GameBoard({
         )}
 
         <IntrigueFeed log={events.log} />
+
+        {view.phase === "fim_de_jogo" && (
+          <VictoryPanel
+            view={view}
+            onRematch={() => {
+              setError("");
+              socket.emit("game_rematch", ack);
+            }}
+          />
+        )}
 
         {/* Retorno rápido de regra (some sozinho) */}
         {error && <div style={toast}>{error}</div>}

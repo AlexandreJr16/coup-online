@@ -220,6 +220,23 @@ test("passar automático: com o interruptor ligado a jogada alheia resolve sem a
   noErrors(a, b);
 });
 
+// ── Fim de partida (4.8) ─────────────────────────────────────────────────────
+test("tela de vitória: vencedor, prêmios corretos e botão de revanche (página de revisão)", async () => {
+  const p = await open("/dev/mesa?fase=fim&n=4");
+  await p.waitFor(`document.querySelector('[data-testid="victory"]')`, "tela de vitória");
+  const txt = await p.eval<string>(`document.querySelector('[data-testid="victory"]').innerText`);
+  assert.match(txt, /Ana vence!/);
+  const premios = await p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-award]')].map(e => e.getAttribute('data-award') + ':' + e.innerText.replace(/\\s+/g,' ')))`);
+  const lista = JSON.parse(premios) as string[];
+  assert.ok(lista.some((l) => l.startsWith("mentiroso:") && l.includes("Bia") && l.includes("3 vezes")), premios);
+  assert.ok(lista.some((l) => l.startsWith("desconfiado:") && l.includes("Ana")), premios);
+  assert.ok(lista.some((l) => l.startsWith("olho_de_lince:") && l.includes("Ana") && l.includes("3 de 4")), premios);
+  assert.ok(lista.some((l) => l.startsWith("carrasco:") && l.includes("Ana")), premios);
+  assert.ok(lista.some((l) => l.startsWith("ricaco:") && l.includes("11")), premios);
+  await p.click('[data-testid="victory"] .seal', "Jogar de novo"); // o clique não pode estar coberto
+  noErrors(p);
+});
+
 // ── F5 e blefe ───────────────────────────────────────────────────────────────
 const mao = (p: Page) =>
   p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-zone="centro"] [title]')].map(e => e.getAttribute('title') + ((e.innerText.includes('🎭') || !!e.querySelector('img[src*="mascara"]')) ? ':blefe' : ':minha')))`);
