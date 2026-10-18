@@ -23,31 +23,31 @@ const cinzel = Cinzel({
 
 // Fontes pixel da interface (DEC-11): as 4 ficam disponíveis e o jogador escolhe em
 // `data-fonte` (src/lib/aparencia.ts). Só a padrão (Pixelify Sans) tem preload; as outras
-// só baixam quando escolhidas. latin-ext cobre os acentos pt-BR.
-const SUBSETS_PIXEL = ["latin", "latin-ext"] as const;
+// só baixam quando escolhidas. latin-ext cobre os acentos pt-BR. As opções do next/font
+// precisam ser literais (o Next as lê na compilação): sem spread nem constantes.
 const pixelify = Pixelify_Sans({
   variable: "--font-pixelify",
-  subsets: [...SUBSETS_PIXEL],
+  subsets: ["latin", "latin-ext"],
   weight: ["400", "700"],
   display: "swap",
 });
 const silkscreen = Silkscreen({
   variable: "--font-silkscreen",
-  subsets: [...SUBSETS_PIXEL],
+  subsets: ["latin", "latin-ext"],
   weight: ["400", "700"],
   display: "swap",
   preload: false,
 });
 const vt323 = VT323({
   variable: "--font-vt323",
-  subsets: [...SUBSETS_PIXEL],
+  subsets: ["latin", "latin-ext"],
   weight: "400",
   display: "swap",
   preload: false,
 });
 const pressStart = Press_Start_2P({
   variable: "--font-press",
-  subsets: [...SUBSETS_PIXEL],
+  subsets: ["latin", "latin-ext"],
   weight: "400",
   display: "swap",
   preload: false,
