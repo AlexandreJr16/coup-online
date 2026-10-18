@@ -535,12 +535,13 @@ test("mão: o nome e o poder de cada carta ficam visíveis (nenhuma carta cobre 
   noErrors(...ps);
 });
 
-test("menu: o leque dos 5 personagens carrega e o painel tem fundo próprio (não transparente)", async () => {
+test("menu: o leque dos 5 personagens carrega e o painel do kit tem fundo próprio (não transparente)", async () => {
   const p = await open("/");
   await p.waitFor(`document.querySelectorAll('[data-testid="home-fan"] img').length === 5`, "5 retratos no menu");
   await p.waitFor(`[...document.querySelectorAll('[data-testid="home-fan"] img')].every(i => i.complete && i.naturalWidth > 0)`, "retratos carregados");
-  const bg = await p.eval<string>(`getComputedStyle(document.querySelector('.panel-salon')).backgroundImage`);
-  assert.ok(bg.includes("gradient"), "painel sem fundo: " + bg);
+  // PixelPanel = borda > face; a face é quem pinta o fundo (cor chapada do tema, sem gradiente).
+  const bg = await p.eval<string>(`getComputedStyle(document.querySelector('[data-testid="home-panel"]').firstElementChild.firstElementChild).backgroundColor`);
+  assert.ok(bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent", "painel sem fundo: " + bg);
   noErrors(p);
 });
 
@@ -560,7 +561,7 @@ test("home: link do GitHub aponta para o repositório, abre em outra aba e não 
     // Visível e sem encostar no painel de entrada (nem em celular).
     const geo = await p.eval<{ a: number[]; b: number[]; vw: number; visible: boolean; hit: boolean }>(`(() => {
       const a = document.querySelector('[data-testid="github-link"]').getBoundingClientRect();
-      const b = document.querySelector('.panel-salon').getBoundingClientRect();
+      const b = document.querySelector('[data-testid="home-panel"]').getBoundingClientRect();
       const visible = a.width > 0 && a.left >= 0 && a.right <= innerWidth;
       const hit = !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
       return { a: [a.left, a.top, a.right, a.bottom], b: [b.left, b.top, b.right, b.bottom], vw: innerWidth, visible, hit };
@@ -570,7 +571,7 @@ test("home: link do GitHub aponta para o repositório, abre em outra aba e não 
     const scroll = await p.eval<{ panelTop: number; overflowY: string; canScroll: boolean }>(`(() => {
       const m = document.querySelector('main');
       return {
-        panelTop: document.querySelector('.panel-salon').getBoundingClientRect().top,
+        panelTop: document.querySelector('[data-testid="home-panel"]').getBoundingClientRect().top,
         overflowY: getComputedStyle(m).overflowY,
         canScroll: m.scrollHeight > m.clientHeight,
       };
@@ -705,6 +706,156 @@ test("colinha: na mesa, Esc com o painel aberto NÃO cancela a mira por baixo; d
   await a.key("Escape");
   await a.waitFor(`!document.querySelector('[data-target="sim"]')`, "Esc cancelou a mira com a colinha fechada");
   noErrors(...ps);
+});
+
+// ── Aba de Aparência (P27.S4) ────────────────────────────────────────────────
+const html = (p: Page) =>
+  p.eval<{ fonte: string | null; estilo: string | null; dock: string | null }>(`({
+    fonte: document.documentElement.getAttribute('data-fonte'),
+    estilo: document.documentElement.getAttribute('data-estilo'),
+    dock: document.documentElement.getAttribute('data-dock'),
+  })`);
+const painelAberto = (p: Page) => p.eval<boolean>(`!!document.querySelector('[data-testid="aparencia-panel"][role="dialog"]')`);
+
+test("aparência: na home abre a aba, troca fonte e estilo ao vivo, persiste ao recarregar e fecha por Esc e clique fora", async () => {
+  const p = await open("/", { w: 1280, h: 720 });
+  await p.waitFor(`!!document.querySelector('[data-testid="aparencia-toggle"]')`, "botão de Aparência na home");
+  try {
+    // Parte do padrão (o perfil do navegador pode ter sobra de outro teste).
+    await p.eval(`localStorage.removeItem("coup:aparencia")`);
+    await p.reload();
+    await p.waitFor(`!!document.querySelector('[data-testid="aparencia-toggle"]')`, "home recarregada");
+    assert.deepEqual(await html(p), { fonte: "pixelify", estilo: "A", dock: "mesa" });
+    assert.equal(await painelAberto(p), false);
+
+    // Abre por clique de mouse real: diálogo modal acessível, com as 4 fontes, 2 estilos e 3 docks.
+    await p.click('[data-testid="aparencia-toggle"]');
+    await p.waitFor(`!!document.querySelector('[data-testid="aparencia-panel"]')`, "aba aberta");
+    const info = await p.eval<{ modal: string; title: string; fontes: number; estilos: number; docks: number; focoDentro: boolean; expanded: string }>(`(() => {
+      const d = document.querySelector('[data-testid="aparencia-panel"]');
+      const t = document.getElementById(d.getAttribute('aria-labelledby'));
+      return {
+        modal: d.getAttribute('aria-modal'), title: t ? t.innerText : '',
+        fontes: d.querySelectorAll('[data-testid^="aparencia-fonte-"]').length,
+        estilos: d.querySelectorAll('[data-testid^="aparencia-estilo-"]').length,
+        docks: d.querySelectorAll('[data-testid^="aparencia-dock-"]').length,
+        focoDentro: d.contains(document.activeElement),
+        expanded: document.querySelector('[data-testid="aparencia-toggle"]').getAttribute('aria-expanded'),
+      };
+    })()`);
+    assert.deepEqual(info, { modal: "true", title: "Aparência", fontes: 4, estilos: 2, docks: 3, focoDentro: true, expanded: "true" });
+
+    // Cada opção de fonte é desenhada na própria fonte e mostra a frase de amostra.
+    const fontes = await p.eval<Array<{ id: string; familia: string; texto: string }>>(`[...document.querySelectorAll('[data-testid^="aparencia-fonte-"]')].map(b => ({
+      id: b.getAttribute('data-testid'), familia: getComputedStyle(b).fontFamily, texto: b.innerText }))`);
+    for (const f of fontes) assert.ok(f.texto.includes("Barão do Café, ação"), `${f.id} sem a amostra: ${f.texto}`);
+    const fam = (id: string) => fontes.find((f) => f.id === `aparencia-fonte-${id}`)?.familia ?? "";
+    assert.match(fam("vt323"), /VT323/i);
+    assert.match(fam("press"), /Press Start 2P/i);
+    assert.notEqual(fam("vt323"), fam("press"));
+
+    // Prévia ao vivo: o <html> muda na hora, sem fechar a aba.
+    await p.click('[data-testid="aparencia-fonte-vt323"]');
+    await p.waitFor(`document.documentElement.getAttribute('data-fonte') === "vt323"`, "fonte VT323 aplicada");
+    await p.click('[data-testid="aparencia-estilo-B"]');
+    await p.waitFor(`document.documentElement.getAttribute('data-estilo') === "B"`, "estilo B aplicado");
+    await p.click('[data-testid="aparencia-dock-cavalete"]');
+    await p.waitFor(`document.documentElement.getAttribute('data-dock') === "cavalete"`, "dock cavalete salvo");
+    assert.equal(await painelAberto(p), true, "escolher uma opção não pode fechar a aba");
+    assert.ok((await p.text()).includes("em breve"), "docks sem visual devem avisar 'em breve'");
+    assert.equal(
+      await p.eval<string>(`document.querySelector('[data-testid="aparencia-estilo-B"]').getAttribute('aria-pressed')`),
+      "true",
+    );
+
+    // A preferência fica no localStorage e a tela não perde nada ao recarregar (sem flash: o
+    // script do <head> já aplica os data-* antes da hidratação).
+    assert.deepEqual(
+      JSON.parse(await p.eval<string>(`localStorage.getItem("coup:aparencia")`)),
+      { fonte: "vt323", estilo: "B", dock: "cavalete" },
+    );
+    await p.key("Escape");
+    await p.waitFor(`!document.querySelector('[data-testid="aparencia-panel"]')`, "Esc fechou a aba");
+    await p.waitFor(`document.activeElement === document.querySelector('[data-testid="aparencia-toggle"]')`, "foco devolvido à engrenagem");
+    await p.reload();
+    await p.waitFor(`!!document.querySelector('[data-testid="aparencia-toggle"]')`, "home após reload");
+    assert.deepEqual(await html(p), { fonte: "vt323", estilo: "B", dock: "cavalete" });
+
+    // Clique fora (no véu) fecha; clique dentro não.
+    await p.click('[data-testid="aparencia-toggle"]');
+    await p.waitFor(`!!document.querySelector('[data-testid="aparencia-panel"]')`, "reabriu");
+    const r = await p.eval<{ inX: number; inY: number }>(`(() => {
+      const d = document.querySelector('[data-testid="aparencia-panel"]').getBoundingClientRect();
+      return { inX: d.left + d.width / 2, inY: d.top + 60 };
+    })()`);
+    await p.clickAt(r.inX, r.inY);
+    assert.equal(await painelAberto(p), true, "clique dentro da aba não pode fechar");
+    await p.clickAt(8, 8);
+    await p.waitFor(`!document.querySelector('[data-testid="aparencia-panel"]')`, "fechou clicando fora");
+    noErrors(p);
+  } finally {
+    await p.eval(`localStorage.removeItem("coup:aparencia")`); // não vaza o tema para os outros testes
+  }
+});
+
+test("aparência: na mesa, o Esc fecha só a aba (a mira segue armada) e as escolhas não travam o jogo", async () => {
+  const { ps } = await game(["Ana", "Bia", "Caio"], { w: 1280, h: 720 });
+  const [a] = ps;
+  try {
+    await a.click('[data-zone="basicas"] button', "Renda");
+    await waitCoins(a, "Ana", 3);
+    await ps[1].click('[data-zone="basicas"] button', "Renda");
+    await ps[2].click('[data-zone="basicas"] button', "Renda");
+    await a.waitFor(`document.querySelector('[data-seat="Ana"]')?.getAttribute('data-coins') === "3" && !!document.querySelector('[data-testid="dock"]')`, "volta a vez da Ana");
+    await a.click('[data-zone="centro"] [title="Capoeira"]');
+    await a.waitFor(`document.querySelector('[data-seat="Bia"][data-target="sim"]')`, "mira em Bia");
+
+    // Abre a aba pela engrenagem do HUD, troca o estilo e a fonte: a mira continua armada.
+    await a.click('[data-testid="aparencia-toggle"]');
+    await a.waitFor(`!!document.querySelector('[data-testid="aparencia-panel"]')`, "aba aberta na mesa");
+    await a.click('[data-testid="aparencia-estilo-B"]');
+    await a.waitFor(`document.documentElement.getAttribute('data-estilo') === "B"`, "estilo B na mesa");
+    await a.click('[data-testid="aparencia-fonte-silkscreen"]');
+    await a.waitFor(`document.documentElement.getAttribute('data-fonte') === "silkscreen"`, "fonte Silkscreen na mesa");
+    assert.equal(await a.eval<boolean>(`!!document.querySelector('[data-seat="Bia"][data-target="sim"]')`), true, "mira some ao mexer na aparência");
+
+    // Esc fecha SÓ a aba; a mira segue. Depois, com a aba fechada, o Esc cancela a mira.
+    await a.key("Escape");
+    await a.waitFor(`!document.querySelector('[data-testid="aparencia-panel"]')`, "Esc fechou a aba");
+    assert.equal(await a.eval<boolean>(`!!document.querySelector('[data-seat="Bia"][data-target="sim"]')`), true, "Esc com a aba aberta cancelou a mira");
+    await a.key("Escape");
+    await a.waitFor(`!document.querySelector('[data-target="sim"]')`, "Esc cancelou a mira com a aba fechada");
+
+    // Com o tema trocado a mesa continua utilizável (nada cortado nem sobreposto).
+    assert.deepEqual(await layoutIssues(a), []);
+    noErrors(...ps);
+  } finally {
+    await a.eval(`localStorage.removeItem("coup:aparencia")`);
+  }
+});
+
+test("HUD da sala: logo, código, um só estilo de botão (5 botões) e nenhum emoji do sistema", async () => {
+  const p = await open(`/room/${room()}?name=Ana`, { w: 1280, h: 720 });
+  await p.waitText("Sala de espera");
+  const hud = await p.eval<{ logo: boolean; codigo: string; botoes: string[]; classes: number; altura: number; emoji: boolean }>(`(() => {
+    const h = document.querySelector('header');
+    const bs = [...h.querySelectorAll('button')];
+    return {
+      logo: !!h.querySelector('[data-testid="logo"] img') && h.querySelector('[data-testid="logo"] img').naturalWidth > 0,
+      codigo: h.querySelector('[data-testid="sala-codigo"]')?.innerText ?? '',
+      botoes: bs.map(b => b.getAttribute('data-testid') || '?'),
+      classes: new Set(bs.map(b => b.className.split(' ').filter(c => !/forca/.test(c)).join(' '))).size,
+      altura: h.getBoundingClientRect().height,
+      emoji: /\\p{Extended_Pictographic}/u.test(h.innerText),
+    };
+  })()`);
+  assert.equal(hud.logo, true, "logo do HUD não carregou");
+  assert.match(hud.codigo, /^[A-Z0-9]{3,}$/);
+  assert.deepEqual(hud.botoes, ["mute-toggle", "crt-toggle", "cheatsheet-toggle", "aparencia-toggle", "leave-button"]);
+  assert.equal(hud.classes, 1, "os botões do HUD devem ter um único estilo");
+  assert.ok(hud.altura <= 64, `HUD alto demais: ${hud.altura}px`);
+  assert.equal(hud.emoji, false, "emoji do sistema no cabeçalho");
+  noErrors(p);
 });
 
 // ── Faixa de status da rodada (retrato da vez + o que a mesa espera) ─────────

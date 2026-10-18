@@ -19,6 +19,8 @@ import {
   type CharacterInfo,
 } from "./cheatsheet";
 import { ACTION_META, type ActionCategory, categoryColor, CINZEL, COLORS } from "./helpers";
+import { IconButton } from "@/src/components/ui/IconButton";
+import { PixelButton } from "@/src/components/ui/PixelButton";
 
 const SHEET = buildCheatSheet();
 
@@ -83,19 +85,15 @@ export function CheatSheetButton() {
 
   return (
     <>
-      <button
+      <IconButton
         ref={btnRef}
-        type="button"
-        className="corner-btn"
+        icone="ajuda"
+        rotulo="Colinha das cartas e regras (?)"
         data-testid="cheatsheet-toggle"
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label="Colinha das cartas e regras"
-        title="Colinha das cartas e regras (?)"
         onClick={() => setOpen((v) => !v)}
-      >
-        ?
-      </button>
+      />
       {open &&
         createPortal(
           <div
@@ -116,17 +114,14 @@ export function CheatSheetButton() {
                 <h2 id={titleId} style={title}>
                   Colinha
                 </h2>
-                <button
+                <PixelButton
                   ref={closeRef}
-                  type="button"
-                  className="corner-btn"
                   data-testid="cheatsheet-close"
                   aria-label="Fechar a colinha"
                   onClick={() => setOpen(false)}
-                  style={{ width: 32, height: 32, fontSize: 15 }}
                 >
-                  ✕
-                </button>
+                  Fechar
+                </PixelButton>
               </div>
               <CheatSheetBody />
               <p style={foot}>Esc ou ? para fechar · o jogo continua rodando enquanto você lê.</p>

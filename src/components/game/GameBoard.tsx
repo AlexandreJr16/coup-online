@@ -37,6 +37,7 @@ import {
   reactionOptions,
   requiredCharacter,
 } from "./helpers";
+import { PixelButton } from "@/src/components/ui/PixelButton";
 import { useGameAudio } from "./useGameAudio";
 import { useGameEvents } from "./useGameEvents";
 
@@ -338,18 +339,16 @@ export default function GameBoard({
             <div key={i} style={{ display: "flex" }}>{card}</div>
           );
         })}
-        <button
+        <PixelButton
           onClick={() => {
             setError("");
             socket.emit("game_exchange", { keep: keepSel.map((i) => pool[i]) }, ack);
             setKeepSel([]);
           }}
           disabled={keepSel.length !== keepCount}
-          className="game-btn"
-          style={{ padding: "10px 16px", fontSize: 14, color: "#1a1a2e", "--c": COLORS.gold } as CSSProperties}
         >
           Manter {keepCount}
-        </button>
+        </PixelButton>
       </div>
     );
   } else {

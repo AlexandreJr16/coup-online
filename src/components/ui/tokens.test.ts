@@ -99,7 +99,9 @@ describe("ui.module.css", () => {
     for (const c of ["bitmap", "panel", "panelBorda", "panelFace", "panelTitulo", "btn", "perigo", "forcaHover",
       "forcaPressionado", "btnIcone", "tag", "tagOuro", "tagPerigo", "tagBloqueio", "tagFora", "tagBlefe",
       "recurso", "recursoTopo", "recursoNumero", "recursoTrilho", "segmento", "segmentoCheio", "logo",
-      "logoTexto", "logoCoup", "logoImperio"]) {
+      "logoImg", "iconeImg", "cheio", "campoRotulo", "campoInput", "leitura", "quadroEscuro", "hud", "hudEsq",
+      "hudCentro", "hudDir", "sala", "salaCodigo", "modalFundo", "modalCaixa", "modalTopo", "modalTitulo",
+      "grupo", "grupoRotulo", "opcoes", "opcaoFonte", "nota"]) {
       assert.match(modulo, new RegExp(`\\.${c}\\b`), c);
     }
   });

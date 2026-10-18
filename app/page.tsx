@@ -5,10 +5,16 @@ import { type CSSProperties, Suspense, useState } from "react";
 
 import { getSocket } from "@/src/lib/socket";
 import type { CreateRoomAck } from "@/src/types/socket";
-import { ALL_CHARACTERS, artUrl, CINZEL, COLORS } from "@/src/components/game/helpers";
+import { ALL_CHARACTERS, artUrl, COLORS } from "@/src/components/game/helpers";
 import { CheatSheetButton } from "@/src/components/game/CheatSheet";
 import { GithubLink } from "@/src/components/game/GithubLink";
 import { SalonBg } from "@/src/components/game/TableBackdrop";
+import { AparenciaButton } from "@/src/components/ui/AparenciaPanel";
+import { Campo } from "@/src/components/ui/Campo";
+import { Logo } from "@/src/components/ui/Logo";
+import { PixelButton } from "@/src/components/ui/PixelButton";
+import { fonteKit } from "@/src/components/ui/escala";
+import { PixelPanel } from "@/src/components/ui/PixelPanel";
 
 // Next 16 exige <Suspense> em volta de quem usa useSearchParams na página
 // pré-renderizada ("/"); sem isso o `next build` (e o `npm start`) falha.
@@ -57,7 +63,7 @@ function Home() {
         // "safe center": se o conteúdo for maior que a tela (celular), alinha ao topo em vez
         // de cortar o início; o main rola (o fundo fica num wrapper fixo e não rola junto).
         justifyContent: "safe center",
-        padding: "14px 24px",
+        padding: "10px 24px",
         position: "relative",
         overflowX: "hidden",
         overflowY: "auto",
@@ -67,9 +73,9 @@ function Home() {
       <div aria-hidden style={{ position: "fixed", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
         <SalonBg />
       </div>
-      <div className="panel-salon" style={{ position: "relative", width: "100%", maxWidth: 400, padding: 28 }}>
+      <PixelPanel data-testid="home-panel" style={{ position: "relative", width: "100%", maxWidth: 400 }}>
         {/* Os cinco personagens em leque, como numa mão de cartas */}
-        <div data-testid="home-fan" style={{ display: "flex", justifyContent: "center", marginBottom: 14, height: 112 }}>
+        <div data-testid="home-fan" style={{ display: "flex", justifyContent: "center", marginBottom: 10, height: 100 }}>
           {ALL_CHARACTERS.map((c, i) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -78,121 +84,90 @@ function Home() {
               alt=""
               draggable={false}
               style={{
-                width: 70,
-                height: 99,
-                marginLeft: i === 0 ? 0 : -8,
-                borderRadius: 8,
-                border: `2px solid ${COLORS.gold}`,
-                boxShadow: "0 6px 14px rgba(0,0,0,0.6)",
+                width: 62,
+                height: 88,
+                marginLeft: i === 0 ? 0 : -6,
+                border: "3px solid var(--k-tinta)",
+                boxShadow: "3px 3px 0 var(--k-sombra)",
                 imageRendering: "pixelated",
                 objectFit: "cover",
-                transform: `rotate(${(i - 2) * 6}deg) translateY(${Math.abs(i - 2) * 5}px)`,
+                transform: `rotate(${(i - 2) * 6}deg) translateY(${Math.abs(i - 2) * 4}px)`,
                 zIndex: 5 - Math.abs(i - 2),
               }}
             />
           ))}
         </div>
-        <h1
-          style={{
-            margin: 0,
-            fontFamily: CINZEL,
-            fontSize: 42,
-            fontWeight: 900,
-            letterSpacing: 1,
-            textAlign: "center",
-          }}
-        >
-          <span style={{ color: COLORS.gold }}>Coup</span>{" "}
-          <span style={{ color: COLORS.text }}>Online</span>
+        <h1 style={{ margin: 0, display: "flex", justifyContent: "center" }}>
+          <Logo largura={260} />
         </h1>
-        <p style={{ margin: "6px 0 22px", color: COLORS.dim, fontSize: 14, textAlign: "center" }}>
+        <p style={{ margin: "8px 0 16px", color: "var(--k-texto-fraco)", fontSize: fonteKit(5), textAlign: "center" }}>
           Blefe, dedução e traição — 2 a 6 jogadores.
         </p>
 
-        <label style={label}>
-          Seu nome
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="ex: Alex"
-            style={input}
-          />
-        </label>
+        <Campo
+          rotulo="Seu nome"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="ex: Alex"
+        />
 
-        <button onClick={handleCreate} className="game-btn" style={primaryBtn}>
+        <PixelButton cheio onClick={handleCreate}>
           Criar sala
-        </button>
+        </PixelButton>
 
         <div style={divider}>
           <span style={dividerLine} />
-          <span style={{ color: COLORS.dim, fontSize: 12 }}>ou entrar com código</span>
+          <span style={{ color: "var(--k-texto-fraco)", fontSize: fonteKit(4) }}>ou entrar com código</span>
           <span style={dividerLine} />
         </div>
 
-        <label style={label}>
-          Código da sala
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="ex: ABC23"
-            style={{ ...input, letterSpacing: 3, textTransform: "uppercase" }}
-          />
-        </label>
+        <Campo
+          rotulo="Código da sala"
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          placeholder="ex: ABC23"
+          style={{ letterSpacing: 3, textTransform: "uppercase" }}
+        />
 
-        <button onClick={handleJoin} className="game-btn" style={secondaryBtn}>
+        <PixelButton cheio onClick={handleJoin}>
           Entrar na sala
-        </button>
+        </PixelButton>
 
         {error && (
-          <p style={{ color: COLORS.red, marginTop: 14, marginBottom: 0, fontSize: 14 }}>
+          <p role="alert" style={{ color: "var(--k-pg-face)", marginTop: 12, marginBottom: 0, fontSize: fonteKit(5) }}>
             {error}
           </p>
         )}
-      </div>
-      <div style={{ position: "relative", marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
+      </PixelPanel>
+      {/* Acesso à Aparência ao lado do GitHub e da colinha: fora do painel, em fluxo normal
+          (um botão solto no canto cobria o painel em celular). */}
+      <div
+        style={{
+          position: "relative",
+          marginTop: 6,
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
         <GithubLink />
         <CheatSheetButton />
+        <AparenciaButton />
       </div>
     </main>
   );
 }
 
-const label: CSSProperties = {
-  display: "block",
-  marginBottom: 14,
-  fontSize: 13,
-  fontWeight: 600,
-  color: COLORS.dim,
-};
-const input: CSSProperties = {
-  display: "block",
-  width: "100%",
-  marginTop: 6,
-  padding: "11px 12px",
-  fontSize: 15,
-  color: COLORS.text,
-  background: "rgba(14,8,10,0.7)",
-  border: "1px solid rgba(240,165,0,0.35)",
-  borderRadius: 10,
-  outline: "none",
-};
-const baseBtn: CSSProperties = {
-  width: "100%",
-  padding: "12px 16px",
-  fontSize: 15,
-  borderRadius: 10,
-};
-// Cor base do botão via --c (a classe .game-btn cuida do gradiente/sombra/press).
-const primaryBtn = { ...baseBtn, color: "#1a1a2e", "--c": COLORS.gold } as CSSProperties;
-const secondaryBtn = { ...baseBtn, color: COLORS.text, "--c": COLORS.neutral } as CSSProperties;
 const divider: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 10,
-  margin: "20px 0",
+  margin: "10px 0 14px",
 };
 const dividerLine: CSSProperties = {
   flex: 1,
-  height: 1,
-  background: "rgba(255,255,255,0.1)",
+  height: 3,
+  background: "var(--k-filete)",
 };

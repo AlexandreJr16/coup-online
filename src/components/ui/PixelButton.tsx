@@ -1,6 +1,8 @@
 // Botão do kit. Estados: normal, hover, pressionado (afunda) e desabilitado, todos por CSS.
-// `forcado` existe só para a página de revisão mostrar os estados lado a lado.
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+// `forcado` existe para a página de revisão mostrar os estados lado a lado e para marcar a
+// opção escolhida num grupo de opções (ex.: aba de Aparência).
+// `ref` chega por props (React 19), sem forwardRef.
+import type { ComponentPropsWithRef, ReactNode } from "react";
 import { cx } from "./cx";
 import s from "./ui.module.css";
 
@@ -10,6 +12,7 @@ export function PixelButton({
   children,
   variante = "normal",
   forcado,
+  cheio,
   type = "button",
   className,
   ...resto
@@ -17,7 +20,9 @@ export function PixelButton({
   children: ReactNode;
   variante?: "normal" | "perigo";
   forcado?: EstadoForcado;
-} & ButtonHTMLAttributes<HTMLButtonElement>) {
+  /** ocupa toda a largura do contêiner (formulários) */
+  cheio?: boolean;
+} & ComponentPropsWithRef<"button">) {
   return (
     <button
       {...resto}
@@ -25,6 +30,7 @@ export function PixelButton({
       className={cx(
         s.btn,
         variante === "perigo" && s.perigo,
+        cheio && s.cheio,
         forcado === "hover" && s.forcaHover,
         forcado === "pressionado" && s.forcaPressionado,
         className,
