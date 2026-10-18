@@ -71,14 +71,19 @@ test("plano-check: dependência de plano inexistente", () => {
   assert.ok(checkPlano({ ...docs, mestre }).includes("P02 depende de plano inexistente: P09"));
 });
 
-test("plano-check: os documentos reais de docs/plano passam (79 IDs)", () => {
+test("plano-check: os documentos reais de docs/plano passam (80 IDs)", () => {
   const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
   const indice = read("docs/IDEIAS_ANIMACAO_E_EXPERIENCIA.md");
-  assert.equal(parseIndexIds(indice).length, 79);
+  assert.equal(parseIndexIds(indice).length, 80);
   const problems = checkPlano({
     indice,
     rastreio: read("docs/plano/00-RASTREIO.md"),
     mestre: read("docs/plano/00-MESTRE.md"),
   });
   assert.deepEqual(problems, []);
+});
+
+test("plano-check: 'todos os planos Pxx a Pyy' não inclui o próprio plano (sem ciclo)", () => {
+  const mestre = MESTRE.replace("| P02 | P01 |", "| P02 | todos os planos P01 a P02 |");
+  assert.deepEqual([...parseDeps(mestre, ["P01", "P02"])].find(([p]) => p === "P02")?.[1], ["P01"]);
 });

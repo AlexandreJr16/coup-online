@@ -6,7 +6,7 @@
 
 - **Seções do índice:** 13
 - **IDs cobertos:** (ver objetivo)
-- **Depende de:** P03 a P25 (todos)
+- **Depende de:** todos os planos P03 a P27
 - **Arquivos que toca:** README.md, game-rules.md, docs/ROADMAP.md, tools/readme-shots.ts
 - **Verificação exigida:** Chave dupla: revisor-de-codigo + auditor-de-vazamento
 - **Decisões que bloqueiam:** nenhuma

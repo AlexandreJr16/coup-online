@@ -15,10 +15,10 @@
 | DEC-08 | Som das cenas por padrão | Ligado / desligado até o 1º clique | Seguir a preferência atual de áudio | aberta | | P19 |
 | DEC-09 | Teste de expressões (2 avatares) | Fazer / não | Fazer no H0, sem compromisso com os 12 | aberta | | P03, P20 (G10) |
 | DEC-10 | Bloqueio de UI durante o duelo | Só o centro / tela toda | Só o centro | aberta | | P14 |
-| DEC-11 | Fonte de interface | Pixelify Sans / Silkscreen / VT323 / Press Start 2P (testar acentos pt-BR) | Testar 2 ou 3 nos mockups | aberta | | P04 |
-| DEC-12 | Corpo de texto | Mesma fonte pixel / sans só para texto longo | Pixel em títulos e botões; sans só se a colinha precisar | aberta | | P04, P22 |
+| DEC-11 | Fonte de interface | Pixelify Sans / Silkscreen / VT323 / Press Start 2P | **Todas disponíveis; o jogador escolhe na Aba de Aparência (P27). Padrão: Pixelify Sans** | **fechada** | Alexandre 18/10/2026 (escolha do jogador; padrão delegado ao orquestrador) | P04, P27 |
+| DEC-12 | Corpo de texto | Mesma fonte pixel / sans só para texto longo | Pixel em títulos e botões; texto longo (colinha) pode usar a sans se a pixel não ficar legível; "pode misturar" | **fechada** | Alexandre 18/10/2026 | P04, P22 |
 | DEC-13 | Escala da tela | Contínua / degraus inteiros | Degraus inteiros | aberta | | P06 |
-| DEC-14 | Dock | Cavalete de madeira / mão sobre a madeira da mesa / bandeja de couro | Escolher no mockup | aberta | | P09 |
+| DEC-14 | Dock | Cavalete / mão sobre a mesa / bandeja de couro | **As 3 implementadas; o jogador escolhe na Aba de Aparência. Padrão: mão sobre a mesa** | **fechada** | Alexandre 18/10/2026 | P09, P27 |
 | DEC-15 | Texto de status | (A) só assento e balão / (B) A + legenda curta no centro | B | aberta | | P08 |
 | DEC-16 | Quais itens de retenção entram na v3 | R1, R2, R3, R7 / + R4, R5 / + R6 | R1, R2, R3, R7; R4 e R5 se der tempo; R6 só depois de medir | aberta | | P23, P24 |
 | DEC-17 | "Iterativas" nas fichas era "interativas"? | Interativas / outra coisa | Interativas (interpretação atual) | aberta | | P07 |
@@ -41,4 +41,8 @@
 | F-05 | E2E só quando o Alexandre pedir e na Fase G | memória `politica-testes-e-ambiente` |
 | F-06 | Commit por entrega na branch de trabalho sem perguntar; push e tag só sob pedido; sem atribuição a Claude | memória `commit-sem-perguntar` + CLAUDE.md global |
 | F-07 | Autonomia dos agentes: param só em decisão criativa ou irreversível | Alexandre, 18/10/2026 |
+| F-09 | Direção visual dos 5 mockups de /dev/v3 aprovada ("extremamente aprovado") | Alexandre, 18/10/2026 |
+| F-10 | Kit de UI: estilo A (madeira e latão) é o padrão; B (pergaminho e tinta) fica como opção do jogador e como estilo da colinha | orquestrador, delegado por Alexandre em 18/10/2026 |
+| F-11 | Aparência personalizável pelo jogador (fonte, estilo do kit, dock) numa aba de configurações: plano P27 / ideia U8 | Alexandre, 18/10/2026 |
+| F-12 | Releases com tag em 3 versões: v3.0 (visual novo), v3.1 (mesa nova), v3.2 (animações); merge/tag só quando o Alexandre pedir | Alexandre, 18/10/2026 |
 | F-08 | Planos e subplanos vivem em `docs/plano/`; quantidade de planos livre (14 a 100), decidida pelo orquestrador | Alexandre, 18/10/2026 |

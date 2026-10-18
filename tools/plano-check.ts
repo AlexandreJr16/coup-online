@@ -28,7 +28,7 @@ export function parseDeps(md: string, allPlans: string[]): Map<string, string[]>
     const cell = m[2].trim();
     if (/todos/.test(cell)) {
       const range = cell.match(/P(\d\d) a P(\d\d)/);
-      out.set(m[1], range ? allPlans.filter((p) => p >= `P${range[1]}` && p <= `P${range[2]}`) : []);
+      out.set(m[1], range ? allPlans.filter((p) => p !== m[1] && p >= `P${range[1]}` && p <= `P${range[2]}`) : []);
     } else {
       out.set(m[1], cell.match(/P\d\d/g) ?? []);
     }

@@ -6,7 +6,7 @@
 
 ## Painel
 
-- Planos: 0 de 27 concluídos · Subplanos: 0 de 144 concluídos
+- Planos: 0 de 28 concluídos · Subplanos: 0 de 150 concluídos
 - Onda atual: **0** (fundação) · Próximo gate humano: **P03** (mockups e decisões)
 
 ## Árvore (planos e subplanos)
@@ -55,6 +55,13 @@
   - [ ] P06.S1 Unidade de escala e hook
   - [ ] P06.S2 Aplicar em Card DIMS, Seat e DOCK_HEIGHT
   - [ ] P06.S3 layoutIssues nas 4 resoluções (teste escrito)
+- [ ] **[P27](planos/P27-aba-de-aparencia.md) Aba de Aparência (jogador escolhe)** · onda 3 · risco médio
+  - [ ] P27.S1 Preferências de aparência puras (fonte, estilo, dock) com padrão, validação e storage protegido
+  - [ ] P27.S2 Tokens por tema: estilo A (madeira e latão) e B (pergaminho e tinta) como conjuntos de variáveis
+  - [ ] P27.S3 As 4 fontes pixel carregadas sem pesar (preload só da escolhida)
+  - [ ] P27.S4 Aba de configurações no HUD (abre como peça do kit) com prévia ao vivo
+  - [ ] P27.S5 Dock em 3 variações selecionáveis (cavalete, mão sobre a mesa, bandeja) sobre as 3 zonas fixas
+  - [ ] P27.S6 Gancho para a linha de efeitos (completo, reduzido, desligado) do P11.S6
 
 ### Programa B Mesa
 
@@ -89,14 +96,14 @@
 ### Programa C Vida e blefe
 
 - [ ] **[P11](planos/P11-motor-de-cenas.md) Motor de cenas** · onda 4 · risco alto
-  - [ ] P11.S1 Tipos Beat, Cena e Alvo
+  - [x] P11.S1 Tipos Beat, Cena e Alvo
   - [ ] P11.S2 events.ts estendido com os eventos que faltam
-  - [ ] P11.S3 directScene (puro) com projeção pública
-  - [ ] P11.S4 Fila: prioridade, coalescência, pular, document.hidden
+  - [x] P11.S3 directScene (puro) com projeção pública
+  - [x] P11.S4 Fila: prioridade, coalescência, pular, document.hidden
   - [ ] P11.S5 CamadaDeCena (executor)
-  - [ ] P11.S6 Preferência de efeitos (3 níveis) e reduced motion
+  - [~] P11.S6 Preferência de efeitos (3 níveis) e reduced motion
   - [ ] P11.S7 Página /dev/cenas
-  - [ ] P11.S8 Hold da view: exibição do desfecho atrasada até o beat do veredito (view efetiva usada por legenda, assento e DOM)
+  - [x] P11.S8 Hold da view: exibição do desfecho atrasada até o beat do veredito (view efetiva usada por legenda, assento e DOM)
   - [ ] P11.S9 Teste do orçamento de drama alto (<= ~25 s) numa partida simulada
 - [ ] **[P12](planos/P12-estados-persistentes.md) Estados persistentes** · onda 5 · risco médio
   - [ ] P12.S1 seatWear puro com testes de limiar
@@ -233,7 +240,8 @@
 | P23 | P00 |
 | P24 | P23 |
 | P25 | — |
-| P26 | P03 a P25 (todos) |
+| P26 | todos os planos P03 a P27 |
+| P27 | P04, P09 |
 
 ## Ondas
 
@@ -242,7 +250,7 @@
 | 0 | P00, P01, P02 | fundação + voo de teste do protocolo |
 | 1 | P03 | **gate humano**: mockups e decisões 1-12 |
 | 2 | P04, P05, P06, P20, P25 | kit, escala, arte de UI, gerador de FX, pendências |
-| 3 | P07, P08, P09 | fichas, informação no assento, dock |
+| 3 | P07, P08, P09, P27 | fichas, informação no assento, dock |
 | 4 | P11, P19 | motor de cenas e áudio |
 | 5 | P10, P12, P13 | persistentes, intuição, declaração e tensão |
 | 6 | P14, P15, P17 | **duelo (maior risco)**, bloqueio e troca, assinaturas |

@@ -131,6 +131,7 @@
 | U5 | **Tela de vitória**: retrato pixel do vencedor, troféu e ícones em pixel, `PixelPanel`, botão de revanche grande com atalho, placar da noite, animação leve de moedas/confete | v3 | D |
 | U6 | **Colinha como objeto**: uma peça só (pergaminho/carta de referência) que sobe como carta, retrato maior, ✓/✗ em ícone no lugar de chips, ≤ 5 regras curtas com ícone, cabe em 1280×720 sem rolar | v3 | E |
 | U7 | **Mockups aprovados antes de qualquer código de UI** (Fase 0, `app/dev/v3/*`) e protótipos de movimento em `/dev/cenas` | v3 | Fase 0 |
+| U8 | **Aba de Aparência**: o jogador escolhe fonte pixel (4), estilo do kit (A madeira e latão, B pergaminho e tinta) e barra de baixo (cavalete, mão sobre a mesa, bandeja); a linha de efeitos entra no mesmo painel | v3 | Alexandre, 18/10/2026 |
 
 ## 9. Retenção ("mais uma partida") — Fase F
 

@@ -77,6 +77,7 @@
 | U5 | P21 Fim de partida | | |  |
 | U6 | P22 Colinha como objeto | | |  |
 | U7 | P03 Fase 0: mockups e decisões | | |  |
+| U8 | P27 Aba de Aparência (jogador escolhe) | | |  |
 | R1 | P23 Placar, títulos, revanche e medição | | |  |
 | R2 | P23 Placar, títulos, revanche e medição | | |  |
 | R3 | P23 Placar, títulos, revanche e medição | | |  |
