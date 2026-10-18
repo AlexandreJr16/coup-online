@@ -42,3 +42,13 @@ Formato:
 - Linha de base (verificador-mecanico): `npm test` 203/203 (~73 s), `tsc --noEmit` e `eslint .` sem erros. Os três escreveram saídas em `/tmp` por conta própria (lixo fora do repositório).
 - Próximo: escritor-de-testes cria `tools/sentinela.test.ts` e mostra a falha; depois o implementador edita `package.json`.
 - Commit: docs apenas · Testes: baseline apenas · E2E e build: não executados
+
+### 2026-10-18 · P02.S1 · concluído: glob do `npm test` cobre `tools/` e novo `npm run check`
+- Autor: implementador (package.json) + escritor-de-testes (tools/sentinela.test.ts) · Verificadores: verificador-mecanico (independente) e revisor-de-codigo (independente) · Veredito: **APROVA** (revisor-de-plano ciclo 2, mecânico verde, revisor de código sem bloqueio)
+- Commit: `be2d5d3` (2 arquivos; `package-lock.json` alheio ficou de fora) · Testes: `npm run check` 205/205, `tsc` e `eslint` limpos; teste de mutação do sentinela feito pelo revisor · E2E e build: não executados
+- Lições do voo de teste (P01.S2, parte 1):
+  1. Revisor de plano deu um achado alto **desatualizado** (`node_modules` ausente; já existia). Conferir fatos de ambiente antes de agir sobre achado de ambiente.
+  2. Agentes gravaram saídas em `/tmp` solto apesar da regra; reforçar no prompt: "só no scratchpad".
+  3. O ciclo completo de uma mudança de 3 linhas custou ~7 agentes e ~25 min de relógio (plano 2 ciclos, baseline, testes, implementação, mecânico, revisão). Para subplanos de risco baixo e tarefas triviais, considerar fundir `escritor-de-testes` e `implementador` e dispensar a re-revisão do plano quando o ciclo 1 só pede texto (decidir no P01.S3).
+  4. O teste 2 do sentinela (`.test.tsx`) nasce verde: é guarda de regressão, não prova a falha. Só o teste 1 prova que o glob muda.
+  5. Sugestão opcional do revisor (não aplicada): trocar `assert.ok(true)` por `existsSync` do próprio arquivo, para o teste 1 não ser vácuo e acusar cwd errada. Vai ao `00-INBOX.md`.

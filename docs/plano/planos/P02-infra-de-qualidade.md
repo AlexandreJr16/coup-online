@@ -16,7 +16,7 @@
 
 ## Subplanos
 
-### P02.S1 Script `npm run check` e glob de testes `[ ]`
+### P02.S1 Script `npm run check` e glob de testes `[x]`
 - **Objetivo:** um comando só para a verificação mecânica do dia a dia (sem E2E nem build) e um glob de testes que realmente cobre `tools/`.
 - **Arquivos tocados (declarados):** `package.json` (só o bloco `scripts`) e `tools/sentinela.test.ts` (novo). **Não toca** a Constituição nem os papéis: T3 e T4 já estão atendidas em `.claude/agents/verificador-mecanico.md:21` e `docs/plano/00-CONSTITUICAO.md:35-36`.
 - **Precondição de ambiente:** `node_modules` presente (`tsx`, `tsc`, `eslint` em `node_modules/.bin`); restaurar com `npm ci` é decisão do Alexandre. Verificado em 18/10/2026: presente.
@@ -25,10 +25,11 @@
 - **Linha de base registrada em 18/10/2026:** `npm test` 203/203 verdes (~73 s), `tsc --noEmit` e `eslint .` limpos.
 - **Linha de base antes de começar (regra):** `verificador-mecanico` registra `npm test`, `tsc --noEmit` e `eslint .` **como estão**. Erro antigo fora dos arquivos declarados vai ao `00-INBOX.md` e **não** é corrigido aqui (S1 fica `[!]` se bloquear).
 - **Tarefas:**
-  - [ ] P02.S1.T1 `escritor-de-testes` cria `tools/sentinela.test.ts` (conteúdo mínimo: um teste `P02.S1 sentinela: tools/**/*.test.ts roda no npm test` e um teste `P02.S1 nenhum arquivo .test.tsx em src, tools ou tests (sem jsdom)` com controle positivo que a varredura enxerga `helpers.test.ts`; usa só `node:test`, `node:assert/strict`, `node:fs`, `node:path`, e `readdirSync` com `withFileTypes`). A **falha vista** antes da mudança: `node --import tsx --test tools/sentinela.test.ts` passa, mas `npm test 2>&1 | grep -c "P02.S1 sentinela"` dá `0`.
-  - [ ] P02.S1.T2 `implementador` edita `package.json`: `"test": "node --import tsx --test \"src/**/*.test.ts\" \"tools/**/*.test.ts\""` (aspas obrigatórias: sem elas o `sh` lê `**` como `*`) e `"check": "npm test && tsc --noEmit && eslint ."`. **Proibido** o glob largo `**/*.test.ts` (pegaria `tests/e2e/`, que exige o build). Sem `precheck`, `postcheck`, `pretest`, `posttest`. Usar `tsc` e `eslint` puros, nunca `npx tsc`.
+  - [x] P02.S1.T1 `escritor-de-testes` cria `tools/sentinela.test.ts` (conteúdo mínimo: um teste `P02.S1 sentinela: tools/**/*.test.ts roda no npm test` e um teste `P02.S1 nenhum arquivo .test.tsx em src, tools ou tests (sem jsdom)` com controle positivo que a varredura enxerga `helpers.test.ts`; usa só `node:test`, `node:assert/strict`, `node:fs`, `node:path`, e `readdirSync` com `withFileTypes`). A **falha vista** antes da mudança: `node --import tsx --test tools/sentinela.test.ts` passa, mas `npm test 2>&1 | grep -c "P02.S1 sentinela"` dá `0`.
+  - [x] P02.S1.T2 `implementador` edita `package.json`: `"test": "node --import tsx --test \"src/**/*.test.ts\" \"tools/**/*.test.ts\""` (aspas obrigatórias: sem elas o `sh` lê `**` como `*`) e `"check": "npm test && tsc --noEmit && eslint ."`. **Proibido** o glob largo `**/*.test.ts` (pegaria `tests/e2e/`, que exige o build). Sem `precheck`, `postcheck`, `pretest`, `posttest`. Usar `tsc` e `eslint` puros, nunca `npx tsc`.
   - [x] P02.S1.T3 regra do `verificador-mecanico` (nomes de teste na saída): já atendida em `.claude/agents/verificador-mecanico.md:21`.
   - [x] P02.S1.T4 DoD na Constituição: já atendida em `docs/plano/00-CONSTITUICAO.md:35-36`.
+- **Concluído em 18/10/2026:** commit `be2d5d3`; verificação mecânica e revisão de código (APROVA) registradas em `00-REGISTRO.md`.
 - **Testes:** unitário: `tools/sentinela.test.ts`. Integração: não se aplica. E2E: não se aplica (nada escrito).
 - **Pronto quando (comandos):**
   - `npm test 2>&1 | grep -F "P02.S1 sentinela"` e `... | grep -F "P02.S1 nenhum arquivo .test.tsx"` acham uma linha cada.

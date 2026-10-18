@@ -24,7 +24,7 @@
   - [ ] P01.S3 Ajuste do protocolo com as lições do voo
   - [ ] P01.S4 Cadência de sessão (fila pronta, relatório de onda)
 - [ ] **[P02](planos/P02-infra-de-qualidade.md) Infra de qualidade** · onda 0 · risco médio
-  - [ ] P02.S1 Script npm run check e glob de testes (sentinela em tools/)
+  - [x] P02.S1 Script npm run check e glob de testes (sentinela em tools/)
   - [ ] P02.S2 Fixtures de GameView (mãos A/B, fases, lastChallenge)
   - [ ] P02.S3 Harness do teste de propriedade de vazamento (16.3)
   - [ ] P02.S4 Script de cobertura do rastreio e de ciclos no grafo
