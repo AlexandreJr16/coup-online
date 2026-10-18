@@ -22,7 +22,7 @@ Definições executáveis dos papéis: `.claude/agents/<papel>.md`. Se a ferrame
         ─► 6 orquestrador integra + commita ─► 7 registro ─► 8 gate humano, se o subplano pedir
 ```
 
-1. **Aprovação do plano** (obrigatória para todo risco, inclusive baixo). `revisor-de-plano` lê o subplano com a Constituição e o rastreio: tem testes primeiro? critérios verificáveis? arquivos declarados e sem conflito com outro subplano em andamento? dependências `[x]`? Veredito `APROVA` / `PEDE MUDANÇA` / `BLOQUEIA` (use `templates/veredito-de-plano.md`; o `templates/veredito.md` é o de código). Sem `APROVA`, não começa.
+1. **Aprovação do plano** (obrigatória só para risco **alto**; nos demais, o plano já expandido pelo `arquiteto` basta). `revisor-de-plano` lê o subplano com a Constituição e o rastreio: tem testes primeiro? critérios verificáveis? arquivos declarados e sem conflito com outro subplano em andamento? dependências `[x]`? Veredito `APROVA` / `PEDE MUDANÇA` / `BLOQUEIA` (use `templates/veredito-de-plano.md`; o `templates/veredito.md` é o de código). Sem `APROVA`, não começa.
 2. **Testes primeiro.** `escritor-de-testes` escreve os testes (unitário, integração, E2E escrito). Roda e **mostra a falha**. Não toca código de produção.
 3. **Implementação.** `implementador` toca **só os arquivos declarados**. Em paralelismo, roda com `isolation: worktree`. Não altera testes, não instala dependência, não commita. Entrega o subplano em `[?]`.
 4. **Verificação mecânica.** `verificador-mecanico` roda `npm test`, `npx tsc --noEmit`, `npx eslint .` e devolve a **saída bruta** (sem opinar). Nunca roda E2E sem pedido.
@@ -41,15 +41,22 @@ Definições executáveis dos papéis: `.claude/agents/<papel>.md`. Se a ferrame
 6. **Bug achado depois** vira teste de regressão (nome cita o bug) antes da correção.
 7. **Paralelismo seguro.** Só rodam juntos subplanos com **arquivos disjuntos** (declarados no plano). Máximo de 3 agentes simultâneos. O orquestrador integra em sequência.
 
-## 4. Níveis de risco e verificação exigida
+## 4. Rigor proporcional ao risco (decisão do Alexandre, 18/10/2026)
 
-| Risco | Exemplos | Verificação |
+> O voo de teste (P02.S1) mostrou que o ciclo completo custa ~7 agentes e ~25 min por mudança de 3 linhas. A cerimônia cheia vale **só onde um erro vaza informação ou quebra regra**. No resto, produzir.
+
+| Risco | Exemplos | Como se trabalha |
 |---|---|---|
-| **alto** | engine, filtro de cartas por socket, `directScene`, fila, qualquer cena com carta oculta, fichas | revisor-de-plano + mecânico + revisor-de-código + **auditor-de-vazamento** |
-| **médio** | componentes de mesa, kit de UI, placar, arte com curadoria | revisor-de-plano + mecânico + revisor-de-código |
-| **baixo** | docs, constantes, receitas de áudio, ícones | revisor-de-plano (leve) + mecânico + revisor-de-código leve |
+| **alto** | engine, filtro de cartas por socket, `directScene`, fila, hold da view, qualquer cena com carta oculta, harness de vazamento | **Ciclo completo** (seção 2): revisor-de-plano, testes primeiro, implementador, mecânico, revisor-de-código **e** auditor-de-vazamento |
+| **médio** | componentes de mesa, kit de UI, fichas, placar, servidor de sala, escala, arte com curadoria | O orquestrador (ou um implementador) escreve **teste + código** direto, roda `npm run check`, commita. **Uma** revisão de código independente **por plano ou por lote de subplanos** (não por subplano), feita depois; achado bloqueante vira correção em novo commit |
+| **baixo** | docs, constantes, scripts, receitas de áudio, ícones, ferramentas de `tools/`, testes | Faz direto. `npm run check` verde e commit. **Sem** revisor de plano nem de código (amostragem ocasional pelo orquestrador) |
 
-O risco do plano é o piso; um subplano pode subir de nível, nunca descer.
+Regras que **não** relaxam em nenhum nível: teste escrito junto com a mudança quando é lógica; `npm run check` verde antes de commitar; sem atribuição a Claude nos commits; nada de dependência nova, E2E, push, tag ou merge sem o Alexandre; o risco de um subplano pode subir, nunca descer.
+
+### Commits (como o Alexandre mede o ritmo)
+- **Um commit por entrega com significado**: um subplano, ou um grupo coerente de subplanos pequenos do mesmo plano. Não commitar cada tarefa; não commitar só atualização de checklist (a atualização de estado vai no mesmo commit da entrega).
+- Mensagem convencional (`feat`, `fix`, `test`, `chore`, `docs`) com o que mudou e por quê; o corpo cita o ID (`P02.S4`).
+- Ao reportar, mostrar o `git diff --stat` do commit (arquivos e linhas) para ele medir.
 
 ## 4b. Convenções de paralelismo
 

@@ -52,3 +52,8 @@ Formato:
   3. O ciclo completo de uma mudança de 3 linhas custou ~7 agentes e ~25 min de relógio (plano 2 ciclos, baseline, testes, implementação, mecânico, revisão). Para subplanos de risco baixo e tarefas triviais, considerar fundir `escritor-de-testes` e `implementador` e dispensar a re-revisão do plano quando o ciclo 1 só pede texto (decidir no P01.S3).
   4. O teste 2 do sentinela (`.test.tsx`) nasce verde: é guarda de regressão, não prova a falha. Só o teste 1 prova que o glob muda.
   5. Sugestão opcional do revisor (não aplicada): trocar `assert.ok(true)` por `existsSync` do próprio arquivo, para o teste 1 não ser vácuo e acusar cwd errada. Vai ao `00-INBOX.md`.
+
+### 2026-10-18 · P02.S4 e P02.S2 · concluídos com rigor proporcional (risco baixo/médio, sem revisores por subplano)
+- Autor: orquestrador (teste e código juntos) · Verificação: `npm run check` 223/223, `tsc` e `eslint` limpos · Veredito de revisor: não aplicável (decisão do Alexandre em 18/10: cerimônia só em risco alto)
+- S4: `plano:check` (cobertura do rastreio, ciclos, regra de ondas) com 10 testes, incluindo os documentos reais (79 IDs). S2: `playersN`, `withHand`, `withPending`, `seededRng` e `challengePair` (par verdade/blefe gerado pela engine, 25 cartas conservadas) com 8 testes.
+- Restante de P02: S3 (harness de vazamento, risco **alto**, ciclo completo com auditor).

@@ -37,10 +37,10 @@
   - Checagem exata do glob (pega o glob largo proibido): `node -e "const s=require('./package.json').scripts;const g=s.test.match(/\\S+\\.test\\.ts\\S*/g);process.exit(JSON.stringify(g)===JSON.stringify(['\\"src/**/*.test.ts\\"','\\"tools/**/*.test.ts\\"'])?0:1)"` sai com 0.
   - `npm run check; echo $?` dá `0` (se a linha de base estava limpa).
 
-### P02.S2 Fixtures de `GameView` `[ ]`
+### P02.S2 Fixtures de `GameView` `[x]`
 - **Objetivo:** construtores para cenários repetíveis (mãos A/B, fases, `lastChallenge` verdade/blefe/bloqueio, `pending` com `passedIds`, jogador ausente, 2 a 6 jogadores).
 - **Arquivos:** `src/components/game/test-utils.ts` (estender, sem quebrar `makeView`/`player`)
-- **Tarefas:** [ ] P02.S2.T1 teste que fixa o contrato atual de `makeView`; [ ] P02.S2.T2 helpers `withHand(view, playerId, hand)`, `withPending(view, {...})`, `playersN(n)`; [ ] P02.S2.T3 `challengePair(preState, ...)`: gera o **par verdade/blefe pela engine** (`applyEvent` a partir do mesmo pré-estado e com `rng` fixo, pois o padrão é `Math.random`), passando por `viewForPlayer` (`engine.ts:758`) antes de `toPublicView`, de forma que os campos derivados (`mustRevealPlayerId`, `stats`, `eliminated`, auto-revelação) fiquem consistentes; [ ] P02.S2.T4 testes dos helpers.
+- **Tarefas:** [x] P02.S2.T1 teste que fixa o contrato atual de `makeView`; [x] P02.S2.T2 helpers `withHand(view, playerId, hand)`, `withPending(view, {...})`, `playersN(n)`; [x] P02.S2.T3 `challengePair(preState, ...)`: gera o **par verdade/blefe pela engine** (`applyEvent` a partir do mesmo pré-estado e com `rng` fixo, pois o padrão é `Math.random`), passando por `viewForPlayer` (`engine.ts:758`) antes de `toPublicView`, de forma que os campos derivados (`mustRevealPlayerId`, `stats`, `eliminated`, auto-revelação) fiquem consistentes; [x] P02.S2.T4 testes dos helpers.
 - **Pronto quando:** os testes existentes que usam `makeView` seguem verdes e os novos helpers têm teste.
 
 ### P02.S3 Harness do teste de propriedade de vazamento `[ ]`
@@ -54,10 +54,10 @@
 - **Risco:** alto. **Verificadores:** `revisor-de-codigo` + `auditor-de-vazamento` (precisa tentar enganar o harness: campos que ele esqueça de zerar, ordem de chaves, `undefined` vs `null`).
 - **Pronto quando:** o mutante é reprovado, o exemplo é aprovado, e o auditor não consegue fazer um vazamento passar.
 
-### P02.S4 Script de cobertura do rastreio e dos ciclos `[ ]`
+### P02.S4 Script de cobertura do rastreio e dos ciclos `[x]`
 - **Objetivo:** automatizar o que hoje foi checado uma vez: todo ID do índice aparece uma vez em `00-RASTREIO.md`; o grafo de dependências do `00-MESTRE.md` não tem ciclos; ondas consistentes.
 - **Arquivos:** `tools/plano-check.ts`
-- **Tarefas:** [ ] P02.S4.T1 parser dos IDs em `docs/IDEIAS_ANIMACAO_E_EXPERIENCIA.md`; [ ] P02.S4.T2 parser de `00-RASTREIO.md` e da tabela de dependências do `00-MESTRE.md`; regra de ondas: **onda da dependência <= onda do plano** (igualdade é permitida; ex.: P06 depende de P04, ambas na onda 2); [ ] P02.S4.T3 testes com fixtures de documentos quebrados (ID faltando, duplicado, ciclo); [ ] P02.S4.T4 script `npm run plano:check` (sem dependência nova, via `tsx` já presente); o teste fica em `tools/plano-check.test.ts` (coberto pelo glob de S1).
+- **Tarefas:** [x] P02.S4.T1 parser dos IDs em `docs/IDEIAS_ANIMACAO_E_EXPERIENCIA.md`; [x] P02.S4.T2 parser de `00-RASTREIO.md` e da tabela de dependências do `00-MESTRE.md`; regra de ondas: **onda da dependência <= onda do plano** (igualdade é permitida; ex.: P06 depende de P04, ambas na onda 2); [x] P02.S4.T3 testes com fixtures de documentos quebrados (ID faltando, duplicado, ciclo); [x] P02.S4.T4 script `npm run plano:check` (sem dependência nova, via `tsx` já presente); o teste fica em `tools/plano-check.test.ts` (coberto pelo glob de S1).
 - **Pronto quando:** o script passa nos documentos atuais e falha nos documentos quebrados de teste.
 
 ## Critérios de pronto do plano
