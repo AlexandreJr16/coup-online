@@ -37,8 +37,34 @@ export type JoinRoomAck =
 // Ack genérico dos eventos de jogo: erro de regra volta privado a quem agiu.
 export type GameActionAck = { ok: true } | { ok: false; error: string };
 
+// ── Placar da noite (room:score) ─────────────────────────────────────────────
+// Só números e nomes públicos: NUNCA carrega carta (nem oculta, nem revelada).
+export interface ScoreRow {
+  id: string; // playerId estável
+  name: string;
+  wins: number;
+  played: number; // partidas terminadas em que esteve na mesa
+}
+
+// Quem lidera um título acumulado na sala ("Mentiroso da noite"). Empate divide o título.
+export interface TitleLeader {
+  id: "mentiroso" | "desconfiado" | "olho_de_lince" | "carrasco" | "ricaco";
+  titulo: string;
+  count: number; // quantas partidas essa(s) pessoa(s) levou o prêmio
+  leaders: Array<{ id: string; name: string }>;
+}
+
+export interface ScorePayload {
+  matches: number; // partidas terminadas na sala
+  lastWinnerId: string | null; // vencedor da última partida (null = nenhuma ou sem vencedor)
+  rows: ScoreRow[]; // ordenado: mais vitórias primeiro
+  titles: TitleLeader[];
+}
+
 // Eventos enviados pelo servidor para o client.
 export interface ServerToClientEvents {
+  // Placar da noite: ao terminar cada partida (para a sala) e ao entrar/reconectar (para quem entrou).
+  "room:score": (score: ScorePayload) => void;
   "room:players": (players: Player[]) => void;
   // Quem está assistindo (nunca é jogador da partida em curso).
   "room:spectators": (spectators: Player[]) => void;

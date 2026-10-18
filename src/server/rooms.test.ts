@@ -274,3 +274,28 @@ test("anyConnected reflete quem está online", () => {
   assert.equal(anyConnected(r), false);
   deleteRoom(room);
 });
+
+test("placar da noite: sala nasce com placar vazio e o apaga junto com ela (sala nova = do zero)", () => {
+  const room = uid();
+  join(room, "Ana");
+  const r = getRoom(room)!;
+  assert.equal(r.scoreboard.matches, 0);
+  assert.deepEqual(r.scoreboard.entries, {});
+  r.scoreboard = { matches: 3, lastWinnerId: "x", entries: {} };
+  deleteRoom(room);
+  join(room, "Bia");
+  assert.equal(getRoom(room)!.scoreboard.matches, 0);
+  deleteRoom(room);
+});
+
+test("placar da noite: espectador promovido mantém o id (e portanto o histórico)", () => {
+  const room = uid();
+  join(room, "Ana");
+  const g = getRoom(room)!;
+  g.game = {} as GameState; // partida em andamento: o próximo entra como espectador
+  const s = join(room, "Caio");
+  assert.equal(s.role, "spectator");
+  promoteSpectators(g);
+  assert.equal(g.players.find((p) => p.name === "Caio")!.id, s.player.id);
+  deleteRoom(room);
+});

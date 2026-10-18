@@ -25,6 +25,14 @@ import {
   tokenOfPlayer,
   type ServerRoom,
 } from "./rooms";
+import { recordMatch, toScorePayload } from "../lib/game/scoreboard";
+import {
+  consoleMetrics,
+  matchEndEntry,
+  matchStartEntry,
+  rematchEntry,
+  type MetricsLogger,
+} from "./metrics";
 import type { GameEvent, GameState } from "../types/game";
 import type {
   ClientToServerEvents,
@@ -74,10 +82,52 @@ export interface SocketOptions {
   // Multiplica TODOS os tempos do servidor (timers de fase, graça do lobby, descarte
   // de sala). 1 em produção; os testes usam um valor pequeno para não esperar segundos.
   timeScale?: number;
+  // Destino das linhas de medição (JSON). Padrão: console.log; os testes injetam um coletor.
+  log?: MetricsLogger;
+  // Relógio (epoch ms). Padrão Date.now; injetável para testar a duração da partida.
+  now?: () => number;
 }
 
 export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
   const scale = opts.timeScale ?? 1;
+  const log = opts.log ?? consoleMetrics;
+  const now = opts.now ?? Date.now;
+
+  // ── Placar da noite e medição ─────────────────────────────────────────────
+  // Só números e nomes públicos: nenhuma carta no payload de room:score.
+  function sendScore(room: ServerRoom, to: { emit: (ev: "room:score", p: ReturnType<typeof toScorePayload>) => unknown }): void {
+    to.emit("room:score", toScorePayload(room.scoreboard));
+  }
+
+  function markMatchStarted(room: ServerRoom, game: GameState): void {
+    room.matchStartedAt = now();
+    log(matchStartEntry({ roomId: room.id, match: game.matchNumber, players: game.players.length, nowMs: room.matchStartedAt }));
+  }
+
+  // Fim de partida (uma vez só por matchNumber): soma ao placar, loga e avisa a sala.
+  function noteMatchEnd(room: ServerRoom): void {
+    const g = room.game;
+    if (!g || g.phase !== "fim_de_jogo" || room.scoredMatch === g.matchNumber) return;
+    room.scoredMatch = g.matchNumber;
+    const t = now();
+    room.scoreboard = recordMatch(room.scoreboard, {
+      winnerId: g.winnerId,
+      players: g.players.map((p) => ({ id: p.id, name: p.name })),
+      stats: g.stats,
+    });
+    log(
+      matchEndEntry({
+        roomId: room.id,
+        match: g.matchNumber,
+        players: g.players.length,
+        winnerId: g.winnerId,
+        winnerName: g.players.find((p) => p.id === g.winnerId)?.name ?? null,
+        startedAtMs: room.matchStartedAt,
+        nowMs: t,
+      }),
+    );
+    sendScore(room, io.to(room.id));
+  }
 
 
   // ── Estado de jogo → clientes ─────────────────────────────────────────────
@@ -175,6 +225,7 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
 
   function commit(room: ServerRoom, state: GameState): void {
     room.game = settle(room, state);
+    noteMatchEnd(room);
     rearmTimer(room);
     broadcastState(room);
   }
@@ -340,6 +391,7 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
       });
       // Avisa todos na sala (inclusive quem entrou) a lista atualizada.
       broadcastPlayers(room);
+      sendScore(room, socket); // quem entra/reconecta já recebe o placar da noite
       if (room.game) {
         // Jogador que voltou: reanima o relógio e manda o estado. Espectador: só a view pública.
         if (role === "player") presenceChanged(room, player.id);
@@ -376,6 +428,7 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
       }
       cb({ ok: true });
       broadcastPlayers(room);
+      markMatchStarted(room, game);
       commit(room, game);
     });
 
@@ -407,6 +460,8 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
       }
       cb({ ok: true });
       broadcastPlayers(room);
+      log(rematchEntry({ roomId: room.id, match: game.matchNumber, players: game.players.length, nowMs: now() }));
+      markMatchStarted(room, game);
       commit(room, game);
     });
 

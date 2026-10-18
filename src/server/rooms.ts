@@ -8,6 +8,7 @@
 
 import { randomBytes, randomUUID } from "node:crypto";
 
+import { emptyScoreboard, type Scoreboard } from "../lib/game/scoreboard";
 import type { GameState } from "../types/game";
 import type { Player, Role, Room } from "../types/socket";
 
@@ -30,6 +31,14 @@ export interface ServerRoom extends Room {
   autoPass: Set<string>; // jogadores com "passar automático" ligado
   graceTimers: Map<string, NodeJS.Timeout>; // lobby: remoção pendente após desconexão
   cleanupTimer: NodeJS.Timeout | null; // sala sem ninguém online: apagar depois
+  // Placar da noite (vitórias, partidas e prêmios acumulados). Em memória: nasce com a sala e
+  // some com ela (deleteRoom). Chaveado por playerId estável, então espectador que vira
+  // jogador (mesmo id) mantém o histórico.
+  scoreboard: Scoreboard;
+  // Medição: epoch ms em que a partida atual começou, e qual partida (matchNumber) já foi
+  // somada ao placar (evita contar duas vezes o mesmo fim de partida).
+  matchStartedAt: number | null;
+  scoredMatch: number;
 }
 
 export type JoinResult =
@@ -124,6 +133,9 @@ export function joinRoom(roomId: string, name: string, token?: string): JoinResu
       autoPass: new Set(),
       graceTimers: new Map(),
       cleanupTimer: null,
+      scoreboard: emptyScoreboard(),
+      matchStartedAt: null,
+      scoredMatch: 0,
     };
   rooms.set(roomId, room);
 

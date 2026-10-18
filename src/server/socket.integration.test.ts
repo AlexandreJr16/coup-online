@@ -21,8 +21,10 @@ import type {
   JoinRoomAck,
   Player,
   Role,
+  ScorePayload,
   ServerToClientEvents,
 } from "../types/socket";
+import type { MetricsEntry } from "./metrics";
 
 const TIME_SCALE = 0.1; // 15s de turno = 1,5s; 5s de janela = 0,5s; graça de 20s = 2s
 
@@ -30,11 +32,13 @@ let httpServer: HttpServer;
 let io: GameIO;
 let url: string;
 const open: Client[] = [];
+const logs: MetricsEntry[] = []; // linhas de medição (JSON) que o servidor escreveria no stdout
+let clock = Date.now(); // relógio injetado no servidor: o teste controla a duração da partida
 
 before(async () => {
   httpServer = createServer();
   io = new Server(httpServer);
-  attachGameSocket(io, { timeScale: TIME_SCALE });
+  attachGameSocket(io, { timeScale: TIME_SCALE, log: (e) => logs.push(e), now: () => clock });
   await new Promise<void>((r) => httpServer.listen(0, r));
   url = `http://localhost:${(httpServer.address() as AddressInfo).port}`;
 });
@@ -55,6 +59,7 @@ interface Client {
   states: GameView[]; // TODAS as views recebidas (para varrer vazamentos)
   players: Player[];
   spectators: Player[];
+  scores: ScorePayload[]; // TODOS os room:score recebidos
   role: Role | "";
   join(room: string, token?: string): Promise<JoinRoomAck>;
   leave(): void;
@@ -79,6 +84,7 @@ function client(name: string): Client {
     states: [],
     players: [],
     spectators: [],
+    scores: [],
     role: "",
     join: (room, token) =>
       new Promise((res) =>
@@ -110,6 +116,7 @@ function client(name: string): Client {
   });
   socket.on("room:players", (p) => (c.players = p));
   socket.on("room:spectators", (sp) => (c.spectators = sp));
+  socket.on("room:score", (sc) => c.scores.push(sc));
   open.push(c);
   return c;
 }
@@ -660,4 +667,138 @@ test("passar automático: valor inválido é recusado", async () => {
     cs[0].socket.emit("game_autopass", { enabled: "sim" } as never, res),
   );
   assert.equal(ack.ok, false);
+});
+
+// ── Placar da noite, títulos e medição (P23: R1, R2, R3, R7) ─────────────────
+const lastScore = (c: Client) => c.scores[c.scores.length - 1];
+
+test("placar: quem entra recebe room:score vazio (nenhuma partida ainda)", async () => {
+  const { cs } = await lobby(["Ana", "Bia"]);
+  await waitFor(() => cs.every((c) => c.scores.length >= 1), 3000, "room:score no join");
+  assert.deepEqual(lastScore(cs[0]), { matches: 0, lastWinnerId: null, rows: [], titles: [] });
+});
+
+test("placar: ao fim da partida a sala inteira recebe a vitória, e o payload não tem nenhuma carta", async () => {
+  const { cs } = await startedGame(["Ana", "Bia"]);
+  const antes = cs.map((c) => c.scores.length);
+  await playToEnd(cs);
+  await waitFor(() => cs.every((c, i) => c.scores.length > antes[i]), 3000, "room:score no fim");
+  const winner = cs[0].view!.winnerId!;
+  for (const c of cs) {
+    const sc = lastScore(c);
+    assert.equal(sc.matches, 1);
+    assert.equal(sc.lastWinnerId, winner);
+    assert.deepEqual(
+      sc.rows.map((r) => [r.id, r.wins, r.played]).sort(),
+      cs.map((x) => [x.id, x.id === winner ? 1 : 0, 1]).sort(),
+    );
+    const json = JSON.stringify(sc);
+    assert.ok(!/"cards"|"character"|duque|assassino|capitao|embaixador|condessa/.test(json), "payload sem cartas");
+    // o vencedor deu golpes: é o Carrasco da noite
+    assert.ok(sc.titles.some((t) => t.id === "carrasco" && t.leaders.some((l) => l.id === winner)));
+  }
+  // Um único room:score por fim de partida (não repete com os broadcasts seguintes).
+  await sleep(150);
+  assert.equal(cs[0].scores.length, antes[0] + 1);
+});
+
+test("placar acumula na revanche (vitórias e títulos) e reconexão recebe o placar atual", async () => {
+  const { room, cs } = await startedGame(["Ana", "Bia"]);
+  await playToEnd(cs);
+  await waitFor(() => lastScore(cs[0])?.matches === 1);
+  assert.equal((await cs[0].rematch()).ok, true);
+  await waitFor(() => cs[0].view!.matchNumber === 2 && cs[0].view!.phase === "aguardando_acao");
+  await playToEnd(cs);
+  await waitFor(() => lastScore(cs[1])?.matches === 2, 3000, "placar da 2ª partida");
+  const sc = lastScore(cs[1]);
+  assert.equal(sc.rows.reduce((n, r) => n + r.wins, 0), 2);
+  assert.ok(sc.rows.every((r) => r.played === 2));
+  assert.ok(sc.titles.every((t) => t.count >= 1 && t.leaders.length >= 1));
+
+  // Reconexão (token): quem volta recebe o placar atual sem esperar outra partida.
+  const back = client("Ana");
+  await back.join(room, cs[0].token);
+  await waitFor(() => back.scores.length >= 1, 3000, "room:score na reconexão");
+  assert.deepEqual(lastScore(back), sc);
+});
+
+test("placar: espectador que vira jogador na revanche mantém o id e passa a pontuar", async () => {
+  const { room, cs } = await startedGame(["Ana", "Bia"]);
+  const caio = client("Caio");
+  assert.equal((await caio.join(room)).ok, true);
+  assert.equal(caio.role, "spectator");
+  await playToEnd(cs);
+  await waitFor(() => lastScore(caio)?.matches === 1, 3000, "espectador vê o placar");
+  assert.ok(!lastScore(caio).rows.some((r) => r.id === caio.id), "espectador ainda não jogou");
+  assert.equal((await cs[0].rematch()).ok, true);
+  await waitFor(() => caio.view?.matchNumber === 2);
+  await playToEnd([...cs, caio]);
+  await waitFor(() => lastScore(caio)?.matches === 2, 3000, "placar da 2ª partida");
+  const row = lastScore(caio).rows.find((r) => r.id === caio.id)!;
+  assert.equal(row.played, 1);
+  assert.equal(row.name, "Caio");
+});
+
+test("sala apagada leva o placar junto: sala nova com o mesmo código começa do zero", async () => {
+  const { room, cs } = await startedGame(["Ana", "Bia"]);
+  await playToEnd(cs);
+  await waitFor(() => lastScore(cs[0])?.matches === 1);
+  const { getRoom, deleteRoom } = await import("./rooms");
+  assert.equal(getRoom(room)!.scoreboard.matches, 1);
+  deleteRoom(room);
+  assert.equal(getRoom(room), undefined);
+  const novo = client("Zeca");
+  assert.equal((await novo.join(room)).ok, true);
+  await waitFor(() => novo.scores.length >= 1);
+  assert.deepEqual(lastScore(novo), { matches: 0, lastWinnerId: null, rows: [], titles: [] });
+});
+
+test("medição: match_start, match_end (vencedor, nº, jogadores, duração) e rematch_request viram linhas JSON", async () => {
+  const { room, cs } = await lobby(["Ana", "Bia", "Caio"]);
+  const minhas = () => logs.filter((l) => l.roomId === room);
+  clock = 1_000_000;
+  assert.equal((await cs[0].start()).ok, true);
+  await waitFor(() => cs.every((c) => c.view !== null));
+  assert.deepEqual(minhas().map((l) => l.evt), ["match_start"]);
+  assert.equal(minhas()[0].match, 1);
+  assert.equal(minhas()[0].players, 3);
+
+  clock = 1_000_000 + 83_000;
+  await playToEnd(cs);
+  await waitFor(() => minhas().some((l) => l.evt === "match_end"), 3000, "match_end");
+  const fim = minhas().find((l) => l.evt === "match_end")!;
+  assert.ok(fim.evt === "match_end");
+  assert.equal(fim.match, 1);
+  assert.equal(fim.players, 3);
+  assert.equal(fim.winnerId, cs[0].view!.winnerId);
+  assert.equal(fim.winnerName, cs.find((c) => c.id === fim.winnerId)!.name);
+  assert.equal(fim.durationMs, 83_000);
+  // serializa em UMA linha JSON com `evt`
+  const linha = JSON.stringify(fim);
+  assert.ok(!linha.includes("\n"));
+  assert.equal(JSON.parse(linha).evt, "match_end");
+
+  assert.equal((await cs[1].rematch()).ok, true);
+  await waitFor(() => cs[0].view!.matchNumber === 2);
+  assert.deepEqual(minhas().map((l) => l.evt), ["match_start", "match_end", "rematch_request", "match_start"]);
+  const rev = minhas()[2];
+  assert.ok(rev.evt === "rematch_request");
+  assert.equal(rev.rematches, 1);
+  assert.equal(rev.match, 2);
+  assert.equal(minhas()[3].match, 2);
+
+  // Revanche recusada (antes do fim) NÃO gera log.
+  const n = minhas().length;
+  assert.equal((await cs[1].rematch()).ok, false);
+  assert.equal(minhas().length, n);
+});
+
+test("R2 revanche sem atrito: um clique de qualquer jogador, sem confirmação, e o vencedor abre a próxima", async () => {
+  const { cs } = await startedGame(["Ana", "Bia", "Caio"]);
+  await playToEnd(cs);
+  const winner = cs[0].view!.winnerId!;
+  const perdedor = cs.find((c) => c.id !== winner)!;
+  assert.equal((await perdedor.rematch()).ok, true); // quem perdeu também pode pedir
+  await waitFor(() => cs.every((c) => c.view!.matchNumber === 2));
+  assert.ok(cs.every((c) => c.view!.currentPlayerId === winner && c.view!.phase === "aguardando_acao"));
 });
