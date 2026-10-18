@@ -1,0 +1,684 @@
+/* Mockup P03.S1: kit de UI pixel em CSS puro.
+   Regras do kit: sem gradiente, sem blur, sem glow, sem border-radius.
+   Bordas "em degraus" = clip-path em escada ou box-shadow só nos 4 eixos
+   (o canto fica de fora, que é o canto pixel). Sombra = offset duro sem blur.
+   --u é o "pixel" do kit (1280x720: 2px, 1920x1080: 3px). As cores --p-* vêm de
+   paleta.ts (tools/art/palette.json). */
+
+.pagina {
+  --u: 3px;
+  --fe: 1;
+  min-height: 100vh;
+  padding: 24px 16px 64px;
+  background: var(--p-tinta);
+  color: var(--p-creme);
+}
+
+.miolo {
+  max-width: 1760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* ── Tokens dos dois estilos ─────────────────────────────────────────────── */
+
+/* A: madeira da mesa e latão */
+.estiloA {
+  --k-tinta: var(--p-tinta);
+  --k-painel: var(--p-cafe-3);
+  --k-painel-alto: var(--p-cafe-5);
+  --k-painel-baixo: var(--p-cafe-2);
+  --k-filete: var(--p-bronze);
+  --k-slot: var(--p-cafe-1);
+  --k-texto: var(--p-creme);
+  --k-texto-fraco: var(--p-pedra);
+  --k-sombra: var(--p-tinta);
+  --k-btn-face: var(--p-ouro);
+  --k-btn-alto: var(--p-ouro-claro);
+  --k-btn-baixo: var(--p-bronze);
+  --k-btn-texto: var(--p-cafe-1);
+  --k-btn-hover: var(--p-ouro-claro);
+  --k-btn-hover-alto: var(--p-marfim);
+  --k-pg-face: var(--p-rubro);
+  --k-pg-alto: var(--p-coral);
+  --k-pg-baixo: var(--p-vermelho);
+  --k-pg-texto: var(--p-marfim);
+  --k-pg-hover: var(--p-coral);
+  --k-pg-hover-alto: var(--p-marfim);
+  --k-d-face: var(--p-cafe-2);
+  --k-d-alto: var(--p-cafe-3);
+  --k-d-baixo: var(--p-cafe-1);
+  --k-d-texto: var(--p-cinza-roxo);
+  --k-logo-1: var(--p-ouro-claro);
+  --k-logo-2: var(--p-creme);
+  --k-logo-gema: var(--p-rubro);
+  --k-logo-sombra: var(--p-tinta);
+}
+
+/* B: pergaminho e tinta */
+.estiloB {
+  --k-tinta: var(--p-cafe-1);
+  --k-painel: var(--p-creme);
+  --k-painel-alto: var(--p-marfim);
+  --k-painel-baixo: var(--p-pele-clara);
+  --k-filete: var(--p-couro);
+  --k-slot: var(--p-pele-clara);
+  --k-texto: var(--p-cafe-1);
+  --k-texto-fraco: var(--p-cafe-4);
+  --k-sombra: var(--p-cafe-2);
+  --k-btn-face: var(--p-noite);
+  --k-btn-alto: var(--p-ameixa);
+  --k-btn-baixo: var(--p-tinta);
+  --k-btn-texto: var(--p-creme);
+  --k-btn-hover: var(--p-ameixa);
+  --k-btn-hover-alto: var(--p-cinza-roxo);
+  --k-pg-face: var(--p-vermelho);
+  --k-pg-alto: var(--p-rubro);
+  --k-pg-baixo: var(--p-vinho);
+  --k-pg-texto: var(--p-marfim);
+  --k-pg-hover: var(--p-rubro);
+  --k-pg-hover-alto: var(--p-coral);
+  --k-d-face: var(--p-pedra);
+  --k-d-alto: var(--p-creme);
+  --k-d-baixo: var(--p-cinza-roxo);
+  --k-d-texto: var(--p-cinza-roxo);
+  --k-logo-1: var(--p-vermelho);
+  --k-logo-2: var(--p-cafe-1);
+  --k-logo-gema: var(--p-ouro);
+  --k-logo-sombra: var(--p-pele);
+}
+
+/* ── Bitmap ──────────────────────────────────────────────────────────────── */
+
+.bitmap {
+  display: block;
+  flex: none;
+  image-rendering: pixelated;
+}
+
+/* ── Painel: moldura chapada, borda em degraus, sombra dura ───────────────── */
+
+.panel {
+  --d1: var(--u);
+  --d2: calc(var(--u) * 2);
+  filter: drop-shadow(var(--d2) var(--d2) 0 var(--k-sombra));
+  margin: 0 var(--d2) var(--d2) 0;
+  color: var(--k-texto);
+}
+
+.panelBorda {
+  --d1: var(--u);
+  --d2: calc(var(--u) * 2);
+  padding: var(--d1);
+  background: var(--k-tinta);
+  clip-path: polygon(
+    0 var(--d2), var(--d1) var(--d2), var(--d1) var(--d1), var(--d2) var(--d1), var(--d2) 0,
+    calc(100% - var(--d2)) 0, calc(100% - var(--d2)) var(--d1), calc(100% - var(--d1)) var(--d1),
+    calc(100% - var(--d1)) var(--d2), 100% var(--d2),
+    100% calc(100% - var(--d2)), calc(100% - var(--d1)) calc(100% - var(--d2)),
+    calc(100% - var(--d1)) calc(100% - var(--d1)), calc(100% - var(--d2)) calc(100% - var(--d1)),
+    calc(100% - var(--d2)) 100%, var(--d2) 100%, var(--d2) calc(100% - var(--d1)),
+    var(--d1) calc(100% - var(--d1)), var(--d1) calc(100% - var(--d2)), 0 calc(100% - var(--d2))
+  );
+}
+
+.panelFace {
+  --d1: var(--u);
+  --d2: calc(var(--u) * 2);
+  padding: calc(var(--u) * 6);
+  background: var(--k-painel);
+  /* filete (latão/couro) + realce no topo-esquerda + sombra interna no fundo-direita */
+  box-shadow:
+    inset 0 0 0 var(--d1) var(--k-filete),
+    inset var(--d2) var(--d2) 0 0 var(--k-painel-alto),
+    inset calc(var(--d2) * -1) calc(var(--d2) * -1) 0 0 var(--k-painel-baixo);
+  clip-path: polygon(
+    0 var(--d1), var(--d1) var(--d1), var(--d1) 0,
+    calc(100% - var(--d1)) 0, calc(100% - var(--d1)) var(--d1), 100% var(--d1),
+    100% calc(100% - var(--d1)), calc(100% - var(--d1)) calc(100% - var(--d1)),
+    calc(100% - var(--d1)) 100%, var(--d1) 100%, var(--d1) calc(100% - var(--d1)), 0 calc(100% - var(--d1))
+  );
+}
+
+.panelTitulo {
+  margin: 0 0 calc(var(--u) * 4);
+  padding-bottom: calc(var(--u) * 3);
+  font-size: calc(var(--u) * 5 * var(--fe));
+  font-weight: 400;
+  letter-spacing: var(--u);
+  box-shadow: 0 var(--u) 0 0 var(--k-filete);
+}
+
+/* ── Botões: normal, hover, pressionado, desabilitado ─────────────────────── */
+
+.btn {
+  --f: var(--k-btn-face);
+  --a: var(--k-btn-alto);
+  --z: var(--k-btn-baixo);
+  --t: var(--k-btn-texto);
+  --h: var(--k-btn-hover);
+  --ha: var(--k-btn-hover-alto);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 3);
+  min-height: calc(var(--u) * 14);
+  margin: var(--u) var(--u) calc(var(--u) * 3);
+  padding: 0 calc(var(--u) * 6);
+  border: 0;
+  border-radius: 0;
+  background: var(--f);
+  color: var(--t);
+  font: inherit;
+  font-size: calc(var(--u) * 5 * var(--fe));
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  /* ordem: realces internos, laje (profundidade), contorno de tinta só nos 4 eixos */
+  box-shadow:
+    inset 0 var(--u) 0 0 var(--a),
+    inset 0 calc(var(--u) * -1) 0 0 var(--z),
+    0 calc(var(--u) * 2) 0 0 var(--z),
+    0 calc(var(--u) * 3) 0 0 var(--k-tinta),
+    calc(var(--u) * -1) 0 0 0 var(--k-tinta),
+    var(--u) 0 0 0 var(--k-tinta),
+    0 calc(var(--u) * -1) 0 0 var(--k-tinta),
+    calc(var(--u) * -1) calc(var(--u) * 2) 0 0 var(--k-tinta),
+    var(--u) calc(var(--u) * 2) 0 0 var(--k-tinta);
+}
+
+.perigo {
+  --f: var(--k-pg-face);
+  --a: var(--k-pg-alto);
+  --z: var(--k-pg-baixo);
+  --t: var(--k-pg-texto);
+  --h: var(--k-pg-hover);
+  --ha: var(--k-pg-hover-alto);
+}
+
+.btn:hover:not(:disabled),
+.btn.forcaHover {
+  --f: var(--h);
+  --a: var(--ha);
+}
+
+.btn:active:not(:disabled),
+.btn.forcaPressionado {
+  transform: translateY(calc(var(--u) * 2));
+  /* sem laje: o botão "afunda" e só sobra o contorno */
+  box-shadow:
+    inset 0 var(--u) 0 0 var(--z),
+    0 var(--u) 0 0 var(--k-tinta),
+    calc(var(--u) * -1) 0 0 0 var(--k-tinta),
+    var(--u) 0 0 0 var(--k-tinta),
+    0 calc(var(--u) * -1) 0 0 var(--k-tinta);
+}
+
+.btn:disabled {
+  --f: var(--k-d-face);
+  --a: var(--k-d-alto);
+  --z: var(--k-d-baixo);
+  --t: var(--k-d-texto);
+  cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  outline: calc(var(--u) * 1) solid var(--p-ouro-claro);
+  outline-offset: calc(var(--u) * 2);
+}
+
+.btnIcone {
+  width: calc(var(--u) * 18);
+  min-height: calc(var(--u) * 18);
+  padding: 0;
+}
+
+/* ── Tag ─────────────────────────────────────────────────────────────────── */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: calc(var(--u) * 8);
+  margin: var(--u);
+  padding: 0 calc(var(--u) * 3);
+  background: var(--tf);
+  color: var(--tt);
+  font-size: calc(var(--u) * 4 * var(--fe));
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow:
+    calc(var(--u) * -1) 0 0 0 var(--k-tinta),
+    var(--u) 0 0 0 var(--k-tinta),
+    0 calc(var(--u) * -1) 0 0 var(--k-tinta),
+    0 var(--u) 0 0 var(--k-tinta);
+}
+.tagOuro { --tf: var(--p-ouro); --tt: var(--p-cafe-1); }
+.tagPerigo { --tf: var(--p-rubro); --tt: var(--p-marfim); }
+.tagBloqueio { --tf: var(--p-azul); --tt: var(--p-marfim); }
+.tagFora { --tf: var(--p-cinza-roxo); --tt: var(--p-tinta); }
+.tagBlefe { --tf: var(--p-roxo); --tt: var(--p-marfim); }
+
+/* ── Barra de recursos ───────────────────────────────────────────────────── */
+
+.recurso {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 2);
+  min-width: 0;
+}
+
+.recursoTopo {
+  display: flex;
+  justify-content: space-between;
+  font-size: calc(var(--u) * 4 * var(--fe));
+  color: var(--k-texto);
+}
+
+.recursoNumero {
+  color: var(--k-texto-fraco);
+}
+
+.recursoTrilho {
+  display: flex;
+  gap: var(--u);
+  padding: calc(var(--u) * 2);
+  margin: var(--u);
+  background: var(--k-slot);
+  box-shadow:
+    calc(var(--u) * -1) 0 0 0 var(--k-tinta),
+    var(--u) 0 0 0 var(--k-tinta),
+    0 calc(var(--u) * -1) 0 0 var(--k-tinta),
+    0 var(--u) 0 0 var(--k-tinta);
+}
+
+.segmento {
+  flex: 1;
+  height: calc(var(--u) * 5);
+  background: var(--k-painel-baixo);
+}
+
+.segmentoCheio {
+  background: var(--cor-recurso);
+  box-shadow: inset 0 var(--u) 0 0 var(--p-marfim);
+}
+
+/* ── Logo ────────────────────────────────────────────────────────────────── */
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 3);
+}
+
+.logoTexto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--u);
+  line-height: 1;
+}
+
+.logoCoup {
+  font-size: calc(var(--u) * 10 * var(--fe));
+  color: var(--k-logo-1);
+  letter-spacing: var(--u);
+  text-shadow: var(--u) var(--u) 0 var(--k-logo-sombra);
+}
+
+.logoImperio {
+  font-size: calc(var(--u) * 4 * var(--fe));
+  color: var(--k-logo-2);
+  letter-spacing: calc(var(--u) * 2);
+}
+
+/* ── Estrutura da página (fora do kit; texto explicativo em sans) ────────── */
+
+.topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.titulo {
+  margin: 0;
+  font-size: 24px;
+}
+
+.sub {
+  margin: 4px 0 0;
+  color: var(--p-pedra);
+  font-size: 14px;
+  max-width: 80ch;
+}
+
+.caixaDecisoes {
+  padding: 16px 20px;
+  background: var(--p-uva);
+  outline: 4px solid var(--p-ouro);
+  outline-offset: -4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.caixaDecisoes h2 {
+  margin: 0;
+}
+
+.caixaDecisoes ol {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.secao {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.secao h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.nota {
+  margin: 0;
+  color: var(--p-pedra);
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 100ch;
+}
+
+.opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.opcoesRotulo {
+  color: var(--p-pedra);
+  margin-right: 4px;
+}
+
+.opcao {
+  padding: 4px 10px;
+  background: var(--p-noite);
+  color: var(--p-creme);
+  text-decoration: none;
+  outline: 2px solid var(--p-ameixa);
+}
+
+.opcaoAtiva {
+  background: var(--p-ouro);
+  color: var(--p-cafe-1);
+  outline-color: var(--p-ouro-claro);
+}
+
+/* ── Comparação de fontes ────────────────────────────────────────────────── */
+
+.gradeFontes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.cartaoFonte {
+  padding: 16px;
+  background: var(--p-noite);
+  outline: 2px solid var(--p-ameixa);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cartaoFonte h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.cartaoPapel {
+  color: var(--p-pedra);
+  font-size: 12px;
+}
+
+.amostra {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 8px;
+  border-top: 2px solid var(--p-ameixa);
+  min-width: 0;
+}
+
+.amostraRotulo {
+  color: var(--p-cinza-roxo);
+  font-size: 11px;
+}
+
+.linhaAmostra {
+  margin: 0;
+  color: var(--p-creme);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.glifosCaixa {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--p-tinta);
+  font-size: 12px;
+}
+
+.glifosStatus {
+  font-size: 12px;
+}
+
+.glifosOk {
+  color: var(--p-limao);
+}
+
+.glifosFalha {
+  color: var(--p-coral);
+}
+
+.glifosGrade {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.glifo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
+  color: var(--p-creme);
+  background: var(--p-noite);
+}
+
+.glifoFalta {
+  background: var(--p-vinho);
+  color: var(--p-coral);
+  outline: 2px solid var(--p-rubro);
+}
+
+/* ── Quadros do kit ──────────────────────────────────────────────────────── */
+
+.gradeKit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 620px), 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+.quadroKit {
+  padding: 24px;
+  background: var(--p-mata);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.quadroRotulo {
+  margin: 0;
+  font-size: 15px;
+  color: var(--p-creme);
+}
+
+.grupo {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 2);
+  margin-top: calc(var(--u) * 5);
+}
+
+.grupoRotulo {
+  font-size: calc(var(--u) * 3.5 * var(--fe));
+  color: var(--k-texto-fraco);
+  letter-spacing: var(--u);
+}
+
+.linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--u) * 3);
+}
+
+.corpo {
+  margin: 0;
+  font-size: calc(var(--u) * 5 * var(--fe));
+  line-height: 1.4;
+}
+
+.slot {
+  padding: calc(var(--u) * 4);
+  background: var(--k-slot);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 3);
+  box-shadow:
+    calc(var(--u) * -1) 0 0 0 var(--k-tinta),
+    var(--u) 0 0 0 var(--k-tinta),
+    0 calc(var(--u) * -1) 0 0 var(--k-tinta),
+    0 var(--u) 0 0 var(--k-tinta);
+  margin: var(--u);
+}
+
+.paleta {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+  gap: 6px;
+}
+
+.amostraCor {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 10px;
+  color: var(--p-pedra);
+}
+
+.amostraCorQuadro {
+  height: 24px;
+  outline: 1px solid var(--p-ameixa);
+}
+
+/* ── HUD ─────────────────────────────────────────────────────────────────── */
+
+.frameRolagem {
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.frameRotulo {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--p-pedra);
+}
+
+.frame {
+  position: relative;
+  overflow: hidden;
+  flex: none;
+  background: var(--p-mata);
+  outline: 2px solid var(--p-ameixa);
+  outline-offset: 2px;
+}
+
+.hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: calc(var(--u) * 28);
+  padding: 0 calc(var(--u) * 8);
+  background: var(--k-painel);
+  color: var(--k-texto);
+  box-shadow:
+    inset 0 var(--u) 0 0 var(--k-painel-alto),
+    inset 0 calc(var(--u) * -1) 0 0 var(--k-filete),
+    0 calc(var(--u) * 2) 0 0 var(--k-tinta);
+}
+
+.hudEsq {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 10);
+}
+
+.hudDir {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  padding-bottom: calc(var(--u) * 2);
+}
+
+.sala {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 3);
+  font-size: calc(var(--u) * 4 * var(--fe));
+  color: var(--k-texto-fraco);
+}
+
+.salaCodigo {
+  padding: calc(var(--u) * 2) calc(var(--u) * 4);
+  background: var(--k-slot);
+  color: var(--k-texto);
+  font-size: calc(var(--u) * 7 * var(--fe));
+  letter-spacing: calc(var(--u) * 2);
+  line-height: 1;
+  box-shadow:
+    calc(var(--u) * -1) 0 0 0 var(--k-tinta),
+    var(--u) 0 0 0 var(--k-tinta),
+    0 calc(var(--u) * -1) 0 0 var(--k-tinta),
+    0 var(--u) 0 0 var(--k-tinta);
+}
+
+.mesaPlaceholder {
+  position: absolute;
+  inset: calc(var(--u) * 28) 0 0 0;
+  display: grid;
+  place-items: center;
+  color: var(--p-verde);
+  font-size: calc(var(--u) * 5 * var(--fe));
+  text-align: center;
+  padding: 0 calc(var(--u) * 10);
+}
