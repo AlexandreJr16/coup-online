@@ -71,3 +71,8 @@ Formato:
 - Também corrigido: coalescência mantém a de maior prioridade (Q1); NaN/Infinity e tetos por prioridade em `validarCena` (Q2); pendentes viram `instantanea` ao ocultar/reiniciar (Q3); cena menor durante drama alto sai logo e drama alto toma a vaga de cena menor (Q4/Q5); `pular` respeita `pulavel` (Q7); hold por cena, por partida e com relógio coerente (H2/H3); só o último beat final no modo estático; projeção pública movida para `publica.ts` (sem `node:`, usável no navegador); `directScene` reprojeta a entrada e descarta cena inválida em vez de lançar.
 - Resultado: 97 testes em `fx/` e `test-utils`; `tsc`/`eslint` limpos; E2E e build: não executados.
 - Decisões do Alexandre (18/10): mockups aprovados; fonte/estilo/dock delegados (padrões: Pixelify Sans, estilo A, dock "mão sobre a mesa") e todas as variações viram opção do jogador (P27/U8); 3 releases com tag (v3.0, v3.1, v3.2).
+
+### 2026-10-18 · P23 (servidor) · revisão em lote: PEDE MUDANÇA -> corrigido; P04 e P27.S1 concluídos
+- P23: revisor de código independente (baea3db) não achou vazamento; pediu 2 correções médias. Corrigido por implementador (teste + código, 3 mutações reais reprovadas pelos testes): placar sem linha duplicada (token aposentado reabre o histórico; nome sem token não herda), filtro de partida duplicada testado, `room:score` depois do `game_state` final, `winnerName` removido do log, testes frouxos apertados. Suíte completa 397/397.
+- P04/P27.S1-S3: kit real em `src/components/ui`, tokens por estilo, 4 fontes e preferências de aparência (commit do kit). Vitrine `/dev/kit`. Telas do jogo ainda não migradas.
+- E2E e build: não executados. Nada exercitado no navegador.

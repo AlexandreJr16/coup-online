@@ -60,6 +60,7 @@ interface Client {
   players: Player[];
   spectators: Player[];
   scores: ScorePayload[]; // TODOS os room:score recebidos
+  seq: string[]; // ordem de chegada: `state:<fase>` (game_state) e `score:<nº de partidas>` (room:score)
   role: Role | "";
   join(room: string, token?: string): Promise<JoinRoomAck>;
   leave(): void;
@@ -85,6 +86,7 @@ function client(name: string): Client {
     players: [],
     spectators: [],
     scores: [],
+    seq: [],
     role: "",
     join: (room, token) =>
       new Promise((res) =>
@@ -113,10 +115,14 @@ function client(name: string): Client {
   socket.on("game_state", (v) => {
     c.view = v;
     c.states.push(v);
+    c.seq.push(`state:${v.phase}`);
   });
   socket.on("room:players", (p) => (c.players = p));
   socket.on("room:spectators", (sp) => (c.spectators = sp));
-  socket.on("room:score", (sc) => c.scores.push(sc));
+  socket.on("room:score", (sc) => {
+    c.scores.push(sc);
+    c.seq.push(`score:${sc.matches}`);
+  });
   open.push(c);
   return c;
 }
@@ -702,6 +708,89 @@ test("placar: ao fim da partida a sala inteira recebe a vitória, e o payload n�
   assert.equal(cs[0].scores.length, antes[0] + 1);
 });
 
+test("placar: room:score chega DEPOIS do game_state final (a UI não pode antecipar o resultado)", async () => {
+  const { cs } = await startedGame(["Ana", "Bia"]);
+  await playToEnd(cs);
+  await waitFor(() => cs.every((c) => lastScore(c)?.matches === 1), 3000, "room:score no fim");
+  for (const c of cs) {
+    const iFim = c.seq.indexOf("state:fim_de_jogo");
+    const iScore = c.seq.indexOf("score:1");
+    assert.ok(iFim >= 0 && iScore >= 0, `${c.name} não recebeu os dois eventos`);
+    assert.ok(iFim < iScore, `${c.name}: room:score veio antes do game_state final (${c.seq.join(",")})`);
+  }
+});
+
+test("placar: a MESMA partida não é somada duas vezes (game_autopass após o fim não regera room:score nem match_end)", async () => {
+  const { room, cs } = await startedGame(["Ana", "Bia"]);
+  await playToEnd(cs);
+  await waitFor(() => cs.every((c) => lastScore(c)?.matches === 1), 3000, "room:score no fim");
+  const fins = () => logs.filter((l) => l.roomId === room && l.evt === "match_end").length;
+  assert.equal(fins(), 1);
+  const antes = cs.map((c) => c.scores.length);
+  // autopass dispara commit() de novo com a partida já em fim_de_jogo.
+  assert.equal((await cs[0].autopass(true)).ok, true);
+  assert.equal((await cs[1].autopass(true)).ok, true);
+  await sleep(200);
+  assert.deepEqual(cs.map((c) => c.scores.length), antes, "chegou outro room:score");
+  assert.equal(lastScore(cs[0]).matches, 1);
+  assert.equal(lastScore(cs[0]).rows.every((r) => r.played === 1), true);
+  assert.equal(fins(), 1, "match_end duplicado no log");
+});
+
+test("BUG placar duplicado: quem foi removido pela revanche e volta com o token mantém a MESMA linha (id reaproveitado)", async () => {
+  const { room, cs } = await startedGame(["Ana", "Bia", "Caio"]);
+  const [ana, bia, caio] = cs;
+  await playToEnd(cs);
+  await waitFor(() => cs.every((c) => lastScore(c)?.matches === 1), 3000, "placar da 1ª partida");
+
+  // Bia cai na tela de vitória; Ana pede revanche e a ausente é removida da sala.
+  bia.socket.close();
+  await waitFor(() => ana.players.find((p) => p.id === bia.id)?.connected === false, 3000, "Bia ausente");
+  assert.equal((await ana.rematch()).ok, true);
+  await waitFor(() => ana.view!.matchNumber === 2 && ana.players.length === 2, 3000, "revanche sem Bia");
+  assert.ok(!ana.players.some((p) => p.id === bia.id), "Bia foi removida");
+
+  // Bia volta com o token antigo: mesmo id, mesmo token (entra como espectadora: há partida).
+  const bia2 = client("Bia");
+  const ack = await bia2.join(room, bia.token);
+  assert.ok(ack.ok);
+  assert.equal(bia2.role, "spectator");
+  assert.equal(bia2.id, bia.id, "o id antigo deveria ser reaproveitado");
+  assert.equal(bia2.token, bia.token);
+
+  await playToEnd([ana, caio]);
+  await waitFor(() => lastScore(ana)?.matches === 2, 3000, "placar da 2ª partida");
+  assert.equal((await ana.rematch()).ok, true);
+  await waitFor(() => bia2.view?.matchNumber === 3 && bia2.view.players.length === 3, 3000, "Bia na 3ª partida");
+  await playToEnd([ana, caio, bia2]);
+  await waitFor(() => lastScore(ana)?.matches === 3, 3000, "placar da 3ª partida");
+
+  const sc = lastScore(ana);
+  assert.equal(sc.rows.filter((r) => r.name === "Bia").length, 1, "Bia apareceu em mais de uma linha");
+  assert.equal(sc.rows.length, 3);
+  const linhaBia = sc.rows.find((r) => r.id === bia.id)!;
+  assert.equal(linhaBia.played, 2, "Bia jogou a 1ª e a 3ª");
+  assert.equal(sc.rows.find((r) => r.id === ana.id)!.played, 3);
+  assert.equal(sc.rows.find((r) => r.id === caio.id)!.played, 3);
+  assert.equal(sc.rows.reduce((n, r) => n + r.wins, 0), 3, "uma vitória por partida");
+});
+
+test("placar: quem só repete o NOME de quem foi removido não herda o histórico (sem o token, id novo)", async () => {
+  const { room, cs } = await startedGame(["Ana", "Bia", "Caio"]);
+  const [ana, bia] = cs;
+  await playToEnd(cs);
+  await waitFor(() => cs.every((c) => lastScore(c)?.matches === 1), 3000, "placar da 1ª partida");
+  bia.socket.close();
+  await waitFor(() => ana.players.find((p) => p.id === bia.id)?.connected === false, 3000, "Bia ausente");
+  assert.equal((await ana.rematch()).ok, true);
+  await waitFor(() => ana.view!.matchNumber === 2 && ana.players.length === 2, 3000, "revanche sem Bia");
+
+  const impostor = client("Bia");
+  assert.ok((await impostor.join(room)).ok);
+  assert.notEqual(impostor.id, bia.id);
+  assert.notEqual(impostor.token, bia.token);
+});
+
 test("placar acumula na revanche (vitórias e títulos) e reconexão recebe o placar atual", async () => {
   const { room, cs } = await startedGame(["Ana", "Bia"]);
   await playToEnd(cs);
@@ -713,6 +802,7 @@ test("placar acumula na revanche (vitórias e títulos) e reconexão recebe o pl
   const sc = lastScore(cs[1]);
   assert.equal(sc.rows.reduce((n, r) => n + r.wins, 0), 2);
   assert.ok(sc.rows.every((r) => r.played === 2));
+  assert.ok(sc.titles.length > 0, "sem títulos o every abaixo passaria vazio");
   assert.ok(sc.titles.every((t) => t.count >= 1 && t.leaders.length >= 1));
 
   // Reconexão (token): quem volta recebe o placar atual sem esperar outra partida.
@@ -771,12 +861,8 @@ test("medição: match_start, match_end (vencedor, nº, jogadores, duração) e 
   assert.equal(fim.match, 1);
   assert.equal(fim.players, 3);
   assert.equal(fim.winnerId, cs[0].view!.winnerId);
-  assert.equal(fim.winnerName, cs.find((c) => c.id === fim.winnerId)!.name);
+  assert.ok(!("winnerName" in fim), "o log não leva o apelido do vencedor");
   assert.equal(fim.durationMs, 83_000);
-  // serializa em UMA linha JSON com `evt`
-  const linha = JSON.stringify(fim);
-  assert.ok(!linha.includes("\n"));
-  assert.equal(JSON.parse(linha).evt, "match_end");
 
   assert.equal((await cs[1].rematch()).ok, true);
   await waitFor(() => cs[0].view!.matchNumber === 2);

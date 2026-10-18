@@ -64,6 +64,8 @@ export interface ScorePayload {
 // Eventos enviados pelo servidor para o client.
 export interface ServerToClientEvents {
   // Placar da noite: ao terminar cada partida (para a sala) e ao entrar/reconectar (para quem entrou).
+  // Ordem garantida: no fim da partida chega o `game_state` final ANTES deste evento. A UI não
+  // deve disparar nada visual (animação, toast, som) com `room:score` antes de exibir o estado final.
   "room:score": (score: ScorePayload) => void;
   "room:players": (players: Player[]) => void;
   // Quem está assistindo (nunca é jogador da partida em curso).

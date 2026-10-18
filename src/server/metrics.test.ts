@@ -22,22 +22,27 @@ test("match_end: vencedor, nº da partida, jogadores e duração", () => {
     match: 3,
     players: 4,
     winnerId: "w1",
-    winnerName: "Ana",
     startedAtMs: T0,
     nowMs: T0 + 95_000,
   });
   assert.equal(e.evt, "match_end");
   assert.deepEqual(
-    { match: e.match, players: e.players, winnerId: e.winnerId, winnerName: e.winnerName },
-    { match: 3, players: 4, winnerId: "w1", winnerName: "Ana" },
+    { match: e.match, players: e.players, winnerId: e.winnerId },
+    { match: 3, players: 4, winnerId: "w1" },
   );
   assert.equal((e as { durationMs: number }).durationMs, 95_000);
 });
 
+test("match_end NÃO leva o nome do vencedor (apelido de amigo fica fora do log)", () => {
+  const e = matchEndEntry({ roomId: "R", match: 1, players: 2, winnerId: "w1", startedAtMs: T0, nowMs: T0 + 1 });
+  assert.ok(!("winnerName" in e));
+  assert.ok(!JSON.stringify(e).includes("winnerName"));
+});
+
 test("match_end: sem início conhecido a duração é 0 (nunca negativa)", () => {
-  const e = matchEndEntry({ roomId: "R", match: 1, players: 2, winnerId: null, winnerName: null, startedAtMs: null, nowMs: T0 });
+  const e = matchEndEntry({ roomId: "R", match: 1, players: 2, winnerId: null, startedAtMs: null, nowMs: T0 });
   assert.equal((e as { durationMs: number }).durationMs, 0);
-  const f = matchEndEntry({ roomId: "R", match: 1, players: 2, winnerId: null, winnerName: null, startedAtMs: T0 + 5, nowMs: T0 });
+  const f = matchEndEntry({ roomId: "R", match: 1, players: 2, winnerId: null, startedAtMs: T0 + 5, nowMs: T0 });
   assert.equal((f as { durationMs: number }).durationMs, 0);
 });
 
@@ -59,4 +64,22 @@ test("consoleMetrics escreve UMA linha JSON parseável com o campo evt", () => {
   assert.equal(linhas.length, 1);
   assert.ok(!linhas[0].includes("\n"));
   assert.equal(JSON.parse(linhas[0]).evt, "match_start");
+});
+
+test("consoleMetrics com texto hostil (aspas e quebra de linha) continua sendo UMA linha parseável", () => {
+  const hostil = 'A"\nB';
+  const linhas: string[] = [];
+  const orig = console.log;
+  console.log = (...args: unknown[]) => void linhas.push(args.join(" "));
+  try {
+    consoleMetrics(matchEndEntry({ roomId: hostil, match: 1, players: 2, winnerId: hostil, startedAtMs: T0, nowMs: T0 + 10 }));
+  } finally {
+    console.log = orig;
+  }
+  assert.equal(linhas.length, 1);
+  assert.ok(!linhas[0].includes("\n"), "a quebra de linha do dado vazou para o log");
+  const parsed = JSON.parse(linhas[0]);
+  assert.equal(parsed.evt, "match_end");
+  assert.equal(parsed.roomId, hostil);
+  assert.equal(parsed.winnerId, hostil);
 });

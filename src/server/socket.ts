@@ -104,7 +104,8 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
     log(matchStartEntry({ roomId: room.id, match: game.matchNumber, players: game.players.length, nowMs: room.matchStartedAt }));
   }
 
-  // Fim de partida (uma vez só por matchNumber): soma ao placar, loga e avisa a sala.
+  // Fim de partida (uma vez só por matchNumber: commit roda a cada passar automático etc.,
+  // e sem esse filtro a mesma partida seria somada de novo): soma ao placar, loga e avisa a sala.
   function noteMatchEnd(room: ServerRoom): void {
     const g = room.game;
     if (!g || g.phase !== "fim_de_jogo" || room.scoredMatch === g.matchNumber) return;
@@ -121,7 +122,6 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
         match: g.matchNumber,
         players: g.players.length,
         winnerId: g.winnerId,
-        winnerName: g.players.find((p) => p.id === g.winnerId)?.name ?? null,
         startedAtMs: room.matchStartedAt,
         nowMs: t,
       }),
@@ -225,9 +225,10 @@ export function attachGameSocket(io: GameIO, opts: SocketOptions = {}): void {
 
   function commit(room: ServerRoom, state: GameState): void {
     room.game = settle(room, state);
-    noteMatchEnd(room);
     rearmTimer(room);
     broadcastState(room);
+    // Depois do broadcast: o cliente recebe o game_state final ANTES do room:score.
+    noteMatchEnd(room);
   }
 
   // Alguém entrou/saiu da mesa: reconsidera o relógio (se a mesa espera por essa

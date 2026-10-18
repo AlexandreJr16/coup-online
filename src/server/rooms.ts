@@ -35,6 +35,12 @@ export interface ServerRoom extends Room {
   // some com ela (deleteRoom). Chaveado por playerId estável, então espectador que vira
   // jogador (mesmo id) mantém o histórico.
   scoreboard: Scoreboard;
+  // Identidades "aposentadas" que TÊM linha no placar: token (segredo) → playerId antigo.
+  // Quem é removido por removePlayer/dropIdentity (ex.: caiu e outro pediu revanche) perde o
+  // assento, mas se voltar com o MESMO token reaproveita o MESMO id, então o placar segue com
+  // 1 linha por pessoa. Casa só por token: quem só repete o nome NÃO herda o histórico.
+  // Morre junto com a sala (deleteRoom); só guarda quem pontuou, então é pequeno.
+  retiredTokens: Map<string, string>;
   // Medição: epoch ms em que a partida atual começou, e qual partida (matchNumber) já foi
   // somada ao placar (evita contar duas vezes o mesmo fim de partida).
   matchStartedAt: number | null;
@@ -96,9 +102,13 @@ export function joinRoom(roomId: string, name: string, token?: string): JoinResu
     }
   }
 
+  // Token de quem foi removido mas já pontuou: volta com o MESMO id (ver retiredTokens).
+  const reusedId = existing && token ? existing.retiredTokens.get(token) : undefined;
+  if (existing && token && reusedId) existing.retiredTokens.delete(token);
+
   if (existing) {
     const wanted = name.trim().toLowerCase();
-    const isGhost = (p: Player) => !p.connected && p.name.toLowerCase() === wanted;
+    const isGhost = (p: Player) => !reusedId && !p.connected && p.name.toLowerCase() === wanted;
     const ghost = existing.players.find(isGhost);
     const ghostToken = ghost ? tokenOfPlayer(existing, ghost.id) : undefined;
     if (ghost && ghostToken) {
@@ -112,8 +122,8 @@ export function joinRoom(roomId: string, name: string, token?: string): JoinResu
       return { ok: true, room: existing, player: specGhost, token: specToken, reconnected: true, role: "spectator" };
     }
     if (existing.game || existing.players.length >= MAX_PLAYERS) {
-      const spectator: Player = { id: randomUUID(), name: name.trim(), connected: true };
-      const specNewToken = randomBytes(16).toString("hex");
+      const spectator: Player = { id: reusedId ?? randomUUID(), name: name.trim(), connected: true };
+      const specNewToken = reusedId && token ? token : randomBytes(16).toString("hex");
       existing.spectators.push(spectator);
       existing.tokens.set(specNewToken, spectator.id);
       return { ok: true, room: existing, player: spectator, token: specNewToken, reconnected: false, role: "spectator" };
@@ -134,13 +144,14 @@ export function joinRoom(roomId: string, name: string, token?: string): JoinResu
       graceTimers: new Map(),
       cleanupTimer: null,
       scoreboard: emptyScoreboard(),
+      retiredTokens: new Map(),
       matchStartedAt: null,
       scoredMatch: 0,
     };
   rooms.set(roomId, room);
 
-  const player: Player = { id: randomUUID(), name: name.trim(), connected: true };
-  const newToken = randomBytes(16).toString("hex");
+  const player: Player = { id: reusedId ?? randomUUID(), name: name.trim(), connected: true };
+  const newToken = reusedId && token ? token : randomBytes(16).toString("hex");
   room.players.push(player);
   room.tokens.set(newToken, player.id);
   return { ok: true, room, player, token: newToken, reconnected: false, role: "player" };
@@ -152,7 +163,12 @@ export function isSpectator(room: ServerRoom, id: string): boolean {
 
 // Esquece a identidade de alguém que saiu de vez: token, "passar automático" e graça.
 function dropIdentity(room: ServerRoom, id: string): void {
-  for (const [token, owner] of room.tokens) if (owner === id) room.tokens.delete(token);
+  const scored = id in room.scoreboard.entries;
+  for (const [token, owner] of room.tokens) {
+    if (owner !== id) continue;
+    room.tokens.delete(token);
+    if (scored) room.retiredTokens.set(token, id); // volta com o token = mesma linha do placar
+  }
   room.autoPass.delete(id);
   const grace = room.graceTimers.get(id);
   if (grace) clearTimeout(grace);

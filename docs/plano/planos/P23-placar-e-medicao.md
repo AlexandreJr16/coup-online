@@ -1,6 +1,6 @@
 # P23 Placar, títulos, revanche e medição
 
-> Programa **E Retenção** · Onda **7** · Risco **médio** · Estado: `[ ]` esboçado (detalhar com `arquiteto` + `revisor-de-plano` antes de executar).
+> Programa **E Retenção** · Onda **2** · Risco **médio** · Estado: `[ ]` esboçado (detalhar com `arquiteto` + `revisor-de-plano` antes de executar).
 
 **Objetivo:** Ligar uma partida à outra: placar da noite, títulos acumulados, revanche sem atrito e medição.
 

@@ -1,12 +1,12 @@
 # P21 Fim de partida
 
-> Programa **D Telas** · Onda **7** · Risco **médio** · Estado: `[ ]` esboçado (detalhar com `arquiteto` + `revisor-de-plano` antes de executar).
+> Programa **D Telas** · Onda **3** · Risco **médio** · Estado: `[ ]` esboçado (detalhar com `arquiteto` + `revisor-de-plano` antes de executar).
 
 **Objetivo:** Consertar a tela final e transformá-la em ponte para a próxima partida.
 
 - **Seções do índice:** 8
 - **IDs cobertos:** U5
-- **Depende de:** P05, P16
+- **Depende de:** P04, P05, P23
 - **Arquivos que toca:** VictoryPanel.tsx, awards.ts, app/dev/mesa/page.tsx
 - **Verificação exigida:** Revisor de código
 - **Decisões que bloqueiam:** nenhuma
@@ -18,7 +18,7 @@
 - [ ] **P21.S2** Troféu e prêmios em ícones
 - [ ] **P21.S3** Botão de revanche grande com atalho
 - [ ] **P21.S4** Espaço do placar da noite
-- [ ] **P21.S5** Animação leve respeitando reduced motion
+- [ ] **P21.S5** Animação leve de moedas/confete respeitando reduced motion (a cena de vitória do P16 vem depois)
 
 ## Critérios de pronto do plano
 

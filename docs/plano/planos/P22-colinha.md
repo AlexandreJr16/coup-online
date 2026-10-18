@@ -1,6 +1,6 @@
 # P22 Colinha como objeto
 
-> Programa **D Telas** · Onda **7** · Risco **baixo** · Estado: `[ ]` esboçado (detalhar com `arquiteto` + `revisor-de-plano` antes de executar).
+> Programa **D Telas** · Onda **3** · Risco **baixo** · Estado: `[ ]` esboçado (detalhar com `arquiteto` + `revisor-de-plano` antes de executar).
 
 **Objetivo:** A colinha vira uma peça do jogo, só apresentação.
 

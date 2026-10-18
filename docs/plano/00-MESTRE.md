@@ -6,7 +6,7 @@
 
 ## Painel
 
-- Planos: 0 de 28 concluídos · Subplanos: 0 de 150 concluídos
+- Planos: 0 de 30 concluídos · Subplanos: 0 de 158 concluídos
 - Onda atual: **0** (fundação) · Próximo gate humano: **P03** (mockups e decisões)
 
 ## Árvore (planos e subplanos)
@@ -40,9 +40,9 @@
 ### Programa A Linguagem visual
 
 - [ ] **[P04](planos/P04-kit-de-ui.md) Kit de UI, tokens e fonte** · onda 2 · risco médio
-  - [ ] P04.S1 Tokens (paleta reduzida, bordas chapadas, sombra dura)
-  - [ ] P04.S2 Fonte escolhida na Fase 0 em layout.tsx
-  - [ ] P04.S3 PixelPanel, PixelButton, IconButton, Tag
+  - [x] P04.S1 Tokens (paleta reduzida, bordas chapadas, sombra dura)
+  - [x] P04.S2 Fonte escolhida na Fase 0 em layout.tsx
+  - [x] P04.S3 PixelPanel, PixelButton, IconButton, Tag
   - [ ] P04.S4 Migrar home, lobby e header para o kit
   - [ ] P04.S5 Remover game-btn, corner-btn, repo-link legados e conferir por busca
 - [ ] **[P05](planos/P05-arte-de-ui.md) Arte de UI** · onda 2 · risco médio
@@ -56,9 +56,9 @@
   - [ ] P06.S2 Aplicar em Card DIMS, Seat e DOCK_HEIGHT
   - [ ] P06.S3 layoutIssues nas 4 resoluções (teste escrito)
 - [ ] **[P27](planos/P27-aba-de-aparencia.md) Aba de Aparência (jogador escolhe)** · onda 3 · risco médio
-  - [ ] P27.S1 Preferências de aparência puras (fonte, estilo, dock) com padrão, validação e storage protegido
-  - [ ] P27.S2 Tokens por tema: estilo A (madeira e latão) e B (pergaminho e tinta) como conjuntos de variáveis
-  - [ ] P27.S3 As 4 fontes pixel carregadas sem pesar (preload só da escolhida)
+  - [x] P27.S1 Preferências de aparência puras (fonte, estilo, dock) com padrão, validação e storage protegido
+  - [x] P27.S2 Tokens por tema: estilo A (madeira e latão) e B (pergaminho e tinta) como conjuntos de variáveis
+  - [x] P27.S3 As 4 fontes pixel carregadas sem pesar (preload só da escolhida)
   - [ ] P27.S4 Aba de configurações no HUD (abre como peça do kit) com prévia ao vivo
   - [ ] P27.S5 Dock em 3 variações selecionáveis (cavalete, mão sobre a mesa, bandeja) sobre as 3 zonas fixas
   - [ ] P27.S6 Gancho para a linha de efeitos (completo, reduzido, desligado) do P11.S6
@@ -167,13 +167,13 @@
 
 ### Programa D Telas
 
-- [ ] **[P21](planos/P21-fim-de-partida.md) Fim de partida** · onda 7 · risco médio
+- [ ] **[P21](planos/P21-fim-de-partida.md) Fim de partida** · onda 3 · risco médio
   - [ ] P21.S1 Retrato do vencedor no PixelPanel
   - [ ] P21.S2 Troféu e prêmios em ícones
   - [ ] P21.S3 Botão de revanche grande com atalho
   - [ ] P21.S4 Espaço do placar da noite
-  - [ ] P21.S5 Animação leve respeitando reduced motion
-- [ ] **[P22](planos/P22-colinha.md) Colinha como objeto** · onda 7 · risco baixo
+  - [ ] P21.S5 Animação leve de moedas/confete respeitando reduced motion (a cena de vitória do P16 vem depois)
+- [ ] **[P22](planos/P22-colinha.md) Colinha como objeto** · onda 3 · risco baixo
   - [ ] P22.S1 Peça única que abre como carta
   - [ ] P22.S2 Retrato maior e ícones de contestável e bloqueável
   - [ ] P22.S3 No máximo 5 regras curtas
@@ -182,12 +182,12 @@
 
 ### Programa E Retenção
 
-- [ ] **[P23](planos/P23-placar-e-medicao.md) Placar, títulos, revanche e medição** · onda 7 · risco médio
-  - [ ] P23.S1 Log JSON de revanches e linha de base (R7) `[H]`
-  - [ ] P23.S2 room.scoreboard e room:score (unit e integração) (R1)
+- [ ] **[P23](planos/P23-placar-e-medicao.md) Placar, títulos, revanche e medição** · onda 2 · risco médio
+  - [x] P23.S1 Log JSON de revanches e linha de base (R7) `[H]`
+  - [x] P23.S2 room.scoreboard e room:score (unit e integração) (R1)
   - [ ] P23.S3 Placar no fim de partida e no lobby
   - [ ] P23.S4 Revanche sem atrito (R2)
-  - [ ] P23.S5 Títulos da noite (R3)
+  - [x] P23.S5 Títulos da noite (R3)
 - [ ] **[P24](planos/P24-ritmo-e-personalidade.md) Ritmo, personalidade e 2 jogadores** · onda 8 · risco médio
   - [ ] P24.S1 Ritmo: turno padrão e animações que atrasam (R4)
   - [ ] P24.S2 Algo para o eliminado fazer (R4)
@@ -201,7 +201,7 @@
   - [ ] P25.S2 Cobertura da promoção de espectador no E2E `[H]`
   - [ ] P25.S3 LICENSE com o nome escolhido pelo Alexandre `[H]`
   - [ ] P25.S4 Cobertura da promoção de espectador na integração (verificar)
-- [ ] **[P26](planos/P26-fechamento-v3.md) Fechamento da v3** · onda 9 · risco alto · `[H]`
+- [ ] **[P26](planos/P26-fechamento-v3.md) Fechamento final (release v3.2: animações)** · onda 9 · risco alto · `[H]`
   - [ ] P26.S1 E2E completo e checagens finais (só com pedido do Alexandre) `[H]`
   - [ ] P26.S2 Teste exploratório com objetivos `[H]`
   - [ ] P26.S3 Playtest com amigos (3 salas) e perguntas fixas (de quem é a vez, o que aconteceu, a contestação é o mais falado, mais uma?) `[H]`
@@ -209,6 +209,16 @@
   - [ ] P26.S5 Validação no ar do build final (branch ou serviço de teste no Render) `[H]`
   - [ ] P26.S6 Documentação e prints novos `[H]`
   - [ ] P26.S7 Merge na main, tag v3 e deploy (aprovação explícita) `[H]`
+- [ ] **[P28](planos/P28-release-v3-0.md) Release v3.0: visual novo** · onda 3 · risco alto · `[H]`
+  - [ ] P28.S1 E2E completo e checagens (só com pedido do Alexandre)
+  - [ ] P28.S2 Partida de teste com amigos
+  - [ ] P28.S3 README e prints novos
+  - [ ] P28.S4 Merge na main, tag v3.0 e deploy (aprovação explícita)
+- [ ] **[P29](planos/P29-release-v3-1.md) Release v3.1: mesa nova** · onda 3 · risco alto · `[H]`
+  - [ ] P29.S1 E2E completo e layoutIssues nas 4 resoluções (só com pedido do Alexandre)
+  - [ ] P29.S2 Teste dos 3 segundos em 1280x720 e 1920x1080
+  - [ ] P29.S3 Partida de teste com amigos
+  - [ ] P29.S4 Merge na main, tag v3.1 e deploy (aprovação explícita)
 
 ## Grafo de dependências
 
@@ -235,13 +245,15 @@
 | P18 | P12, P20 |
 | P19 | P11 |
 | P20 | P03 |
-| P21 | P05, P16 |
+| P21 | P04, P05, P23 |
 | P22 | P04 |
 | P23 | P00 |
 | P24 | P23 |
 | P25 | — |
-| P26 | todos os planos P03 a P27 |
+| P26 | todos os planos P03 a P29 |
 | P27 | P04, P09 |
+| P28 | P04, P05, P21, P22, P27 |
+| P29 | P06, P07, P08, P09, P28 |
 
 ## Ondas
 
@@ -249,14 +261,14 @@
 |---|---|---|
 | 0 | P00, P01, P02 | fundação + voo de teste do protocolo |
 | 1 | P03 | **gate humano**: mockups e decisões 1-12 |
-| 2 | P04, P05, P06, P20, P25 | kit, escala, arte de UI, gerador de FX, pendências |
-| 3 | P07, P08, P09, P27 | fichas, informação no assento, dock |
+| 2 | P04, P05, P06, P20, P23, P25 | kit, escala, arte de UI, gerador de FX, pendências, placar (servidor) |
+| 3 | P07, P08, P09, P21, P22, P27, P28, P29 | v3.0 (visual novo: kit, aba de aparência, vitória, colinha) e v3.1 (mesa nova: escala, fichas, assento, dock) |
 | 4 | P11, P19 | motor de cenas e áudio |
 | 5 | P10, P12, P13 | persistentes, intuição, declaração e tensão |
 | 6 | P14, P15, P17 | **duelo (maior risco)**, bloqueio e troca, assinaturas |
-| 7 | P16, P21, P22, P23 | perda/exílio/vitória, telas, retenção base |
+| 7 | P16 | perda, exílio e vitória (cenas) |
 | 8 | P18, P24 | itens "se der tempo" e "depois" |
-| 9 | P26 | **gate humano**: fechamento, merge, tag |
+| 9 | P26 | **gate humano**: fechamento final e tag v3.2 |
 
 ## Notas de desenho
 

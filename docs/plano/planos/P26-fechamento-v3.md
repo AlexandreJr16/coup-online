@@ -1,4 +1,4 @@
-# P26 Fechamento da v3
+# P26 Fechamento final (release v3.2: animações)
 
 > Programa **F Fechamento** · Onda **9** · Risco **alto** · Estado: `[ ]` esboçado (detalhar com `arquiteto` + `revisor-de-plano` antes de executar).
 
@@ -6,7 +6,7 @@
 
 - **Seções do índice:** 13
 - **IDs cobertos:** (ver objetivo)
-- **Depende de:** todos os planos P03 a P27
+- **Depende de:** todos os planos P03 a P29
 - **Arquivos que toca:** README.md, game-rules.md, docs/ROADMAP.md, tools/readme-shots.ts
 - **Verificação exigida:** Chave dupla: revisor-de-codigo + auditor-de-vazamento
 - **Decisões que bloqueiam:** nenhuma

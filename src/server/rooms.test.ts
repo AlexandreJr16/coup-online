@@ -299,3 +299,71 @@ test("placar da noite: espectador promovido mantém o id (e portanto o históric
   assert.equal(g.players.find((p) => p.name === "Caio")!.id, s.player.id);
   deleteRoom(room);
 });
+
+// Placar: quem pontuou e é removido volta com o MESMO id se trouxer o token (1 linha por pessoa).
+function comLinhaNoPlacar(room: string) {
+  const ana = join(room, "Ana");
+  const bia = join(room, "Bia");
+  const r = getRoom(room)!;
+  r.scoreboard = {
+    matches: 1,
+    lastWinnerId: ana.player.id,
+    entries: { [bia.player.id]: { id: bia.player.id, name: "Bia", wins: 0, played: 1, awards: {} } },
+  };
+  return { ana, bia, r };
+}
+
+test("placar: removida do lobby, Bia volta com o token e reaproveita id e token (sem tocar nos demais)", () => {
+  const room = uid();
+  const { bia, r } = comLinhaNoPlacar(room);
+  removePlayer(room, bia.player.id);
+  assert.equal(r.tokens.has(bia.token), false);
+  const back = join(room, "Bia", bia.token);
+  assert.equal(back.player.id, bia.player.id);
+  assert.equal(back.token, bia.token);
+  assert.equal(back.role, "player"); // sem partida e com vaga
+  assert.equal(r.players.filter((p) => p.name === "Bia").length, 1);
+  assert.equal(r.tokens.get(bia.token), bia.player.id); // o token volta a valer
+  assert.equal(r.retiredTokens.size, 0); // consumido
+  deleteRoom(room);
+});
+
+test("placar: com partida em andamento, a removida volta como espectadora com o id antigo", () => {
+  const room = uid();
+  const { bia, r } = comLinhaNoPlacar(room);
+  removePlayer(room, bia.player.id);
+  r.game = {} as GameState;
+  const back = join(room, "Bia", bia.token);
+  assert.equal(back.role, "spectator");
+  assert.equal(back.player.id, bia.player.id);
+  promoteSpectators(r);
+  assert.equal(r.players.find((p) => p.name === "Bia")!.id, bia.player.id);
+  deleteRoom(room);
+});
+
+test("placar: só o token reabre o histórico; o mesmo NOME sem token ganha id novo", () => {
+  const room = uid();
+  const { bia, r } = comLinhaNoPlacar(room);
+  removePlayer(room, bia.player.id);
+  const outra = join(room, "Bia");
+  assert.notEqual(outra.player.id, bia.player.id);
+  assert.notEqual(outra.token, bia.token);
+  assert.equal(r.scoreboard.entries[outra.player.id], undefined);
+  // e um token inventado não vira id de ninguém
+  const forjado = join(room, "Zeca", "token-que-nao-existe");
+  assert.notEqual(forjado.player.id, bia.player.id);
+  assert.notEqual(forjado.token, "token-que-nao-existe");
+  deleteRoom(room);
+});
+
+test("placar: quem foi removido SEM nunca ter pontuado não deixa token aposentado", () => {
+  const room = uid();
+  join(room, "Ana");
+  const bia = join(room, "Bia");
+  const r = getRoom(room)!;
+  removePlayer(room, bia.player.id);
+  assert.equal(r.retiredTokens.size, 0);
+  const back = join(room, "Bia", bia.token);
+  assert.notEqual(back.player.id, bia.player.id);
+  deleteRoom(room);
+});

@@ -38,6 +38,24 @@ test("recordMatch soma vitória do vencedor e partida jogada de todos, sem mutar
   assert.ok(Object.values(b1.entries).every((e) => e.played === 1));
 });
 
+test("recordMatch não muta um placar NÃO vazio (entradas e awards aninhados ficam intactos)", () => {
+  const stats = { a: st({ kills: 3 }), b: st({ challengesRight: 2, challengesMade: 2 }), c: st() };
+  const b1 = recordMatch(emptyScoreboard(), { winnerId: "a", players: mesa, stats });
+  assert.ok(Object.keys(b1.entries.a.awards).length > 0, "a fixture precisa ter awards aninhados");
+  const antes = JSON.stringify(b1);
+  const refAna = b1.entries.a;
+  const refAwards = b1.entries.a.awards;
+  const b2 = recordMatch(b1, { winnerId: "a", players: mesa.map((p) => (p.id === "a" ? { ...p, name: "Ana 2" } : p)), stats });
+  assert.equal(JSON.stringify(b1), antes, "o placar antigo mudou");
+  assert.equal(b1.entries.a, refAna);
+  assert.equal(b1.entries.a.awards, refAwards);
+  assert.notEqual(b2.entries.a, b1.entries.a);
+  assert.notEqual(b2.entries.a.awards, b1.entries.a.awards);
+  assert.equal(b2.entries.a.wins, 2);
+  assert.equal(b1.entries.a.wins, 1);
+  assert.equal(b1.entries.a.name, "Ana");
+});
+
 test("placar acumula entre partidas e ordena por vitórias (depois menos partidas, depois nome)", () => {
   let b = emptyScoreboard();
   b = recordMatch(b, { winnerId: "a", players: mesa, stats: { a: st(), b: st(), c: st() } });

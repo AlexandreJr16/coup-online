@@ -1,6 +1,11 @@
 // Medição (F7/R7): linhas de log JSON, uma por evento, sem banco e sem arquivo. Dá para
 // contar revanches por sala depois com `grep '"evt":"rematch_request"'` no log do servidor.
 // As funções de montagem são PURAS; quem escreve é um logger injetável (padrão: console.log).
+//
+// ATENÇÃO ao analisar: o contador `match` vive no estado da sala. Se a sala for apagada (todo
+// mundo saiu / abandono) e recriada com o MESMO código, o log recomeça em `match: 1`. Para
+// separar análises, trate cada `match_start` com `match: 1` como o início de uma sala nova,
+// em vez de agrupar só por roomId.
 
 export type MetricsEntry =
   | {
@@ -16,8 +21,7 @@ export type MetricsEntry =
       roomId: string;
       match: number;
       players: number;
-      winnerId: string | null;
-      winnerName: string | null;
+      winnerId: string | null; // só o id: o apelido de amigo não precisa ir para o log do Render
       durationMs: number;
     }
   | {
@@ -45,7 +49,6 @@ export function matchEndEntry(a: {
   match: number;
   players: number;
   winnerId: string | null;
-  winnerName: string | null;
   startedAtMs: number | null;
   nowMs: number;
 }): MetricsEntry {
@@ -56,7 +59,6 @@ export function matchEndEntry(a: {
     match: a.match,
     players: a.players,
     winnerId: a.winnerId,
-    winnerName: a.winnerName,
     durationMs: a.startedAtMs === null ? 0 : Math.max(0, a.nowMs - a.startedAtMs),
   };
 }
