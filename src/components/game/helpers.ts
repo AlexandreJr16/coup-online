@@ -83,13 +83,20 @@ export function reactionOptions(view: GameView, myId: string): ReactionOptions {
 // ── Ícones dos selos de ação (public/art/<tema>/icones/) ─────────────────────
 export type IconName =
   | "renda" | "ajuda_externa" | "golpe" | "taxas" | "assassinar" | "extorquir"
-  | "trocar" | "contestar" | "bloquear" | "passar" | "mascara" | "cadeado";
+  | "trocar" | "contestar" | "bloquear" | "passar" | "mascara" | "cadeado"
+  // arte de UI procedural (tools/art/ui-icons.ts)
+  | "trofeu" | "olho" | "ajuda" | "som" | "mudo" | "sair" | "engrenagem" | "crt" | "coroa"
+  | "certo" | "errado" | "ampulheta" | "moeda"
+  | "carrasco" | "ricaco" | "mentiroso" | "desconfiado" | "olho_de_lince";
 
-// Ícones que JÁ existem como arquivo; os demais caem no emoji do selo (contestar
-// entra quando a 2ª leva de geração for curada).
+// Ícones que JÁ existem como arquivo; os demais caem no emoji do selo.
 export const ICONS_AVAILABLE: readonly IconName[] = [
   "renda", "ajuda_externa", "golpe", "taxas", "assassinar", "extorquir", "trocar",
   "bloquear", "passar", "mascara", "cadeado",
+  // arte de UI procedural
+  "contestar", "trofeu", "olho", "ajuda", "som", "mudo", "sair", "engrenagem", "crt", "coroa",
+  "certo", "errado", "ampulheta", "moeda",
+  "carrasco", "ricaco", "mentiroso", "desconfiado", "olho_de_lince",
 ];
 
 export function iconUrl(name: IconName, size: "sm" | "lg" = "sm"): string | null {
