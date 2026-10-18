@@ -14,17 +14,17 @@
 ### Programa 0 Fundação
 
 - [~] **[P00](planos/P00-constituicao.md) Constituição e governança** · onda 0 · risco baixo
-  - [ ] P00.S1 Carta de princípios (seção 0 do índice)
-  - [ ] P00.S2 Definição de Pronto por tipo de entrega
-  - [ ] P00.S3 Gates humanos e proibições
-  - [ ] P00.S4 Templates de plano, subplano, veredito e relatório de onda
+  - [~] P00.S1 Carta de princípios (seção 0 do índice)
+  - [~] P00.S2 Definição de Pronto por tipo de entrega
+  - [~] P00.S3 Gates humanos e proibições
+  - [~] P00.S4 Templates de plano, subplano, veredito e relatório de onda
 - [~] **[P01](planos/P01-times-de-agentes.md) Times de agentes e protocolo** · onda 0 · risco médio
-  - [ ] P01.S1 Definições dos 8 papéis em .claude/agents/ e teste de aninhamento de subagentes
+  - [~] P01.S1 Definições dos 8 papéis em .claude/agents/ e teste de aninhamento de subagentes
   - [ ] P01.S2 Voo de teste do ciclo completo numa tarefa pequena
   - [ ] P01.S3 Ajuste do protocolo com as lições do voo
   - [ ] P01.S4 Cadência de sessão (fila pronta, relatório de onda)
 - [ ] **[P02](planos/P02-infra-de-qualidade.md) Infra de qualidade** · onda 0 · risco médio
-  - [ ] P02.S1 Script npm run check (test + tsc + eslint)
+  - [ ] P02.S1 Script npm run check e glob de testes (sentinela em tools/)
   - [ ] P02.S2 Fixtures de GameView (mãos A/B, fases, lastChallenge)
   - [ ] P02.S3 Harness do teste de propriedade de vazamento (16.3)
   - [ ] P02.S4 Script de cobertura do rastreio e de ciclos no grafo

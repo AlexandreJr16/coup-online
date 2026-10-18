@@ -6,7 +6,7 @@
 
 - **Seções do índice:** 0, 2
 - **Depende de:** P00
-- **Arquivos que toca:** `package.json` (scripts `check` e `plano:check`, glob do `test`), `src/components/game/test-utils.ts` (estender), `src/components/game/fx/leak.ts` e `leak.test.ts` (novos), `tools/plano-check.ts` (novo)
+- **Arquivos que toca:** `package.json` (scripts `check` e `plano:check`, glob do `test`), `tools/sentinela.test.ts` (novo, S1), `tools/plano-check.ts` e `tools/plano-check.test.ts` (novos, S4), `src/components/game/test-utils.ts` (estender), `src/components/game/fx/leak.ts` e `leak.test.ts` (novos), `tools/plano-check.ts` (novo)
 - **Verificação exigida:** revisor de código nos S1, S2, S4; **chave dupla** (`revisor-de-codigo` + `auditor-de-vazamento`) no S3.
 - **Reaproveita:** `makeView` e `player` em `src/components/game/test-utils.ts`; tipo `GameView` em `src/types/game.ts`.
 
@@ -16,13 +16,25 @@
 
 ## Subplanos
 
-### P02.S1 Script `npm run check` `[ ]`
-- **Objetivo:** um comando só para a verificação mecânica do dia a dia (sem E2E).
-- **Arquivos:** `package.json`
-- **Achado da revisão:** o glob atual do `npm test` é `src/**/*.test.ts` (`package.json:11`). Arquivos `*.test.tsx` e testes em `tools/` **nunca rodam**, e o verificador reportaria verde sem executar nada.
-- **Tarefas:** [ ] P02.S1.T1 estender o glob do `test` para incluir `tools/**/*.test.ts` (ou manter todos os testes novos em `src/**/*.test.ts`) e **proibir `.test.tsx`** (sem jsdom no projeto); [ ] P02.S1.T2 adicionar `"check": "npm test && tsc --noEmit && eslint ."`; [ ] P02.S1.T3 regra para o `verificador-mecanico`: conferir que os **nomes dos testes novos aparecem na saída**; [ ] P02.S1.T4 documentar na Constituição (DoD).
-- **Testes:** executar `npm run check` e ver a saída; sem dependência nova.
-- **Pronto quando:** `npm run check` verde na branch atual, **não** invoca `test:e2e` nem `build`, e um teste-sentinela em `tools/` aparece na saída.
+### P02.S1 Script `npm run check` e glob de testes `[ ]`
+- **Objetivo:** um comando só para a verificação mecânica do dia a dia (sem E2E nem build) e um glob de testes que realmente cobre `tools/`.
+- **Arquivos tocados (declarados):** `package.json` (só o bloco `scripts`) e `tools/sentinela.test.ts` (novo). **Não toca** a Constituição nem os papéis: T3 e T4 já estão atendidas em `.claude/agents/verificador-mecanico.md:21` e `docs/plano/00-CONSTITUICAO.md:35-36`.
+- **Precondição de ambiente:** `node_modules` presente (`tsx`, `tsc`, `eslint` em `node_modules/.bin`); restaurar com `npm ci` é decisão do Alexandre. Verificado em 18/10/2026: presente.
+- **Exceção de ordem registrada:** P02.S1 e P02.S4 rodam com P00 em `[~]` porque são o voo de teste que fecha P00 (ver `00-REGISTRO.md`).
+- **Achado que originou o subplano:** o glob do `npm test` é `src/**/*.test.ts` (`package.json:11`); testes em `tools/` e `*.test.tsx` nunca rodam.
+- **Linha de base registrada em 18/10/2026:** `npm test` 203/203 verdes (~73 s), `tsc --noEmit` e `eslint .` limpos.
+- **Linha de base antes de começar (regra):** `verificador-mecanico` registra `npm test`, `tsc --noEmit` e `eslint .` **como estão**. Erro antigo fora dos arquivos declarados vai ao `00-INBOX.md` e **não** é corrigido aqui (S1 fica `[!]` se bloquear).
+- **Tarefas:**
+  - [ ] P02.S1.T1 `escritor-de-testes` cria `tools/sentinela.test.ts` (conteúdo mínimo: um teste `P02.S1 sentinela: tools/**/*.test.ts roda no npm test` e um teste `P02.S1 nenhum arquivo .test.tsx em src, tools ou tests (sem jsdom)` com controle positivo que a varredura enxerga `helpers.test.ts`; usa só `node:test`, `node:assert/strict`, `node:fs`, `node:path`, e `readdirSync` com `withFileTypes`). A **falha vista** antes da mudança: `node --import tsx --test tools/sentinela.test.ts` passa, mas `npm test 2>&1 | grep -c "P02.S1 sentinela"` dá `0`.
+  - [ ] P02.S1.T2 `implementador` edita `package.json`: `"test": "node --import tsx --test \"src/**/*.test.ts\" \"tools/**/*.test.ts\""` (aspas obrigatórias: sem elas o `sh` lê `**` como `*`) e `"check": "npm test && tsc --noEmit && eslint ."`. **Proibido** o glob largo `**/*.test.ts` (pegaria `tests/e2e/`, que exige o build). Sem `precheck`, `postcheck`, `pretest`, `posttest`. Usar `tsc` e `eslint` puros, nunca `npx tsc`.
+  - [x] P02.S1.T3 regra do `verificador-mecanico` (nomes de teste na saída): já atendida em `.claude/agents/verificador-mecanico.md:21`.
+  - [x] P02.S1.T4 DoD na Constituição: já atendida em `docs/plano/00-CONSTITUICAO.md:35-36`.
+- **Testes:** unitário: `tools/sentinela.test.ts`. Integração: não se aplica. E2E: não se aplica (nada escrito).
+- **Pronto quando (comandos):**
+  - `npm test 2>&1 | grep -F "P02.S1 sentinela"` e `... | grep -F "P02.S1 nenhum arquivo .test.tsx"` acham uma linha cada.
+  - `node -e "const s=require('./package.json').scripts;const bad=['check','test'].some(k=>/e2e|build|tests\\//.test(s[k]))||['precheck','postcheck','pretest','posttest'].some(k=>k in s);process.exit(bad?1:0)"` sai com 0.
+  - Checagem exata do glob (pega o glob largo proibido): `node -e "const s=require('./package.json').scripts;const g=s.test.match(/\\S+\\.test\\.ts\\S*/g);process.exit(JSON.stringify(g)===JSON.stringify(['\\"src/**/*.test.ts\\"','\\"tools/**/*.test.ts\\"'])?0:1)"` sai com 0.
+  - `npm run check; echo $?` dá `0` (se a linha de base estava limpa).
 
 ### P02.S2 Fixtures de `GameView` `[ ]`
 - **Objetivo:** construtores para cenários repetíveis (mãos A/B, fases, `lastChallenge` verdade/blefe/bloqueio, `pending` com `passedIds`, jogador ausente, 2 a 6 jogadores).

@@ -30,3 +30,15 @@ Formato:
 - Correção aplicada e conferida **mecanicamente pelo orquestrador** (grep dos resíduos e regeneração do MESTRE/RASTREIO: 27 planos, 144 subplanos, 79 IDs, sem ciclos). **Não houve terceira revisão independente**: o limite do protocolo é 2 ciclos e as correções eram só de texto; fica registrado como exceção para o Alexandre decidir se quer uma revisão adicional.
 - Observação: "140 subplanos" na primeira entrada deste registro é histórico; o número atual é 144.
 - Commit: ver `git log` (mensagem `docs(plano): ...`) · Testes: nenhum código alterado; E2E e build: não executados
+
+### 2026-10-18 · P02.S1 · revisão de plano, ciclo 1: PEDE MUDANÇA (achados 2 a 11 aplicados; achado 1 obsoleto)
+- Autor: orquestrador · Verificador: revisor-de-plano (instância independente, papel via Explore) · Veredito: PEDE MUDANÇA
+- Achado 1 (node_modules ausente) estava desatualizado: ao conferir, `node_modules` existe com `tsx`, `tsc` e `eslint`. O `package-lock.json` apareceu modificado (`+"license": "MIT"`, efeito de `npm install`, **não feito por mim**) e fica fora dos commits.
+- Exceção de ordem: P02.S1 e P02.S4 rodam com P00 em `[~]`, pois são o voo de teste que fecha P00. Subplano reescrito com sentinela, glob exato e comandos de verificação.
+- Commit: nenhum · Testes: nenhum rodado ainda · E2E e build: não executados
+
+### 2026-10-18 · P02.S1 · revisão de plano, ciclo 2: APROVA
+- Autor: orquestrador · Verificador: revisor-de-plano (instância nova) · Veredito: **APROVA** (3 ressalvas de texto aplicadas: checagem exata do glob, arquivos do plano, commit dos docs antes de qualquer worktree)
+- Linha de base (verificador-mecanico): `npm test` 203/203 (~73 s), `tsc --noEmit` e `eslint .` sem erros. Os três escreveram saídas em `/tmp` por conta própria (lixo fora do repositório).
+- Próximo: escritor-de-testes cria `tools/sentinela.test.ts` e mostra a falha; depois o implementador edita `package.json`.
+- Commit: docs apenas · Testes: baseline apenas · E2E e build: não executados
