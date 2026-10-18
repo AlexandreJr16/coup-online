@@ -3,7 +3,7 @@ import { applyEvent, createGame } from "@/src/lib/game/engine";
 import type { Rng } from "@/src/lib/game/deck";
 import type { ActionType, Character, GameState, GameView, PublicPlayer } from "@/src/types/game";
 
-const card = (character: Character | null, revealed = false) => ({ character, revealed });
+const card = (character: Character | null, revealed = false) => ({ revealed, character });
 
 export function player(
   id: string,
@@ -102,14 +102,26 @@ function giveHand(s: GameState, playerId: string, hand: [Character, Character]):
 }
 
 // Par verdade/blefe gerado PELA ENGINE: mesmo pré-estado (3 jogadores, p1 abre, rng fixo),
-// p1 declara `action` (alegando `claimed`) e p2 contesta. Só a mão de p1 muda:
-// em `truth` ela tem a carta alegada; em `bluff` não tem. Os campos derivados
-// (mustRevealPlayerId, stats, lastChallenge, eliminated) saem consistentes da engine.
+// p1 declara `action` e p2 contesta. Só a mão de p1 muda: em `truth` ela tem a carta
+// alegada; em `bluff` não. Ações suportadas (sem alvo, alegam personagem): taxas (duque) e
+// trocar (embaixador). O veredito é VALIDADO contra a engine (truth = verdade, bluff = blefe).
+//  - `pre`: estado inicial (3 jogadores, antes de `giveHand` e da ação).
+//  - `afterAction`: logo após a declaração e ANTES da contestação; os dois ramos diferem
+//    SÓ no oculto (mão de p1): é o par certo para testar cenas de declaração/tensão, mas
+//    SÓ com o observador p1 (para p2 e p3 as views saem idênticas e `assertNoLeak` recusa
+//    o par como vácuo).
+//  - `truth`/`bluff`: após a contestação (diferem em dado público: lastChallenge, stats...).
 // Para a view de um observador: `viewForPlayer(par.truth, "p3")`.
-export function challengePair(
-  opts: { action?: ActionType; claimed?: Character; seed?: number } = {},
-): { pre: GameState; truth: GameState; bluff: GameState } {
-  const { action = "taxas", claimed = "duque", seed = 7 } = opts;
+const CLAIM_OF = { taxas: "duque", trocar: "embaixador" } as const;
+
+export function challengePair(opts: { action?: keyof typeof CLAIM_OF; seed?: number } = {}): {
+  pre: GameState;
+  afterAction: { truth: GameState; bluff: GameState };
+  truth: GameState;
+  bluff: GameState;
+} {
+  const { action = "taxas", seed = 7 } = opts;
+  const claimed: Character = CLAIM_OF[action];
   const ids = [
     { id: "p1", name: "Ana" },
     { id: "p2", name: "Bia" },
@@ -119,14 +131,19 @@ export function challengePair(
   const other = (["duque", "assassino", "capitao", "embaixador", "condessa"] as Character[]).filter(
     (c) => c !== claimed,
   );
-  const run = (hand: [Character, Character]): GameState => {
+  const run = (hand: [Character, Character], hadCard: boolean) => {
     const s = structuredClone(pre);
     giveHand(s, "p1", hand);
     const a = applyEvent(s, { type: "action", playerId: "p1", action }, seededRng(seed));
     if (a.error) throw new Error(a.error);
     const c = applyEvent(a.state, { type: "challenge", playerId: "p2" }, seededRng(seed));
     if (c.error) throw new Error(c.error);
-    return c.state;
+    if (c.state.lastChallenge?.accusedHadCard !== hadCard) {
+      throw new Error(`challengePair: veredito inesperado (${action}, seed ${seed})`);
+    }
+    return { afterAction: a.state, final: c.state };
   };
-  return { pre, truth: run([claimed, other[0]]), bluff: run([other[0], other[1]]) };
+  const t = run([claimed, other[0]], true);
+  const b = run([other[0], other[1]], false);
+  return { pre, afterAction: { truth: t.afterAction, bluff: b.afterAction }, truth: t.final, bluff: b.final };
 }

@@ -26,7 +26,7 @@
 - [ ] **[P02](planos/P02-infra-de-qualidade.md) Infra de qualidade** · onda 0 · risco médio
   - [x] P02.S1 Script npm run check e glob de testes (sentinela em tools/)
   - [x] P02.S2 Fixtures de GameView (mãos A/B, fases, lastChallenge)
-  - [ ] P02.S3 Harness do teste de propriedade de vazamento (16.3)
+  - [x] P02.S3 Harness do teste de propriedade de vazamento (16.3)
   - [x] P02.S4 Script de cobertura do rastreio e de ciclos no grafo
 - [ ] **[P03](planos/P03-fase0-mockups-e-decisoes.md) Fase 0: mockups e decisões** · onda 1 · risco médio · `[H]`
   - [ ] P03.S1 Mockup do kit de UI e do cabeçalho (1280x720 e 1920x1080) `[H]`

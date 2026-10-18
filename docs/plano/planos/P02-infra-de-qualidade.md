@@ -1,6 +1,6 @@
 # P02 Infra de qualidade
 
-> Programa **0 Fundação** · Onda **0** · Risco **médio** (o S3 é **alto**: é o que garante que não vaza informação) · Estado: `[ ]`
+> Programa **0 Fundação** · Onda **0** · Risco **médio** (o S3 é **alto**: é o que garante que não vaza informação) · Estado: `[x]` concluído em 18/10/2026
 
 **Objetivo:** dar aos verificadores as ferramentas: script `check`, fixtures de `GameView`, harness do teste de propriedade de vazamento (16.3) e checagem de cobertura do rastreio.
 
@@ -43,14 +43,14 @@
 - **Tarefas:** [x] P02.S2.T1 teste que fixa o contrato atual de `makeView`; [x] P02.S2.T2 helpers `withHand(view, playerId, hand)`, `withPending(view, {...})`, `playersN(n)`; [x] P02.S2.T3 `challengePair(preState, ...)`: gera o **par verdade/blefe pela engine** (`applyEvent` a partir do mesmo pré-estado e com `rng` fixo, pois o padrão é `Math.random`), passando por `viewForPlayer` (`engine.ts:758`) antes de `toPublicView`, de forma que os campos derivados (`mustRevealPlayerId`, `stats`, `eliminated`, auto-revelação) fiquem consistentes; [x] P02.S2.T4 testes dos helpers.
 - **Pronto quando:** os testes existentes que usam `makeView` seguem verdes e os novos helpers têm teste.
 
-### P02.S3 Harness do teste de propriedade de vazamento `[ ]`
+### P02.S3 Harness do teste de propriedade de vazamento `[x]`
 - **Objetivo:** infraestrutura que as Fases H usarão: dado um "observador" e uma função pura `f(viewPublica)`, provar que `f` não depende de dado oculto.
 - **Arquivos:** `src/components/game/fx/leak.ts` (`toPublicView(view)`: zera a mão **não revelada** do observador e `exchange.pool`; tipo `PublicView` com brand, para o `tsc` impedir que o diretor receba o `GameView` cru), `src/components/game/fx/leak.test.ts`
 - **Tarefas:**
-  - [ ] P02.S3.T1 `toPublicView` com teste: nenhuma carta oculta sobrevive; `revealed: true` permanece
-  - [ ] P02.S3.T2 `assertNoLeak(f, viewA, viewB)` (igualdade profunda da saída para views que diferem só no oculto)
-  - [ ] P02.S3.T3 teste de mutação: uma `f` deliberadamente vazadora (lê a mão) **é reprovada** pelo harness
-  - [ ] P02.S3.T4 `f` de exemplo que passa (usa só `toPublicView`)
+  - [x] P02.S3.T1 `toPublicView` com teste: nenhuma carta oculta sobrevive; `revealed: true` permanece
+  - [x] P02.S3.T2 `assertNoLeak(f, viewA, viewB)` (igualdade profunda da saída para views que diferem só no oculto)
+  - [x] P02.S3.T3 teste de mutação: uma `f` deliberadamente vazadora (lê a mão) **é reprovada** pelo harness
+  - [x] P02.S3.T4 `f` de exemplo que passa (usa só `toPublicView`)
 - **Risco:** alto. **Verificadores:** `revisor-de-codigo` + `auditor-de-vazamento` (precisa tentar enganar o harness: campos que ele esqueça de zerar, ordem de chaves, `undefined` vs `null`).
 - **Pronto quando:** o mutante é reprovado, o exemplo é aprovado, e o auditor não consegue fazer um vazamento passar.
 

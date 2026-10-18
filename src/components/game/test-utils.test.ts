@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { viewForPlayer } from "@/src/lib/game/engine";
 import type { GameState } from "@/src/types/game";
+import { toPublicView } from "./fx/leak";
 import { challengePair, makeView, playersN, seededRng, withHand, withPending } from "./test-utils";
 
 const total = (s: GameState) => s.deck.length + s.players.reduce((n, p) => n + p.cards.length, 0);
@@ -67,4 +68,29 @@ test("challengePair: o terceiro observador (p3) não vê as cartas de p1 em nenh
     const p1 = view.players.find((p) => p.id === "p1")!;
     assert.ok(p1.cards.every((c) => c.revealed || c.character === null));
   }
+});
+
+test("challengePair: afterAction difere SÓ no oculto (mão de p1) para todos os observadores", () => {
+  for (const action of ["taxas", "trocar"] as const) {
+    const { afterAction } = challengePair({ action });
+    for (const viewer of ["p1", "p2", "p3"]) {
+      const a = viewForPlayer(afterAction.truth, viewer);
+      const b = viewForPlayer(afterAction.bluff, viewer);
+      assert.deepEqual(toPublicView(a), toPublicView(b), `observador ${viewer}, ${action}`);
+    }
+  }
+});
+
+test("challengePair: o veredito bate para taxas e trocar em várias seeds", () => {
+  for (const action of ["taxas", "trocar"] as const) {
+    for (let seed = 1; seed <= 40; seed++) {
+      const { truth, bluff } = challengePair({ action, seed });
+      assert.equal(truth.lastChallenge?.accusedHadCard, true, `${action} seed ${seed}`);
+      assert.equal(bluff.lastChallenge?.accusedHadCard, false, `${action} seed ${seed}`);
+    }
+  }
+});
+
+test("challengePair: trocar alega embaixador", () => {
+  assert.equal(challengePair({ action: "trocar" }).truth.lastChallenge?.claimed, "embaixador");
 });
