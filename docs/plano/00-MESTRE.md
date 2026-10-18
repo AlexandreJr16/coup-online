@@ -46,10 +46,10 @@
   - [ ] P04.S4 Migrar home, lobby e header para o kit
   - [ ] P04.S5 Remover game-btn, corner-btn, repo-link legados e conferir por busca
 - [ ] **[P05](planos/P05-arte-de-ui.md) Arte de UI** · onda 2 · risco médio
-  - [ ] P05.S1 Lista de arte e método por peça (script ou mão) em tools/art/README.md
-  - [ ] P05.S2 Gerador de ícones de UI
-  - [ ] P05.S3 Logo e favicon `[H]`
-  - [ ] P05.S4 Ícones de prêmios e registro em ICONS_AVAILABLE
+  - [x] P05.S1 Lista de arte e método por peça (script ou mão) em tools/art/README.md
+  - [x] P05.S2 Gerador de ícones de UI
+  - [x] P05.S3 Logo e favicon `[H]`
+  - [x] P05.S4 Ícones de prêmios e registro em ICONS_AVAILABLE
   - [ ] P05.S5 Zero emoji do sistema (busca em src/ e app/)
 - [ ] **[P06](planos/P06-escala.md) Escala em degraus inteiros** · onda 2 · risco médio
   - [ ] P06.S1 Unidade de escala e hook
@@ -157,8 +157,8 @@
   - [ ] P19.S3 clique e embaralhar
   - [ ] P19.S4 Mapeamento em useGameAudio e testes das receitas
 - [ ] **[P20](planos/P20-arte-de-fx.md) Arte de FX** · onda 2 · risco médio
-  - [ ] P20.S1 Gerador base fx.ts e paleta mestra
-  - [ ] P20.S2 Dano, carimbos e duelo `[H]`
+  - [x] P20.S1 Gerador base fx.ts e paleta mestra
+  - [x] P20.S2 Dano, carimbos e duelo `[H]`
   - [ ] P20.S3 Bloqueio, tempo e ameaça `[H]`
   - [ ] P20.S4 Ações (navalha, canhão, mão, saquinho) `[H]`
   - [ ] P20.S5 Exílio (cais, mar, barcos, fumaça) `[H]`
