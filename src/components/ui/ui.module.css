@@ -1,0 +1,253 @@
+/* Kit de UI pixel (P04), versão de produção do mockup aprovado (app/dev/v3/kit).
+   Regras: sem gradiente, sem blur, sem glow, sem border-radius. Bordas "em degraus" =
+   clip-path em escada ou box-shadow só nos 4 eixos (o canto fica de fora, que é o canto
+   pixel). Sombra = offset duro sem blur. Só lê variáveis do tema (`--p-*`, `--k-*`, `--u`,
+   `--fe`, `--fonte-ui`), definidas em app/globals.css; nenhuma cor fixa aqui.
+   Alvo de clique >= 44px (WCAG 2.5.8 / regra do projeto). */
+
+/* ── Bitmap ──────────────────────────────────────────────────────────────── */
+
+.bitmap {
+  display: block;
+  flex: none;
+  image-rendering: pixelated;
+}
+
+/* ── Painel: moldura chapada, borda em degraus, sombra dura ───────────────── */
+
+.panel {
+  --d1: var(--u);
+  --d2: calc(var(--u) * 2);
+  filter: drop-shadow(var(--d2) var(--d2) 0 var(--k-sombra));
+  margin: 0 var(--d2) var(--d2) 0;
+  color: var(--k-texto);
+  font-family: var(--fonte-ui);
+}
+
+.panelBorda {
+  --d1: var(--u);
+  --d2: calc(var(--u) * 2);
+  padding: var(--d1);
+  background: var(--k-tinta);
+  clip-path: polygon(
+    0 var(--d2), var(--d1) var(--d2), var(--d1) var(--d1), var(--d2) var(--d1), var(--d2) 0,
+    calc(100% - var(--d2)) 0, calc(100% - var(--d2)) var(--d1), calc(100% - var(--d1)) var(--d1),
+    calc(100% - var(--d1)) var(--d2), 100% var(--d2),
+    100% calc(100% - var(--d2)), calc(100% - var(--d1)) calc(100% - var(--d2)),
+    calc(100% - var(--d1)) calc(100% - var(--d1)), calc(100% - var(--d2)) calc(100% - var(--d1)),
+    calc(100% - var(--d2)) 100%, var(--d2) 100%, var(--d2) calc(100% - var(--d1)),
+    var(--d1) calc(100% - var(--d1)), var(--d1) calc(100% - var(--d2)), 0 calc(100% - var(--d2))
+  );
+}
+
+.panelFace {
+  --d1: var(--u);
+  --d2: calc(var(--u) * 2);
+  padding: calc(var(--u) * 6);
+  background: var(--k-painel);
+  /* filete (latão/couro) + realce no topo-esquerda + sombra interna no fundo-direita */
+  box-shadow:
+    inset 0 0 0 var(--d1) var(--k-filete),
+    inset var(--d2) var(--d2) 0 0 var(--k-painel-alto),
+    inset calc(var(--d2) * -1) calc(var(--d2) * -1) 0 0 var(--k-painel-baixo);
+  clip-path: polygon(
+    0 var(--d1), var(--d1) var(--d1), var(--d1) 0,
+    calc(100% - var(--d1)) 0, calc(100% - var(--d1)) var(--d1), 100% var(--d1),
+    100% calc(100% - var(--d1)), calc(100% - var(--d1)) calc(100% - var(--d1)),
+    calc(100% - var(--d1)) 100%, var(--d1) 100%, var(--d1) calc(100% - var(--d1)), 0 calc(100% - var(--d1))
+  );
+}
+
+.panelTitulo {
+  margin: 0 0 calc(var(--u) * 4);
+  padding-bottom: calc(var(--u) * 3);
+  font-size: calc(var(--u) * 5 * var(--fe));
+  font-weight: 400;
+  letter-spacing: var(--u);
+  box-shadow: 0 var(--u) 0 0 var(--k-filete);
+}
+
+/* ── Botões: normal, hover, pressionado, desabilitado ─────────────────────── */
+
+.btn {
+  --f: var(--k-btn-face);
+  --a: var(--k-btn-alto);
+  --z: var(--k-btn-baixo);
+  --t: var(--k-btn-texto);
+  --h: var(--k-btn-hover);
+  --ha: var(--k-btn-hover-alto);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 3);
+  min-height: max(44px, calc(var(--u) * 14));
+  min-width: 44px;
+  margin: var(--u) var(--u) calc(var(--u) * 3);
+  padding: 0 calc(var(--u) * 6);
+  border: 0;
+  border-radius: 0;
+  background: var(--f);
+  color: var(--t);
+  font-family: var(--fonte-ui);
+  font-size: calc(var(--u) * 5 * var(--fe));
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  /* ordem: realces internos, laje (profundidade), contorno de tinta só nos 4 eixos */
+  box-shadow:
+    inset 0 var(--u) 0 0 var(--a),
+    inset 0 calc(var(--u) * -1) 0 0 var(--z),
+    0 calc(var(--u) * 2) 0 0 var(--z),
+    0 calc(var(--u) * 3) 0 0 var(--k-tinta),
+    calc(var(--u) * -1) 0 0 0 var(--k-tinta),
+    var(--u) 0 0 0 var(--k-tinta),
+    0 calc(var(--u) * -1) 0 0 var(--k-tinta),
+    calc(var(--u) * -1) calc(var(--u) * 2) 0 0 var(--k-tinta),
+    var(--u) calc(var(--u) * 2) 0 0 var(--k-tinta);
+}
+
+.perigo {
+  --f: var(--k-pg-face);
+  --a: var(--k-pg-alto);
+  --z: var(--k-pg-baixo);
+  --t: var(--k-pg-texto);
+  --h: var(--k-pg-hover);
+  --ha: var(--k-pg-hover-alto);
+}
+
+.btn:hover:not(:disabled),
+.btn.forcaHover {
+  --f: var(--h);
+  --a: var(--ha);
+}
+
+.btn:active:not(:disabled),
+.btn.forcaPressionado {
+  transform: translateY(calc(var(--u) * 2));
+  /* sem laje: o botão "afunda" e só sobra o contorno */
+  box-shadow:
+    inset 0 var(--u) 0 0 var(--z),
+    0 var(--u) 0 0 var(--k-tinta),
+    calc(var(--u) * -1) 0 0 0 var(--k-tinta),
+    var(--u) 0 0 0 var(--k-tinta),
+    0 calc(var(--u) * -1) 0 0 var(--k-tinta);
+}
+
+.btn:disabled {
+  --f: var(--k-d-face);
+  --a: var(--k-d-alto);
+  --z: var(--k-d-baixo);
+  --t: var(--k-d-texto);
+  cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  outline: var(--u) solid var(--k-foco);
+  outline-offset: calc(var(--u) * 2);
+}
+
+.btnIcone {
+  width: max(44px, calc(var(--u) * 18));
+  height: max(44px, calc(var(--u) * 18));
+  padding: 0;
+}
+
+/* ── Tag ─────────────────────────────────────────────────────────────────── */
+
+.tag {
+  display: inline-flex;
+  font-family: var(--fonte-ui);
+  align-items: center;
+  height: calc(var(--u) * 8);
+  margin: var(--u);
+  padding: 0 calc(var(--u) * 3);
+  background: var(--tf);
+  color: var(--tt);
+  font-size: calc(var(--u) * 4 * var(--fe));
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow:
+    calc(var(--u) * -1) 0 0 0 var(--k-tinta),
+    var(--u) 0 0 0 var(--k-tinta),
+    0 calc(var(--u) * -1) 0 0 var(--k-tinta),
+    0 var(--u) 0 0 var(--k-tinta);
+}
+.tagOuro { --tf: var(--p-ouro); --tt: var(--p-cafe-1); }
+.tagPerigo { --tf: var(--p-rubro); --tt: var(--p-marfim); }
+.tagBloqueio { --tf: var(--p-azul); --tt: var(--p-marfim); }
+.tagFora { --tf: var(--p-cinza-roxo); --tt: var(--p-tinta); }
+.tagBlefe { --tf: var(--p-roxo); --tt: var(--p-marfim); }
+
+/* ── Barra de recursos ───────────────────────────────────────────────────── */
+
+.recurso {
+  display: flex;
+  font-family: var(--fonte-ui);
+  flex-direction: column;
+  gap: calc(var(--u) * 2);
+  min-width: 0;
+}
+
+.recursoTopo {
+  display: flex;
+  justify-content: space-between;
+  font-size: calc(var(--u) * 4 * var(--fe));
+  color: var(--k-texto);
+}
+
+.recursoNumero {
+  color: var(--k-texto-fraco);
+}
+
+.recursoTrilho {
+  display: flex;
+  gap: var(--u);
+  padding: calc(var(--u) * 2);
+  margin: var(--u);
+  background: var(--k-slot);
+  box-shadow:
+    calc(var(--u) * -1) 0 0 0 var(--k-tinta),
+    var(--u) 0 0 0 var(--k-tinta),
+    0 calc(var(--u) * -1) 0 0 var(--k-tinta),
+    0 var(--u) 0 0 var(--k-tinta);
+}
+
+.segmento {
+  flex: 1;
+  height: calc(var(--u) * 5);
+  background: var(--k-painel-baixo);
+}
+
+.segmentoCheio {
+  background: var(--cor-recurso);
+  box-shadow: inset 0 var(--u) 0 0 var(--p-marfim);
+}
+
+/* ── Logo ────────────────────────────────────────────────────────────────── */
+
+.logo {
+  display: flex;
+  font-family: var(--fonte-ui);
+  align-items: center;
+  gap: calc(var(--u) * 3);
+}
+
+.logoTexto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--u);
+  line-height: 1;
+}
+
+.logoCoup {
+  font-size: calc(var(--u) * 10 * var(--fe));
+  color: var(--k-logo-1);
+  letter-spacing: var(--u);
+  text-shadow: var(--u) var(--u) 0 var(--k-logo-sombra);
+}
+
+.logoImperio {
+  font-size: calc(var(--u) * 4 * var(--fe));
+  color: var(--k-logo-2);
+  letter-spacing: calc(var(--u) * 2);
+}

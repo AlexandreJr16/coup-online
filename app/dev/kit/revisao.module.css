@@ -1,0 +1,75 @@
+/* Página de revisão do kit real (/dev/kit). Só estrutura; o visual dos componentes vem do kit
+   e das variáveis do tema. Cores só por variável da paleta. */
+.pagina {
+  min-height: 100vh;
+  padding: 24px 16px 64px;
+  background: var(--p-mata);
+  color: var(--p-creme);
+  font-family: var(--fonte-ui);
+  font-size: calc(var(--u) * 5 * var(--fe));
+}
+
+.miolo {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.titulo {
+  margin: 0;
+  font-size: calc(var(--u) * 8 * var(--fe));
+  font-weight: 400;
+}
+
+.sub {
+  margin: 8px 0 0;
+  color: var(--p-pedra);
+  line-height: 1.5;
+  max-width: 80ch;
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+.grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.grupoRotulo {
+  color: var(--k-texto-fraco);
+  letter-spacing: var(--u);
+  font-size: calc(var(--u) * 3.5 * var(--fe));
+}
+
+.linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--u) * 3);
+}
+
+.coluna {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 4);
+}
+
+.corpo {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.estado {
+  margin: 0;
+  color: var(--p-ouro-claro);
+  line-height: 1.5;
+}

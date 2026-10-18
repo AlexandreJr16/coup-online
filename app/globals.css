@@ -493,3 +493,145 @@ html[data-crt="1"] body::after {
     inset 0 1px 0 rgba(255, 225, 160, 0.2),
     inset 0 0 40px rgba(0, 0, 0, 0.35);
 }
+
+/* ═══ Kit de UI pixel (P04/P27): tokens ═══════════════════════════════════════════
+   Regras do kit: bordas chapadas, sombra dura SEM blur, sem gradiente liso, sem glow,
+   sem border-radius. Os componentes de `src/components/ui/` só leem estas variáveis.
+   - `--p-*`  paleta mestra (tools/art/palette.json, 38 cores; um teste confere os hex).
+   - `--k-*`  papéis do kit, em dois conjuntos: estilo A (madeira e latão, PADRÃO, também
+              quando o atributo não existe) e estilo B (pergaminho e tinta).
+   - `--u`    o "pixel" do kit. Um contêiner (ex.: o HUD) pode sobrescrever (2px = 1280x720).
+   - `--fonte-ui` / `--fe`  fonte da interface e seu fator de escala, por `data-fonte`.
+   Os atributos `data-estilo`, `data-fonte` e `data-dock` ficam no <html> (layout.tsx) e
+   são trocados pela preferência do jogador (src/lib/aparencia.ts). */
+:root {
+  --p-tinta: #14101a;
+  --p-noite: #2b2236;
+  --p-ameixa: #4a3d5c;
+  --p-cinza-roxo: #7c6f8a;
+  --p-pedra: #bdb0a6;
+  --p-creme: #f6ecd6;
+  --p-cafe-1: #3a2218;
+  --p-cafe-2: #4e2f20;
+  --p-cafe-3: #5e3a26;
+  --p-cafe-4: #734630;
+  --p-cobre-1: #884028;
+  --p-cafe-5: #8a5535;
+  --p-cafe-6: #a0643d;
+  --p-cobre-2: #c0583a;
+  --p-couro: #b87a48;
+  --p-areia: #cd9358;
+  --p-pele: #dba26c;
+  --p-pele-clara: #efc89a;
+  --p-vinho: #5c1620;
+  --p-vermelho: #9a2a2a;
+  --p-rubro: #d0453a;
+  --p-coral: #f08a5d;
+  --p-bronze: #8a5a14;
+  --p-ouro: #d9a028;
+  --p-ouro-claro: #f7d56a;
+  --p-mata: #1f3a2a;
+  --p-verde: #2f6b45;
+  --p-folha: #6aa84f;
+  --p-limao: #b5d86a;
+  --p-marinho: #1a2a4a;
+  --p-azul: #2f5d9a;
+  --p-ceu: #4aa3c7;
+  --p-gelo: #a8dce0;
+  --p-uva: #3b1f52;
+  --p-roxo: #7b3f8f;
+  --p-lilas: #c58ad0;
+  --p-laranja: #e8743b;
+  --p-marfim: #fffaf0;
+  --u: 3px;
+}
+
+/* A: madeira da mesa e latão (PADRÃO) */
+:root,
+:root[data-estilo="A"] {
+  --k-tinta: var(--p-tinta);
+  --k-painel: var(--p-cafe-3);
+  --k-painel-alto: var(--p-cafe-5);
+  --k-painel-baixo: var(--p-cafe-2);
+  --k-filete: var(--p-bronze);
+  --k-slot: var(--p-cafe-1);
+  --k-texto: var(--p-creme);
+  --k-texto-fraco: var(--p-pedra);
+  --k-sombra: var(--p-tinta);
+  --k-foco: var(--p-ouro-claro);
+  --k-btn-face: var(--p-ouro);
+  --k-btn-alto: var(--p-ouro-claro);
+  --k-btn-baixo: var(--p-bronze);
+  --k-btn-texto: var(--p-cafe-1);
+  --k-btn-hover: var(--p-ouro-claro);
+  --k-btn-hover-alto: var(--p-marfim);
+  --k-pg-face: var(--p-rubro);
+  --k-pg-alto: var(--p-coral);
+  --k-pg-baixo: var(--p-vermelho);
+  --k-pg-texto: var(--p-marfim);
+  --k-pg-hover: var(--p-coral);
+  --k-pg-hover-alto: var(--p-marfim);
+  --k-d-face: var(--p-cafe-2);
+  --k-d-alto: var(--p-cafe-3);
+  --k-d-baixo: var(--p-cafe-1);
+  --k-d-texto: var(--p-cinza-roxo);
+  --k-logo-1: var(--p-ouro-claro);
+  --k-logo-2: var(--p-creme);
+  --k-logo-gema: var(--p-rubro);
+  --k-logo-sombra: var(--p-tinta);
+}
+
+/* B: pergaminho e tinta (também o estilo da colinha e da vitória) */
+:root[data-estilo="B"] {
+  --k-tinta: var(--p-cafe-1);
+  --k-painel: var(--p-creme);
+  --k-painel-alto: var(--p-marfim);
+  --k-painel-baixo: var(--p-pele-clara);
+  --k-filete: var(--p-couro);
+  --k-slot: var(--p-pele-clara);
+  --k-texto: var(--p-cafe-1);
+  --k-texto-fraco: var(--p-cafe-4);
+  --k-sombra: var(--p-cafe-2);
+  --k-foco: var(--p-azul);
+  --k-btn-face: var(--p-noite);
+  --k-btn-alto: var(--p-ameixa);
+  --k-btn-baixo: var(--p-tinta);
+  --k-btn-texto: var(--p-creme);
+  --k-btn-hover: var(--p-ameixa);
+  --k-btn-hover-alto: var(--p-cinza-roxo);
+  --k-pg-face: var(--p-vermelho);
+  --k-pg-alto: var(--p-rubro);
+  --k-pg-baixo: var(--p-vinho);
+  --k-pg-texto: var(--p-marfim);
+  --k-pg-hover: var(--p-rubro);
+  --k-pg-hover-alto: var(--p-coral);
+  --k-d-face: var(--p-pedra);
+  --k-d-alto: var(--p-creme);
+  --k-d-baixo: var(--p-cinza-roxo);
+  --k-d-texto: var(--p-cinza-roxo);
+  --k-logo-1: var(--p-vermelho);
+  --k-logo-2: var(--p-cafe-1);
+  --k-logo-gema: var(--p-ouro);
+  --k-logo-sombra: var(--p-pele);
+}
+
+/* Fonte da interface (DEC-11): as 4 ficam disponíveis, o jogador escolhe. Padrão Pixelify
+   Sans, também quando o atributo não existe. `--font-*` vêm do next/font em layout.tsx;
+   `--fe` compensa a altura de x de cada fonte nos tamanhos do kit. */
+:root,
+:root[data-fonte="pixelify"] {
+  --fonte-ui: var(--font-pixelify), "Courier New", monospace;
+  --fe: 1;
+}
+:root[data-fonte="silkscreen"] {
+  --fonte-ui: var(--font-silkscreen), "Courier New", monospace;
+  --fe: 0.9;
+}
+:root[data-fonte="vt323"] {
+  --fonte-ui: var(--font-vt323), "Courier New", monospace;
+  --fe: 1.35;
+}
+:root[data-fonte="press"] {
+  --fonte-ui: var(--font-press), "Courier New", monospace;
+  --fe: 0.62;
+}
