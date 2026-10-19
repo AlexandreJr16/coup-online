@@ -31,12 +31,12 @@ arte pixel art, animações de baralho, efeitos sonoros e partidas em tempo real
 
 <table>
 <tr>
-<td width="50%"><img src="docs/img/mesa.png" alt="Mesa de jogo com uma carta declarada no centro"><br><sub><b>A jogada acontece na mesa:</b> a carta alegada fica virada no centro, com o tempo restante. Quem pode reagir vê os selos <i>Contestar</i> e <i>Passar</i>.</sub></td>
-<td width="50%"><img src="docs/img/mesa-6-jogadores.png" alt="Mesa com 6 jogadores"><br><sub><b>De 2 a 6 jogadores</b> numa mesa de veludo, cada um com seu retrato de convidado do baile.</sub></td>
+<td width="50%"><img src="docs/img/mesa.png" alt="Mesa de jogo com o balão da jogada sobre o assento de quem declarou"><br><sub><b>A jogada acontece na mesa:</b> um balão sobre o assento mostra o que foi declarado, a legenda no centro diz de quem a mesa espera e a ampulheta conta o tempo. Quem pode reagir vê os selos <i>Contestar</i> e <i>Passar</i>.</sub></td>
+<td width="50%"><img src="docs/img/mesa-6-jogadores.png" alt="Mesa com 6 jogadores"><br><sub><b>De 2 a 6 jogadores</b> numa mesa de veludo que se ajusta a qualquer tela, cada um com seu retrato de convidado do baile e a pilha de fichas em pixel art.</sub></td>
 </tr>
 <tr>
 <td width="50%"><img src="docs/img/lobby.png" alt="Sala de espera"><br><sub><b>Sala de espera:</b> compartilhe o link, ajuste os tempos da partida e o host inicia.</sub></td>
-<td width="50%"><img src="docs/img/vitoria.png" alt="Tela de vitória com prêmios"><br><sub><b>Fim de partida:</b> prêmios como <i>Mentiroso do ano</i> e <i>Olho de lince</i>, e revanche em um clique.</sub></td>
+<td width="50%"><img src="docs/img/vitoria.png" alt="Tela de vitória com prêmios"><br><sub><b>Fim de partida:</b> prêmios como <i>Mentiroso do ano</i> e <i>Olho de lince</i>, placar e títulos da noite, e revanche em um clique (ou <code>Enter</code>).</sub></td>
 </tr>
 </table>
 
@@ -85,10 +85,19 @@ As regras completas (timers, "Perigo Duplo do Assassino", casos especiais) estã
 - 🃏 **Mesa viva:** distribuição do baralho, moedas voando entre o Erário e os jogadores,
   carta que vira na contestação (e a mesa treme quando é blefe), inclinação 3D e brilho
   *foil* nas cartas que são suas.
+- 🪙 **Mesa sem texto sobrando:** moedas como pilhas de fichas em pixel art (com variantes
+  sorteadas a cada partida), Erário com baú, baralho da Corte em monte, balão da jogada sobre o
+  assento, retrato com moldura que racha a cada influência perdida e uma legenda curta no centro.
+  A mesa escala de forma contínua e cabe de 1280x720 a 1920x1080 sem rolagem.
+- 🎨 **Aba de Aparência:** 4 fontes pixel, 2 estilos (madeira e latão ou pergaminho e tinta) e
+  3 jeitos de segurar a mão (mesa, cavalete ou bandeja).
+- 📜 **Colinha** das regras que abre como uma carta (`?`) e **modo espectador** para quem chega
+  no meio da partida.
 - 🔊 **Áudio sintetizado** no navegador (sem arquivos de som) com botão de mudo.
 - ⏱️ **Fluidez:** botão *Passar*, timeouts em todas as fases, relógio controlado pelo servidor,
   **reconexão** sem login (F5 no meio da partida mantém seu lugar e sua mão) e **revanche**.
-- 🏆 **Estatísticas e prêmios** ao fim de cada partida.
+- 🏆 **Estatísticas e prêmios** ao fim de cada partida e **placar da noite** com títulos, que
+  liga uma partida à outra enquanto a sala estiver aberta.
 - 🔒 **Sem trapaça por construção:** o servidor é a única fonte da verdade e o navegador
   **nunca** recebe as cartas dos outros — nem escondidas no JSON.
 - 🧪 **Testado em três níveis:** unitário, integração com servidor real e E2E no Chrome.
@@ -123,8 +132,8 @@ npm start            # NODE_ENV=production, porta via PORT (padrão 3000)
 | `npm run test:e2e` | Faz o build e roda os testes no Chrome real |
 | `npx tsx tools/readme-shots.ts` | Regenera as imagens deste README (precisa de build) |
 
-Páginas de revisão visual (só para desenvolvimento): `/dev/mesa`, `/dev/selos`, `/dev/cartas`
-e `/dev/audio`.
+Páginas de revisão visual (só para desenvolvimento): `/dev/mesa`, `/dev/kit`, `/dev/colinha`,
+`/dev/selos`, `/dev/cartas` e `/dev/audio`.
 
 ## Testes
 
@@ -148,7 +157,9 @@ src/
   server/                 # socket.ts (eventos, timers, reconexão) e rooms.ts (salas em memória)
   lib/game/               # engine.ts (regras — fonte da verdade), cards.ts, deck.ts, awards.ts
   lib/audio/              # efeitos e trilha sintetizados (Web Audio)
-  components/game/        # mesa, cartas, mão, selos, animações, feed de Intrigas
+  components/game/        # mesa, cartas, mão, selos, fichas, animações, feed de Intrigas
+  components/game/fx/     # motor de cenas (animações que não podem vazar informação)
+  components/ui/          # kit de UI pixel (painéis, botões, Aparência)
   types/                  # tipos de domínio e de socket
 tests/e2e/                # testes no navegador
 tools/art/                # pipeline de geração e pós-processamento de pixel art
@@ -192,19 +203,23 @@ Coup é um jogo de terceiros: este é um projeto não oficial de fãs, sem fins 
 | [`docs/DIRECAO_CRIATIVA.md`](./docs/DIRECAO_CRIATIVA.md) | Universo, personagens, estilo e paleta |
 | [`docs/DESIGN_MESA_V2.md`](./docs/DESIGN_MESA_V2.md) | Desenho da mesa v2 (dock, selos, jogada na mesa) |
 | [`docs/AUDIO.md`](./docs/AUDIO.md) | Efeitos e trilha |
-| [`docs/ROADMAP.md`](./docs/ROADMAP.md) | O que foi feito e o que vem a seguir |
+| [`docs/PLANO_V3.md`](./docs/PLANO_V3.md) | Plano da v3 (visual, mesa nova, retenção) |
+| [`docs/VIDA_E_BLEFE.md`](./docs/VIDA_E_BLEFE.md) | Animações e efeitos da v3.2 (dano, contestação, exílio) |
+| [`docs/plano/00-MESTRE.md`](./docs/plano/00-MESTRE.md) | Plano mestre por subplanos, com o que já foi feito |
+| [`docs/ROADMAP.md`](./docs/ROADMAP.md) | Roadmap da v2 (histórico) |
 | [`AGENTS.md`](./AGENTS.md) / [`CLAUDE.md`](./CLAUDE.md) | Contexto, regras do projeto e política de testes |
 
 ## Status e próximos passos
 
-Versão **v2**: jogo completo e jogável de ponta a ponta. Ainda há cantos não acabados:
+Versão **v3.1** (mesa nova): jogo completo e jogável de ponta a ponta, com a mesa redesenhada
+em pixel art. A próxima é a **v3.2**, das animações:
 
-- Escolha do retrato no lobby e balões de fala dos personagens.
-- Ícones de *Contestar* e *Trocar* em pixel art (hoje há emoji no lugar).
-- Os sons foram medidos por teste automático, mas ainda não ouvidos e ajustados por ouvido humano.
-- Indicador de "ausente" no assento, limite de taxa de eventos e versão para celular.
+- Duelo da contestação com suspense, exílio de barco e reações de dano no retrato, sem que
+  nenhuma animação revele carta ou blefe.
+- Áudio novo (gongo, estilhaço, canhão) e falas dos personagens.
+- Ainda faltam: escolha do retrato no lobby, limite de taxa de eventos e versão para celular.
 
-Mais em [`docs/ROADMAP.md`](./docs/ROADMAP.md).
+Mais em [`docs/plano/00-MESTRE.md`](./docs/plano/00-MESTRE.md).
 
 ## Sobre o desenvolvimento assistido por IA
 

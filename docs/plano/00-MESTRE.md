@@ -59,7 +59,7 @@
   - [x] P27.S1 Preferências de aparência puras (fonte, estilo, dock) com padrão, validação e storage protegido
   - [x] P27.S2 Tokens por tema: estilo A (madeira e latão) e B (pergaminho e tinta) como conjuntos de variáveis
   - [x] P27.S3 As 4 fontes pixel carregadas sem pesar (preload só da escolhida)
-  - [ ] P27.S4 Aba de configurações no HUD (abre como peça do kit) com prévia ao vivo
+  - [x] P27.S4 Aba de configurações no HUD (abre como peça do kit) com prévia ao vivo
   - [x] P27.S5 Dock em 3 variações selecionáveis (cavalete, mão sobre a mesa, bandeja) sobre as 3 zonas fixas
   - [ ] P27.S6 Gancho para a linha de efeitos (completo, reduzido, desligado) do P11.S6
 
@@ -212,13 +212,13 @@
 - [ ] **[P28](planos/P28-release-v3-0.md) Release v3.0: visual novo (mesclada na main em 18/10/2026)** · onda 3 · risco alto · `[H]`
   - [ ] P28.S1 E2E completo (feito: 68/68)
   - [ ] P28.S2 Merge na main (feito)
-  - [ ] P28.S3 Tag v3.0, push e deploy (Alexandre)
+  - [x] P28.S3 Tag v3.0, push e deploy (Alexandre)
   - [ ] P28.S4 Partida de teste com amigos no ar
-- [ ] **[P29](planos/P29-release-v3-1.md) Release v3.1: mesa nova** · onda 3 · risco alto · `[H]`
-  - [ ] P29.S1 E2E completo e layoutIssues nas 4 resoluções (só com pedido do Alexandre)
-  - [ ] P29.S2 Teste dos 3 segundos em 1280x720 e 1920x1080
-  - [ ] P29.S3 Partida de teste com amigos
-  - [ ] P29.S4 Merge na main, tag v3.1 e deploy (aprovação explícita)
+- [x] **[P29](planos/P29-release-v3-1.md) Release v3.1: mesa nova (mesclada na main e com tag em 19/10/2026)** · onda 3 · risco alto · `[H]`
+  - [x] P29.S1 E2E completo e layoutIssues nas 4 resoluções (79/79 em `d779828`)
+  - [x] P29.S2 Teste dos 3 segundos em 1280x720 e 1920x1080 (Alexandre)
+  - [ ] P29.S3 Partida de teste com amigos (no ar, depois do deploy)
+  - [x] P29.S4 Merge na main, tag v3.1 e deploy (aprovação explícita)
 
 ## Grafo de dependências
 

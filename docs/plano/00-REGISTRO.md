@@ -82,3 +82,10 @@ Formato:
 - Decisões: P09.S3 não move as reações (zonas fixas e atalhos; ideia no backlog pós-v3). "Desmoronar" das fichas virou pilha que tomba e apaga, sem voo ao Erário: a engine não devolve as moedas de quem sai, e a animação não pode mentir sobre o estado. P21.S5 já existia (`ChuvaDeMoedas`).
 - Achado: o commit do dock (P09.S5) quebrou o teste de migração de escala (`minHeight: 44` em px); corrigido em `f2f0020`. Lição: rodar `npm test` em toda entrega, mesmo quando o E2E filtrado passa.
 - Pendente para a v3.1: P07.S2 (curadoria, gate humano) e P29 (E2E completo, teste dos 3 s, partida com amigos, merge e tag).
+
+### 2026-10-19 · P29 · release v3.1 (mesa nova)
+- Verificação: `npm test` 542/542, `tsc` e `eslint` limpos em `d779828`; E2E completo 79/79 no mesmo commit (não reexecutado no release, a pedido do Alexandre). Teste dos 3 segundos feito pelo Alexandre, que liberou o lançamento.
+- README com prints novos (`tools/readme-shots.ts` contra o build de produção) e texto da v3.1; `docs/ROADMAP.md` marcado como histórico da v2.
+- Merge `--no-ff` de `feat/v3.1-mesa-nova` na `main`, tag `v3.1` e push (deploy automático no Render). Branch apagada (local e remota).
+- Contagem de testes 546 para 542: a mesa portada do mockup trocou `escalaDaTela` (degraus) por `escalaDoPalco` (escala contínua) e removeu `ringOffset`; os testes antigos saíram com o código.
+- Pendente: P29.S3 (partida com amigos no ar). Próxima release: v3.2 (animações, P26).
