@@ -173,3 +173,30 @@ export function timeoutWarning(view: GameView, myId: string, secondsLeft: number
       return null;
   }
 }
+
+/**
+ * Legenda de UMA linha no centro da mesa (P08.S1): o aviso dos últimos segundos toma o lugar do
+ * detalhe; sem detalhe, vale a manchete. Só dados públicos, como o resto deste arquivo.
+ */
+export function centerCaption(
+  view: GameView,
+  myId: string,
+  secondsLeft: number,
+): { text: string; warning: boolean } {
+  const warning = timeoutWarning(view, myId, secondsLeft);
+  if (warning) return { text: warning, warning: true };
+  const s = deriveRoundStatus(view, myId);
+  return { text: s.detail || s.headline, warning: false };
+}
+
+/**
+ * Balão sobre o assento de quem agiu (P08.S3): "Assassinar → Bia" enquanto a jogada está em
+ * andamento. Sem jogada pendente, não há balão.
+ */
+export function actionBalloon(view: GameView): { actorId: string; text: string } | null {
+  const p = view.pending;
+  if (!p) return null;
+  const alvo = p.targetId ? view.players.find((x) => x.id === p.targetId)?.name : null;
+  const label = ACTION_META[p.action].label;
+  return { actorId: p.actorId, text: alvo ? `${label} → ${alvo}` : label };
+}

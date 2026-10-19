@@ -1082,17 +1082,20 @@ for (const [fase, head, detail] of FASES_STATUS) {
     const p = await open(`/dev/mesa?fase=${fase}&n=4`, { w: 1280, h: 720 });
     await headIs(p, head);
     await detailIs(p, detail);
-    // A faixa vive no miolo do cabeçalho (portal), com o retrato de quem tem a vez.
-    const dom = await p.eval<{ inSlot: boolean; phase: string; turn: string; portrait: boolean }>(`(() => {
+    // P08.S2: a região de status segue no cabeçalho (portal), mas oculta; o texto visível é a legenda do centro.
+    const dom = await p.eval<{ inSlot: boolean; phase: string; turn: string; oculta: boolean; legenda: boolean }>(`(() => {
       const b = document.querySelector('[data-testid="round-status"]');
+      const r = b.getBoundingClientRect();
       return {
         inSlot: !!document.querySelector('[data-testid="round-status-slot"] [data-testid="round-status"]'),
         phase: b.getAttribute('data-phase'), turn: b.getAttribute('data-turn-id'),
-        portrait: !!b.querySelector('[data-testid="round-status-portrait"]'),
+        oculta: r.width <= 1 && r.height <= 1,
+        legenda: !!document.querySelector('[data-testid="center-caption"]'),
       };
     })()`);
-    assert.equal(dom.inSlot, true, "faixa fora do slot do cabeçalho");
-    assert.equal(dom.portrait, fase !== "fim", fase === "fim" ? "no fim ninguém tem a vez" : "falta o retrato de quem tem a vez");
+    assert.equal(dom.inSlot, true, "região fora do slot do cabeçalho");
+    assert.equal(dom.oculta, true, "o status não deve aparecer como texto no cabeçalho");
+    assert.equal(dom.legenda, fase !== "fim", "legenda do centro presente (menos no fim)");
     if (fase === "turno") assert.equal(dom.turn, "p1");
     if (fase === "reacao") assert.equal(dom.turn, "p2");
     noErrors(p);
@@ -1141,16 +1144,15 @@ test("faixa de status: partida real — turno, declaração, passar, contestaç�
   await headIs(b, "Ana declarou Taxas (Barão do Café)");
   await detailIs(b, "Aguardando você e Caio: contestar ou passar");
 
-  // A faixa não invade os botões do cabeçalho nem mexe no layout da mesa.
-  const geo = await b.eval<{ bannerInHeader: boolean; clearOfButtons: boolean; headerH: number }>(`(() => {
-    const ban = document.querySelector('[data-testid="round-status"]').getBoundingClientRect();
-    const hdr = document.querySelector('header').getBoundingClientRect();
-    const btn = document.querySelector('[data-testid="cheatsheet-toggle"]').getBoundingClientRect();
-    return { bannerInHeader: ban.top >= hdr.top && ban.bottom <= hdr.bottom + 0.5, clearOfButtons: ban.right <= btn.left, headerH: hdr.height };
-  })()`);
-  assert.equal(geo.bannerInHeader, true, "faixa vaza do cabeçalho");
-  assert.equal(geo.clearOfButtons, true, "faixa sobre os botões do cabeçalho");
+  // O cabeçalho não cresce e a legenda do centro e o balão da jogada aparecem na mesa.
+  const geo = await b.eval<{ headerH: number; legenda: string; balao: string }>(`(() => ({
+    headerH: document.querySelector('header').getBoundingClientRect().height,
+    legenda: document.querySelector('[data-testid="center-caption"]')?.innerText ?? '',
+    balao: document.querySelector('[data-seat="Ana"] [data-seat-balloon]')?.innerText ?? '',
+  }))()`);
   assert.ok(geo.headerH <= 64, `cabeçalho cresceu demais: ${geo.headerH}px`);
+  assert.match(geo.legenda, /Aguardando você e Caio/);
+  assert.equal(geo.balao, "Taxas");
   assert.deepEqual(await layoutIssues(b), []);
 
   // Bia passa: sai da espera e a mesa só espera o Caio.

@@ -255,3 +255,23 @@ test("aviso: janelas de reação e fim de jogo NÃO avisam (passar já resolve /
 test("aviso: sem timer na view não há aviso", () => {
   assert.equal(timeoutWarning(makeView({ timer: null }), ANA, 0), null);
 });
+
+// ── P08: legenda do centro e balão da jogada ─────────────────────────────────
+import { actionBalloon, centerCaption } from "./status";
+
+test("centerCaption: sem aviso usa o detalhe; com 3s sobrando o aviso toma o lugar", () => {
+  const v = makeView();
+  assert.equal(centerCaption(v, ANA, 30).warning, false);
+  assert.equal(centerCaption(v, ANA, 30).text, deriveRoundStatus(v, ANA).detail || deriveRoundStatus(v, ANA).headline);
+  const urgente = centerCaption(v, ANA, 3);
+  assert.equal(urgente.warning, true);
+  assert.match(urgente.text, /joga Renda em 3/);
+});
+
+test("actionBalloon: null sem jogada; com alvo mostra 'Ação → Nome'; sem alvo só a ação", () => {
+  assert.equal(actionBalloon(makeView()), null);
+  const sem = actionBalloon(makeView({ pending: pending({}) }));
+  assert.deepEqual(sem, { actorId: ANA, text: "Taxas" });
+  const com = actionBalloon(makeView({ pending: pending({ action: "assassinar", targetId: BIA, claimedCharacter: "assassino" }) }));
+  assert.deepEqual(com, { actorId: ANA, text: "Assassinar → Bia" });
+});

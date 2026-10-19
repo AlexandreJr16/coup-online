@@ -21,6 +21,7 @@ export default function Seat({
   dim = false,
   urgent = false,
   passed = false,
+  balloon,
   style,
   coinDelta = 0,
   deltaKey = 0,
@@ -34,6 +35,7 @@ export default function Seat({
   dim?: boolean; // escurece quem não está na vez (o brilho fica só em quem joga)
   urgent?: boolean; // a mesa espera por este jogador (revelar/trocar)
   passed?: boolean; // já passou nesta janela de reação (✔)
+  balloon?: string; // jogada em andamento deste jogador ("Assassinar → Bia")
   style?: CSSProperties;
   coinDelta?: number; // variação de moedas na última transição (Economia viva)
   deltaKey?: number; // re-dispara a animação do "+N/−N"
@@ -73,6 +75,29 @@ export default function Seat({
           className="lamp"
           style={{ width: U(190), height: U(190), transform: `translate(-50%, ${U(-18)})` }}
         />
+      )}
+
+      {balloon && (
+        <div
+          data-seat-balloon
+          style={{
+            position: "absolute",
+            bottom: "100%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            marginBottom: U(2),
+            zIndex: 3,
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+            fontSize: U(12),
+            padding: `${U(2)} ${U(8)}`,
+            color: "#14101a",
+            background: COLORS.gold,
+            border: "2px solid #14101a",
+          }}
+        >
+          {balloon}
+        </div>
       )}
 
       {/* Retrato emoldurado — pulsa no turno (classe turn-pulse); anel vermelho quando é alvo */}

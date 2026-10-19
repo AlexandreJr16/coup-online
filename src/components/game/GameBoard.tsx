@@ -25,6 +25,7 @@ import IntrigueFeed from "./IntrigueFeed";
 import VictoryPanel from "./VictoryPanel";
 import ReactionTray from "./ReactionTray";
 import Table from "./Table";
+import { actionBalloon, centerCaption, deriveRoundStatus } from "./status";
 import TurnBanner from "./TurnBanner";
 import WaxSeal, { type SealData } from "./WaxSeal";
 import {
@@ -280,12 +281,13 @@ export default function GameBoard({
   const armedChar = targetingAction ? requiredCharacter(targetingAction) : null;
 
   // Quem a mesa está esperando (marca o assento): revelar carta ou escolher a troca.
+  // Na janela de reação, quem ainda não passou também é esperado (P08.S4).
   const urgentIds =
     view.phase === "aguardando_revelacao" && view.mustRevealPlayerId
       ? [view.mustRevealPlayerId]
       : view.phase === "aguardando_troca" && view.currentPlayerId
         ? [view.currentPlayerId]
-        : [];
+        : deriveRoundStatus(view, myId).waitingOnIds;
 
   // ── Zona central do dock: o que o jogador faz AGORA ───────────────────────
   let center: ReactNode;
@@ -380,6 +382,8 @@ export default function GameBoard({
           dealIn={dealIn}
           urgentIds={urgentIds}
           passedIds={view.pending?.passedIds ?? []}
+          caption={view.phase === "fim_de_jogo" ? undefined : centerCaption(view, myId, secondsLeft)}
+          balloon={actionBalloon(view)}
         />
 
         {/* Jogada em andamento (informação; não bloqueia a mesa) */}

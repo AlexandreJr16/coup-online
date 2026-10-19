@@ -73,10 +73,10 @@
   - [ ] P07.S5 Animações pop, voo e desmoronar
   - [ ] P07.S6 Hover na pilha (E8), fichas fantasma, fichas que pousam (E9) e aviso de 10+ (dono único)
 - [ ] **[P08](planos/P08-informacao-no-assento.md) Informação no assento e no centro** · onda 3 · risco médio
-  - [ ] P08.S1 Legenda curta no centro (reusa deriveRoundStatus e timeoutWarning)
-  - [ ] P08.S2 Cabeçalho sem texto de status e role=status oculto
-  - [ ] P08.S3 Balão da jogada sobre o assento
-  - [ ] P08.S4 Marca de quem a mesa espera
+  - [x] P08.S1 Legenda curta no centro (reusa deriveRoundStatus e timeoutWarning)
+  - [x] P08.S2 Cabeçalho sem texto de status e role=status oculto
+  - [x] P08.S3 Balão da jogada sobre o assento
+  - [x] P08.S4 Marca de quem a mesa espera
   - [ ] P08.S5 Baralho por faixa e Erário com baú
   - [ ] P08.S6 Histórico de Intrigas no kit
   - [ ] P08.S7 Dígitos do relógio em sprite

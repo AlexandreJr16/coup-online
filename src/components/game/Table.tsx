@@ -10,6 +10,7 @@ import { ChipPile } from "./ChipPile";
 import { useCountUp } from "./CoinFx";
 import { TREASURY_ID } from "./fichas";
 import Card from "./Card";
+import CenterCaption from "./CenterCaption";
 import { U } from "./escalaMesa";
 import { centerOf, flyIn, reducedMotion } from "./motion";
 import { assignAvatars, CINZEL, COLORS, seatLayout, seatStyle } from "./helpers";
@@ -29,6 +30,8 @@ export default function Table({
   dealIn = false,
   urgentIds = [],
   passedIds = [],
+  caption,
+  balloon,
 }: {
   players: PublicPlayer[];
   currentPlayerId: string | null;
@@ -43,6 +46,8 @@ export default function Table({
   dealIn?: boolean; // partida nova: as cartas dos assentos voam do baralho ao montar
   urgentIds?: string[]; // jogadores que a mesa está esperando
   passedIds?: string[]; // quem já passou na janela de reação
+  caption?: { text: string; warning: boolean }; // legenda do centro (P08.S1)
+  balloon?: { actorId: string; text: string } | null; // balão da jogada (P08.S3)
 }) {
   // Rotaciona para o local virar índice 0 (assento de baixo).
   const meIndex = Math.max(0, players.findIndex((p) => p.id === myId));
@@ -126,6 +131,8 @@ export default function Table({
           </div>
         )}
 
+        {caption && <CenterCaption text={caption.text} warning={caption.warning} />}
+
         {ordered.map((p, i) => (
           <Seat
             key={p.id}
@@ -139,6 +146,7 @@ export default function Table({
             dim={dimOthers && p.id !== currentPlayerId}
             urgent={urgentIds.includes(p.id)}
             passed={passedIds.includes(p.id)}
+            balloon={balloon?.actorId === p.id ? balloon.text : undefined}
             avatar={avatarByPlayer.get(p.id)}
             style={seatStyle(layout[i])}
           />
