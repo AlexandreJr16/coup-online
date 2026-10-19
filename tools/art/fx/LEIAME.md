@@ -64,3 +64,26 @@ Os carimbos são mais largos que a arte da carta (88 / 40) de propósito (carimb
 | retrato | G10 (rostos que reagem), só se o teste de expressões passar (P20.S7) | H8 |
 
 Não gerado ainda e sem registro em `tools/art/README.md` (arquivo de outro agente): registrar o método "FX procedural" lá quando a edição for liberada.
+
+## Fichas (P07.S1): `tools/art/fichas.ts`
+Gerador à parte do `fx.ts` (a saída tem outra estrutura de pastas), mas na mesma infra: `Tela`, apelidos da paleta
+mestra, `mulberry32` e a micro-fonte da folha de contato. Pixels inteiros, alfa só 0 ou 255, contorno de 1 px.
+
+```bash
+npx tsx tools/art/fichas.ts                                  # grava public/art/imperio/fichas/**
+npx tsx tools/art/fichas.ts --out /tmp/f --folha /tmp/contato-fichas.png --zoom 4   # fora do repo + folha de contato
+node --import tsx --test tools/art/fichas.test.ts src/components/game/fichas.test.ts
+```
+
+| Arquivo | Qtd | Tamanho | Conteúdo |
+|---|---|---|---|
+| `fichas/<n>/<a\|b\|c>.png` (n = 1..10) | 30 | 32x26 | a arrumada (colunas retas de até 5), b torta (colunas inclinadas + uma deitada), c espalhada (deitadas e em pé) |
+| `fichas/monte/<11-15\|16-25\|26+>/<a\|b>.png` | 6 | cresce com a faixa | montes do Erário (colunas de alturas diferentes + fichas caídas) |
+| `fichas/bau/<vazio\|11-15\|16-25\|26+>.png` | 4 | 30x26 | baú que enche (0 a 10 = vazio) |
+
+Não há `.sm.png`: os sprites já são pequenos; o CSS amplia por fator inteiro. 0 fichas não tem sprite.
+Quem escolhe o arquivo é `chipSprite(count, playerId)` em `src/components/game/fichas.ts` (hash FNV-1a de
+jogador e quantidade; mesmo par, mesma pilha). O teste `fichas.test.ts` confere que o que está versionado em
+`public/` é igual ao que o gerador produz: mexeu no desenho, rode o comando e commite os PNGs.
+Para retocar à mão, edite as peças (`LADO`, `DEITADA_*`, `DE_FRENTE`), as `SLOTS_C` (variante c) ou as
+alturas em `MONTES`, e regenere; a folha de contato mostra 1..10 x A/B/C, os montes e o baú sobre o verde da mesa.
