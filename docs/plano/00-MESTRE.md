@@ -60,7 +60,7 @@
   - [x] P27.S2 Tokens por tema: estilo A (madeira e latão) e B (pergaminho e tinta) como conjuntos de variáveis
   - [x] P27.S3 As 4 fontes pixel carregadas sem pesar (preload só da escolhida)
   - [ ] P27.S4 Aba de configurações no HUD (abre como peça do kit) com prévia ao vivo
-  - [ ] P27.S5 Dock em 3 variações selecionáveis (cavalete, mão sobre a mesa, bandeja) sobre as 3 zonas fixas
+  - [x] P27.S5 Dock em 3 variações selecionáveis (cavalete, mão sobre a mesa, bandeja) sobre as 3 zonas fixas
   - [ ] P27.S6 Gancho para a linha de efeitos (completo, reduzido, desligado) do P11.S6
 
 ### Programa B Mesa
@@ -82,7 +82,7 @@
   - [ ] P08.S7 Dígitos do relógio em sprite
 - [ ] **[P09](planos/P09-dock.md) Dock imersivo** · onda 3 · risco médio
   - [x] P09.S1 Casca do dock sem fundo de largura total (variação escolhida)
-  - [ ] P09.S2 Ações básicas como selos sobre a madeira
+  - [x] P09.S2 Ações básicas como selos sobre a madeira
   - [ ] P09.S3 Reações como selos perto da jogada
   - [x] P09.S4 Chave de passar automático e dicas de tecla menores
   - [x] P09.S5 Alvos de 44 px e atalhos C, B, Espaço intactos

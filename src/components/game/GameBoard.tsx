@@ -531,6 +531,6 @@ const dock: CSSProperties = {
   alignItems: "center",
   gap: U(20),
   padding: `0 ${U(20)}`,
-  // P09.S1: sem fundo, filete nem sombra de largura total: selos e mão ficam sobre o fundo da sala.
-  background: "transparent",
+  // P09.S1: sem fundo, filete nem sombra de largura total (selos e mão ficam sobre o fundo da sala);
+  // as variações "cavalete" e "bandeja" da Aparência pintam só o necessário, por CSS (globals.css).
 };

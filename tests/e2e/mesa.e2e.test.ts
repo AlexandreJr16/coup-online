@@ -302,6 +302,26 @@ test("dock: sem fundo de largura total e com alvos de pelo menos 44px (P09.S1, S
   noErrors(...ps);
 });
 
+test("dock: variações cavalete e bandeja pintam só a parte necessária, sem largura total (P27.S5)", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const p = ps[0];
+  const medir = () => p.eval<{ dockW: number; fundo: string; vw: number; centro: string }>(`(() => {
+    const d = document.querySelector('[data-testid="dock"]');
+    return { dockW: d.getBoundingClientRect().width, vw: innerWidth, fundo: getComputedStyle(d).backgroundColor,
+      centro: getComputedStyle(d.querySelector('[data-zone="centro"]')).backgroundColor };
+  })()`);
+  await p.eval(`document.documentElement.setAttribute('data-dock', 'bandeja')`);
+  const b = await medir();
+  assert.notEqual(b.fundo, "rgba(0, 0, 0, 0)");
+  assert.ok(b.dockW < b.vw - 8, "a bandeja não pode ocupar a largura toda");
+  await p.eval(`document.documentElement.setAttribute('data-dock', 'cavalete')`);
+  const c = await medir();
+  assert.equal(c.fundo, "rgba(0, 0, 0, 0)");
+  assert.notEqual(c.centro, "rgba(0, 0, 0, 0)");
+  assert.deepEqual(await layoutIssues(p), []);
+  noErrors(...ps);
+});
+
 // ── Animações de baralho (4.4) ───────────────────────────────────────────────
 /** Conta quantas moedas voadoras já foram criadas na camada (e quantas ainda estão no ar). */
 const espiarMoedas = (p: Page) =>

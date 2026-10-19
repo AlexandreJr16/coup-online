@@ -527,3 +527,22 @@ html[data-crt="1"] body::after {
   --fonte-ui: var(--font-press), "Courier New", monospace;
   --fe: 0.62;
 }
+
+/* Dock em 3 variações (P27.S5), escolhidas na aba de Aparência (html[data-dock]). As três zonas
+   (básicas / centro / reações) ficam onde estão; só muda o que há por baixo. "mesa" é o padrão:
+   selos e mão direto sobre o fundo da sala. */
+[data-dock="cavalete"] [data-testid="dock"] [data-zone="centro"] {
+  padding: 8px 18px;
+  background: var(--k-tinta);
+  border: 3px solid var(--k-filete);
+  box-shadow: 4px 4px 0 var(--k-sombra);
+}
+[data-dock="bandeja"] [data-testid="dock"]:not([data-spectator]) {
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  margin: 0 auto 8px;
+  padding-inline: 28px;
+  background: var(--k-tinta);
+  border: 3px solid var(--k-filete);
+  box-shadow: 4px 4px 0 var(--k-sombra);
+}
