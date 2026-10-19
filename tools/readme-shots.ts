@@ -67,6 +67,12 @@ async function main(): Promise<void> {
     await ready(ps[1], 1400);
     await save("mesa", await ps[1].screenshot());
 
+    // 3b) Colinha aberta por cima da mesa, na aba do Caio
+    await ps[2].click('[data-testid="cheatsheet-toggle"]');
+    await ps[2].waitFor(`!!document.querySelector('[data-testid="cheatsheet"][role="dialog"]')`, "colinha aberta");
+    await ready(ps[2], 900);
+    await save("colinha", await ps[2].screenshot());
+
     // 4) Mesa cheia (6 jogadores) no começo da partida
     const room6 = "SEIS" + Math.floor(Math.random() * 9);
     const six: Page[] = [];
@@ -82,8 +88,9 @@ async function main(): Promise<void> {
     await ready(six[0], 600);
     await save("mesa-6-jogadores", await six[0].screenshot());
 
-    // 5) Páginas de revisão: tela de vitória e selos
+    // 5) Páginas de revisão: contestação (quem perdeu escolhe a carta), tela de vitória e selos
     for (const [file, path, wait] of [
+      ["contestacao", "/dev/mesa?fase=revelar&n=4", 1200],
       ["vitoria", "/dev/mesa?fase=fim&n=4", 1500],
       ["selos", "/dev/selos", 800],
     ] as const) {
