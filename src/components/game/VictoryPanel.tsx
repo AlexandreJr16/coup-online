@@ -1,111 +1,243 @@
-// Tela de vitória: quem venceu e os prêmios da partida (calculados das estatísticas
-// públicas). Cobre a mesa, mas o dock continua visível; "Jogar de novo" inicia a revanche.
+// Tela de fim de partida: quem venceu (retrato da mesa em moldura), prêmios da partida
+// (computeAwards), placar da noite (`room:score`) e o botão grande de revanche. Cobre a mesa,
+// mas o dock continua visível; "Jogar de novo" (Enter ou R) inicia a revanche.
+// Arte: ícones PNG pixel, nunca emoji do sistema. Movimento só com transform/opacity.
 "use client";
 
-import type { CSSProperties } from "react";
+import { useEffect, useRef } from "react";
 
-import { type Award, computeAwards } from "@/src/lib/game/awards";
+import { computeAwards } from "@/src/lib/game/awards";
 import type { GameView } from "@/src/types/game";
-import ActionSeal from "./ActionSeal";
-import { avatarColor, avatarInitials, CINZEL, COLORS } from "./helpers";
+import { PixelButton } from "../ui/PixelButton";
+import { PixelPanel } from "../ui/PixelPanel";
+import { Tag } from "../ui/Tag";
+import { assignAvatars, avatarUrl, type IconName, iconUrl } from "./helpers";
+import { juntarNomes, resumoLinha, visaoDoPlacar } from "./placar";
+import { particulas, teclaPedeRevanche } from "./victory";
+import v from "./VictoryPanel.module.css";
+import { useScore } from "./useScore";
 
-const EMOJI: Record<Award["id"], string> = {
-  mentiroso: "🤥",
-  desconfiado: "🤨",
-  olho_de_lince: "🦅",
-  carrasco: "⚔️",
-  ricaco: "💰",
-};
+const CHUVA = particulas();
+const REVANCHE_RECARGA_MS = 1000; // segurar Enter/R não pede a revanche várias vezes
 
-// `onRematch` ausente = espectador: só aguarda (ele entra na próxima partida).
-export default function VictoryPanel({ view, onRematch }: { view: GameView; onRematch?: () => void }) {
-  const winner = view.players.find((p) => p.id === view.winnerId);
-  const names = Object.fromEntries(view.players.map((p) => [p.id, p.name]));
-  const awards = computeAwards(view.stats, names);
+function Icone({ nome, className, testId }: { nome: IconName; className?: string; testId?: string }) {
+  const src = iconUrl(nome, "sm");
+  if (!src) return null;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" aria-hidden draggable={false} className={className ?? v.icone} data-testid={testId} />;
+}
 
+/** Moedas caindo (padrão). Posição determinística; oculta sob prefers-reduced-motion. */
+function ChuvaDeMoedas() {
+  const src = iconUrl("moeda", "sm");
+  if (!src) return null;
   return (
-    <div data-testid="victory" style={veil}>
-      <div style={panel}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14 }}>
-          {winner && (
-            <div style={{ ...badge, background: avatarColor(winner.name) }}>{avatarInitials(winner.name)}</div>
-          )}
-          <div style={{ textAlign: "left" }}>
-            <div style={{ fontSize: 12, letterSpacing: 2, color: "#7c6f8a" }}>PARTIDA {view.matchNumber}</div>
-            <h2 style={{ margin: 0, fontFamily: CINZEL, fontSize: 28, color: "#8a5a14" }}>
-              🏆 {winner ? `${winner.name} vence!` : "Empate"}
-            </h2>
-          </div>
+    <div aria-hidden className={v.chuva} data-testid="victory-fx" data-fx="moedas" data-particulas={CHUVA.length}>
+      {CHUVA.map((p, i) => (
+        <div
+          key={i}
+          className={v.moeda}
+          style={{
+            left: `${p.esquerda}%`,
+            ["--dx" as string]: `${p.desvio}px`,
+            ["--dur" as string]: `${p.duracao}s`,
+            ["--atraso" as string]: `${p.atraso}s`,
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={src} alt="" draggable={false} className={v.moedaImg} style={{ ["--giro" as string]: `${p.giro}s` }} />
         </div>
-
-        <ul style={{ listStyle: "none", margin: "18px 0 20px", padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-          {awards.length === 0 && (
-            <li style={{ color: "#7c6f8a" }}>Partida tranquila: ninguém levou prêmio.</li>
-          )}
-          {awards.map((a) => (
-            <li key={a.id} data-award={a.id} style={row}>
-              <span style={{ fontSize: 24 }}>{EMOJI[a.id]}</span>
-              <span style={{ flex: 1, textAlign: "left" }}>
-                <b style={{ fontFamily: CINZEL }}>{a.titulo}</b>
-                <span style={{ display: "block", fontSize: 12, color: "#5c4a38" }}>
-                  {a.names.join(" e ")} · {a.detalhe}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ul>
-
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          {onRematch ? (
-            <ActionSeal icon="trocar" emoji="🔄" label="Jogar de novo" color={COLORS.gold} onClick={onRematch} />
-          ) : (
-            <p data-testid="victory-wait" style={{ margin: 0, color: COLORS.dim, fontSize: 14, textAlign: "center" }}>
-              Você está assistindo: se um jogador pedir a revanche, você entra na próxima partida.
-            </p>
-          )}
-        </div>
-      </div>
+      ))}
     </div>
   );
 }
 
-const veil: CSSProperties = {
-  position: "absolute",
-  inset: 0,
-  zIndex: 30,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: "rgba(10,8,16,0.68)",
-};
-const panel: CSSProperties = {
-  width: "min(480px, 92%)",
-  padding: "22px 26px 24px",
-  textAlign: "center",
-  color: "#2b2236",
-  background: "linear-gradient(#e9dcbf, #d8c59a)",
-  border: "2px solid #b8923f",
-  borderRadius: 14,
-  boxShadow: "0 18px 50px rgba(0,0,0,0.6)",
-};
-const badge: CSSProperties = {
-  width: 56,
-  height: 56,
-  borderRadius: "50%",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontWeight: 800,
-  fontSize: 20,
-  color: "#fff",
-  border: "3px solid #8a5a14",
-};
-const row: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 12,
-  padding: "8px 12px",
-  background: "rgba(255,255,255,0.35)",
-  border: "1px solid rgba(138,90,20,0.35)",
-  borderRadius: 8,
-};
+// `onRematch` ausente = espectador: só aguarda (ele entra na próxima partida).
+export default function VictoryPanel({ view, onRematch }: { view: GameView; onRematch?: () => void }) {
+  const ids = view.players.map((p) => p.id);
+  const slugs = assignAvatars(ids); // o MESMO retrato da mesa
+  const avatares = Object.fromEntries(ids.map((id, i) => [id, slugs[i]]));
+  const winnerIdx = view.players.findIndex((p) => p.id === view.winnerId);
+  const winner = winnerIdx >= 0 ? view.players[winnerIdx] : undefined;
+  const names = Object.fromEntries(view.players.map((p) => [p.id, p.name]));
+  const awards = computeAwards(view.stats, names);
+  const placar = visaoDoPlacar(useScore(), { matchNumber: view.matchNumber, playerIds: ids, avatares });
+
+  // Atalho: Enter ou R. Espaço fica de fora (na mesa é Passar).
+  const rematchRef = useRef(onRematch);
+  const ultimoPedido = useRef(0);
+  useEffect(() => {
+    rematchRef.current = onRematch;
+  });
+  const podeRevanche = Boolean(onRematch);
+  useEffect(() => {
+    if (!podeRevanche) return;
+    const onKey = (e: KeyboardEvent) => {
+      const alvo = e.target instanceof HTMLElement ? e.target : null;
+      const ok = teclaPedeRevanche({
+        key: e.key,
+        repeat: e.repeat,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+        altKey: e.altKey,
+        defaultPrevented: e.defaultPrevented,
+        alvoTag: alvo?.tagName.toLowerCase() ?? "body",
+        alvoEditavel: Boolean(alvo?.isContentEditable),
+        alvoEmDialogo: Boolean(alvo?.closest('[role="dialog"], dialog')),
+        temModalAberto: Boolean(document.querySelector('[aria-modal="true"]')),
+      });
+      if (!ok) return;
+      const agora = Date.now();
+      if (agora - ultimoPedido.current < REVANCHE_RECARGA_MS) return;
+      ultimoPedido.current = agora;
+      e.preventDefault();
+      rematchRef.current?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [podeRevanche]);
+
+  return (
+    <div data-testid="victory" className={v.veu}>
+      <ChuvaDeMoedas />
+      <PixelPanel className={v.painel} data-testid="victory-panel" aria-label="Fim de partida">
+        <div className={v.rolagem}>
+          <div className={v.corpo}>
+            {/* Vencedor */}
+            <section className={v.vencedor} data-testid="victory-winner">
+              <div className={v.retratoBox}>
+                <span aria-hidden className={v.pulso} />
+                <div className={v.moldura}>
+                  {winner ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={avatarUrl(slugs[winnerIdx])}
+                      alt={winner.name}
+                      draggable={false}
+                      className={v.retrato}
+                      data-testid="victory-retrato"
+                      data-avatar={slugs[winnerIdx]}
+                    />
+                  ) : (
+                    <div className={v.retrato} />
+                  )}
+                </div>
+                {winner && <Icone nome="coroa" className={v.coroa} testId="victory-coroa" />}
+                <Icone nome="trofeu" className={v.trofeu} testId="victory-trofeu" />
+              </div>
+              <span className={v.partida}>PARTIDA {view.matchNumber}</span>
+              <h2 className={v.nome} data-testid="victory-title">
+                {winner ? `${winner.name} vence!` : "Empate"}
+              </h2>
+            </section>
+
+            {/* Prêmios da partida */}
+            <section>
+              <h3 className={v.titulo}>Prêmios da partida</h3>
+              <ul className={v.lista} data-testid="victory-awards">
+                {awards.length === 0 && <li className={v.vazio}>Partida tranquila: ninguém levou prêmio.</li>}
+                {awards.map((a) => (
+                  <li key={a.id} data-award={a.id} className={v.item}>
+                    <Icone nome={a.icone} />
+                    <span className={v.texto}>
+                      <b className={v.nomeLinha}>{a.titulo}</b>
+                      <span className={v.detalhe}>
+                        {juntarNomes(a.names)} · {a.detalhe}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            {/* Placar da noite */}
+            <section data-testid="placar">
+              <h3 className={v.titulo}>Placar da noite</h3>
+              {placar ? (
+                <>
+                  <ul className={v.lista} data-testid="placar-linhas">
+                    {placar.linhas.map((l) => (
+                      <li
+                        key={l.id}
+                        data-player={l.id}
+                        data-lider={l.lider ? "sim" : undefined}
+                        className={`${v.item} ${l.lider ? v.itemLider : ""}`}
+                      >
+                        {l.avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={avatarUrl(l.avatar)} alt="" draggable={false} className={v.avatar} />
+                        ) : (
+                          <span aria-hidden className={v.semAvatar} />
+                        )}
+                        <span className={v.texto}>
+                          <span className={v.linhaNome}>
+                            <b className={v.nomeLinha}>{l.name}</b>
+                            {l.lider && <Tag tom="ouro">Líder</Tag>}
+                          </span>
+                          <span className={v.detalhe}>{resumoLinha(l.wins, l.played)}</span>
+                        </span>
+                        <span className={v.vitorias}>
+                          {l.ultimoVencedor && <Tag tom="ouro">+1</Tag>}
+                          <b data-testid="placar-vitorias">{l.wins}</b>
+                          <Icone nome="trofeu" />
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  {placar.ocultas > 0 && <p className={v.rodape}>e mais {placar.ocultas} que já saíram da sala</p>}
+                  {placar.titulos.length > 0 && (
+                    <div className={v.titulosNoite} data-testid="placar-titulos">
+                      <h3 className={v.titulo}>Títulos da noite</h3>
+                      <ul className={v.lista}>
+                        {placar.titulos.map((t) => (
+                          <li key={t.id} data-title={t.id} className={v.item}>
+                            <Icone nome={t.icone} />
+                            <span className={v.texto}>
+                              <b className={v.nomeLinha}>{t.titulo}</b>
+                              <span className={v.detalhe}>
+                                {t.quem} · {t.detalhe}
+                              </span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <p className={v.rodape}>{placar.rotulo}. O placar zera quando a sala fecha.</p>
+                </>
+              ) : (
+                <p className={v.vazio} data-testid="placar-vazio">
+                  O placar da noite aparece em instantes.
+                </p>
+              )}
+            </section>
+          </div>
+        </div>
+
+        <div className={v.acoes}>
+          {onRematch ? (
+            <>
+              <PixelButton
+                className={v.revanche}
+                data-testid="revanche"
+                aria-keyshortcuts="Enter R"
+                onClick={onRematch}
+              >
+                <Icone nome="trocar" className="" />
+                Jogar de novo
+              </PixelButton>
+              <span className={v.atalho} aria-hidden>
+                <kbd>Enter</kbd> ou <kbd>R</kbd>
+              </span>
+            </>
+          ) : (
+            <p data-testid="victory-wait" className={v.espera}>
+              <Icone nome="ampulheta" className="" />
+              <span>Você está assistindo: se um jogador pedir a revanche, você entra na próxima partida.</span>
+            </p>
+          )}
+        </div>
+      </PixelPanel>
+    </div>
+  );
+}
