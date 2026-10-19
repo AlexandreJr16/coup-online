@@ -194,10 +194,10 @@ test("reação: a bandeja usa selos (Contestar/Passar) e some depois de passar",
 test("página /dev/selos: 5 estados × 4 selos, ícones e fallback de emoji sem erros", async () => {
   const p = await open("/dev/selos");
   await p.waitFor(`document.querySelectorAll('[data-testid="selos"] .seal').length === 20`, "20 selos");
-  // só contestar ainda não tem arte → emoji; os 11 existentes carregam.
+  // todos os ícones têm arte (a de contestar veio do P05); nenhum cai no fallback de emoji.
   await p.waitFor(`[...document.querySelectorAll('[data-testid="icones"] img')].every(i => i.complete && i.naturalWidth > 0)`, "ícones carregados");
   const semArte = await p.eval<number>(`[...document.querySelectorAll('[data-testid="icones"] > div')].filter(d => d.innerText.includes("(emoji)")).length`);
-  assert.equal(semArte, 1);
+  assert.equal(semArte, 0);
   noErrors(p);
 });
 
