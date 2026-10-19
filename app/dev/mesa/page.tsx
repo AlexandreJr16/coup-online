@@ -1,25 +1,45 @@
 // Mesa de demonstração (sem socket): partida FICTÍCIA só para revisar visual.
-// Estados por query: ?fase=turno (padrão) | reacao | contestar | revelar | troca | fim
+// Estados por query: ?fase=turno (padrão) | reacao | extorquir | contestar | revelar | troca | fim
+//   fim mostra o painel de fim de partida com um placar da noite FICTÍCIO (publicado no
+//   scoreStore, o mesmo caminho do `room:score` real).
 //   ?n=2..6 muda o número de jogadores. Útil para as Fases 3–4 do ROADMAP.
 //   ?restante=3 fixa o tempo restante da fase (em s): revisa o aviso dos últimos segundos.
 //   ?espectador=1 abre a mesa como espectador (somente leitura, sem mão nem ações).
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 
 import GameBoard from "@/src/components/game/GameBoard";
 import TableBackdrop from "@/src/components/game/TableBackdrop";
 import { RoundStatusSlot } from "@/src/components/game/TurnBanner";
 import { COLORS } from "@/src/components/game/helpers";
+import { publicarPlacar } from "@/src/components/game/scoreStore";
 import type { Character, GameView } from "@/src/types/game";
+import type { ScorePayload } from "@/src/types/socket";
 
 const card = (character: Character | null, revealed = false) => ({ character, revealed });
 const CONFIG = { globalReactionTime: 5, targetReactionTime: 15, challengeBlockTime: 5, turnTime: 45, choiceTime: 30 };
 
+// Placar da noite fictício da página de revisão (4 partidas; a de agora foi da Ana).
+const NOMES = ["Ana", "Bia", "Caio", "Davi", "Eva", "Fábio"];
+function placarFicticio(n: number): ScorePayload {
+  const vitorias = n === 2 ? [3, 1] : [2, 1, 1, 0, 0, 0];
+  return {
+    matches: 4,
+    lastWinnerId: "p1",
+    rows: NOMES.slice(0, n).map((name, i) => ({ id: `p${i + 1}`, name, wins: vitorias[i], played: 4 })),
+    titles: [
+      { id: "mentiroso", titulo: "Mentiroso da noite", count: 2, leaders: [{ id: "p2", name: "Bia" }] },
+      { id: "desconfiado", titulo: "Maior desconfiado da noite", count: 2, leaders: [{ id: "p1", name: "Ana" }] },
+      { id: "carrasco", titulo: "Carrasco da noite", count: 3, leaders: [{ id: "p1", name: "Ana" }] },
+      { id: "ricaco", titulo: "Ricaço da noite", count: 1, leaders: [{ id: "p1", name: "Ana" }, { id: "p2", name: "Bia" }] },
+    ],
+  };
+}
+
 function build(fase: string, n: number): GameView {
-  const names = ["Ana", "Bia", "Caio", "Davi", "Eva", "Fábio"];
-  const players = names.slice(0, n).map((name, i) => ({
+  const players = NOMES.slice(0, n).map((name, i) => ({
     id: `p${i + 1}`,
     name,
     coins: [4, 7, 2, 9, 3, 5][i],
@@ -56,6 +76,15 @@ function build(fase: string, n: number): GameView {
         pending: { action: "taxas", actorId: "p2", targetId: null, claimedCharacter: "duque", block: null, passedIds: ["p3"] },
         timer: { phase: "janela_reacao_global", seconds: 5, remainingMs: 3400 },
       };
+    case "extorquir":
+      // Vítima pode contestar e bloquear com 2 personagens: o dock mostra 4 reações (pior caso).
+      return {
+        ...base,
+        phase: "janela_reacao_vitima",
+        currentPlayerId: "p2",
+        pending: { action: "extorquir", actorId: "p2", targetId: "p1", claimedCharacter: "capitao", block: null, passedIds: [] },
+        timer: { phase: "janela_reacao_vitima", seconds: 5, remainingMs: 3400 },
+      };
     case "contestar":
       return {
         ...base,
@@ -85,6 +114,7 @@ function build(fase: string, n: number): GameView {
       return {
         ...base,
         phase: "fim_de_jogo",
+        matchNumber: 4,
         winnerId: "p1",
         currentPlayerId: null,
         timer: null,
@@ -104,6 +134,11 @@ function Mesa() {
   const q = useSearchParams();
   const built = build(q.get("fase") ?? "turno", Math.min(6, Math.max(2, Number(q.get("n") ?? 4))));
   const restante = Number(q.get("restante"));
+  const fase = q.get("fase");
+  const nJogadores = built.players.length;
+  useEffect(() => {
+    if (fase === "fim") publicarPlacar(placarFicticio(nJogadores));
+  }, [fase, nJogadores]);
   const view =
     q.get("restante") !== null && Number.isFinite(restante) && built.timer
       ? { ...built, timer: { ...built.timer, remainingMs: Math.max(0, restante) * 1000 } }

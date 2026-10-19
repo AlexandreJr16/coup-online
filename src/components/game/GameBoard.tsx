@@ -1,9 +1,8 @@
-// Orquestrador da partida. Único ponto que fala com o Socket.IO. Layout em ZONAS
-// FIXAS (DESIGN_MESA_V2): a mesa ocupa o espaço de cima; o DOCK de baixo tem altura
-// fixa e três zonas que nunca mudam de lugar — ações básicas (esq.), mão ou escolha
-// da hora (centro) e reações (dir.). O estado do jogo aparece na própria mesa
-// (brilho no turno, mira nos alvos, ✔ em quem passou) e, em texto, na faixa de status
-// do cabeçalho (TurnBanner: de quem é a vez e o que a mesa espera).
+// Orquestrador da partida. Único ponto que fala com o Socket.IO. Tudo vive num PALCO de tamanho
+// base fixo (1280x680 unidades, centralizado e escalado por --mu): a mesa em cima e o DOCK
+// embaixo, com três zonas que nunca mudam de lugar — ações básicas (esq.), mão ou escolha da hora
+// (centro) e reações (dir.). O estado do jogo aparece na própria mesa (balão da jogada, legenda
+// do centro, marcas nos assentos); o cabeçalho só guarda a região de status para leitor de tela.
 "use client";
 
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
@@ -16,7 +15,6 @@ import AutoPassToggle from "./AutoPassToggle";
 import BasicActions from "./BasicActions";
 import Card from "./Card";
 import ChallengeReveal from "./ChallengeReveal";
-import ClaimCard from "./ClaimCard";
 import CoinFlights from "./CoinFlights";
 import DragGhost from "./DragGhost";
 import FlyFromDeck from "./FlyFromDeck";
@@ -25,7 +23,11 @@ import IntrigueFeed from "./IntrigueFeed";
 import VictoryPanel from "./VictoryPanel";
 import ReactionTray from "./ReactionTray";
 import Table from "./Table";
+import { actionBalloon, centerCaption, deriveRoundStatus } from "./status";
 import TurnBanner from "./TurnBanner";
+import { Pic } from "./ActionSeal";
+import { bitmapDoNumero } from "../ui/digitos";
+import { PixelBitmap } from "../ui/PixelBitmap";
 import WaxSeal, { type SealData } from "./WaxSeal";
 import {
   ACTION_META,
@@ -38,17 +40,15 @@ import {
   requiredCharacter,
 } from "./helpers";
 import { PixelButton } from "@/src/components/ui/PixelButton";
+import { F, PALCO, U } from "./escalaMesa";
+import "./mesa/mesa.css";
+import { useEscalaMesa } from "./useEscalaMesa";
 import { useGameAudio } from "./useGameAudio";
 import { useGameEvents } from "./useGameEvents";
 
-const REACTION_PHASES = new Set<GameView["phase"]>([
-  "janela_reacao_global",
-  "janela_reacao_vitima",
-  "janela_contestar_bloqueio",
-]);
-
-const DOCK_HEIGHT = 214;
-const FEED_LANE = 232; // largura reservada ao feed de Intrigas aberto (painel 216 + folga)
+// Medidas em UNIDADES DA MESA (1 = 1 px em 1280x720); U() as leva ao degrau da tela (escalaMesa.ts).
+// Palco de 1280x680: a mesa ocupa 0..536 e o dock 536..680 (PALCO, escalaMesa.ts).
+const DOCK_HEIGHT = U(PALCO.altura - PALCO.mesa);
 
 export default function GameBoard({
   view,
@@ -62,6 +62,7 @@ export default function GameBoard({
   spectator?: boolean; // só assiste: sem mão, sem ações e sem revanche; entra na próxima partida
 }) {
   const socket = getSocket();
+  const { ref: area, style: escalaStyle } = useEscalaMesa(); // --mu/--u: o palco cabe na área
   const [error, setError] = useState("");
   const [feedOpen, setFeedOpen] = useState(true);
   const [targetingAction, setTargetingAction] = useState<ActionType | null>(null);
@@ -87,8 +88,6 @@ export default function GameBoard({
     };
   }, [timer]);
   const secondsLeft = timer ? (tick && tick.src === timer ? tick.left : timer.remainingMs / 1000) : 0;
-  const inReaction = REACTION_PHASES.has(view.phase);
-  const decisionTimer = timer && !inReaction;
 
   // ── Eventos derivados (Feed/Economia) + selo de cera ──────────────────────
   const events = useGameEvents(view);
@@ -276,12 +275,13 @@ export default function GameBoard({
   const armedChar = targetingAction ? requiredCharacter(targetingAction) : null;
 
   // Quem a mesa está esperando (marca o assento): revelar carta ou escolher a troca.
+  // Na janela de reação, quem ainda não passou também é esperado (P08.S4).
   const urgentIds =
     view.phase === "aguardando_revelacao" && view.mustRevealPlayerId
       ? [view.mustRevealPlayerId]
       : view.phase === "aguardando_troca" && view.currentPlayerId
         ? [view.currentPlayerId]
-        : [];
+        : deriveRoundStatus(view, myId).waitingOnIds;
 
   // ── Zona central do dock: o que o jogador faz AGORA ───────────────────────
   let center: ReactNode;
@@ -290,10 +290,10 @@ export default function GameBoard({
   } else if (view.phase === "aguardando_revelacao" && view.mustRevealPlayerId === myId) {
     // Só as MINHAS cartas ocultas, pulsando: clicar numa revela (perde a influência).
     center = (
-      <div style={{ display: "flex", gap: 14 }}>
+      <div style={{ display: "flex", gap: U(14) }}>
         {me?.cards.map((c, i) =>
           c.revealed ? null : (
-            <div key={i} className="urgent-pulse" style={{ borderRadius: 10 }}>
+            <div key={i} className="urgent-pulse" style={{ borderRadius: U(10) }}>
               <Card
                 size="lg"
                 character={c.character}
@@ -312,7 +312,7 @@ export default function GameBoard({
     const keepCount = me?.cards.filter((c) => !c.revealed).length ?? 0;
     const pool = view.exchange.pool;
     center = (
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: U(14) }}>
         {pool.map((c, i) => {
           const card = (
             <Card
@@ -325,7 +325,7 @@ export default function GameBoard({
                 )
               }
               style={{
-                transform: keepSel.includes(i) ? "translateY(-12px)" : undefined,
+                transform: keepSel.includes(i) ? `translateY(${U(-12)})` : undefined,
                 transition: "transform 120ms ease",
               }}
             />
@@ -356,12 +356,10 @@ export default function GameBoard({
   }
 
   return (
-    <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", color: COLORS.text }}>
-      {/* Mesa — ocupa todo o espaço acima do dock */}
-      <div className={shaking ? "shake" : undefined} style={{ position: "relative", flex: 1, minHeight: 0 }}>
-       {/* Palco: a mesa e tudo que se ancora nela. Com o feed de Intrigas aberto, ele
-           ganha uma faixa própria à direita em vez de cobrir os assentos. */}
-       <div data-stage style={{ position: "absolute", inset: 0, right: feedOpen ? FEED_LANE : 0, transition: "right 200ms ease" }}>
+    <div ref={area} style={{ position: "relative", height: "100%", overflow: "hidden", color: COLORS.text, fontFamily: "var(--fonte-ui)", ...escalaStyle }}>
+     <div data-palco className={shaking ? "shake" : undefined} style={palco}>
+      {/* Mesa: a parte de cima do palco */}
+      <div data-stage style={{ position: "absolute", left: 0, top: 0, width: U(PALCO.largura), height: U(PALCO.mesa) }}>
         <Table
           players={view.players}
           currentPlayerId={view.currentPlayerId}
@@ -376,15 +374,23 @@ export default function GameBoard({
           dealIn={dealIn}
           urgentIds={urgentIds}
           passedIds={view.pending?.passedIds ?? []}
+          caption={view.phase === "fim_de_jogo" ? undefined : centerCaption(view, myId, secondsLeft)}
+          balloon={actionBalloon(view)}
+          custoFantasma={targetingAction ? (ACTION_META[targetingAction].coinCost ?? 0) : 0}
         />
 
-        {/* Jogada em andamento (informação; não bloqueia a mesa) */}
-        {inReaction && <ClaimCard view={view} secondsLeft={secondsLeft} />}
         <ChallengeReveal challenge={events.challenge} />
         <CoinFlights deltas={events.coinDeltas} deltaKey={events.deltaKey} />
 
-        {/* Tempo do turno / revelação / troca (as janelas têm a barra na placa) */}
-        {decisionTimer && (
+        {/* Passar automático: canto de cima à esquerda, embaixo do relógio (o dock fica só com selos) */}
+        {!spectator && (
+          <div style={{ position: "absolute", left: U(12), top: U(58), zIndex: 5 }}>
+            <AutoPassToggle enabled={autoPass} onChange={toggleAutoPass} />
+          </div>
+        )}
+
+        {/* Relógio da fase (turno, reação, revelação, troca) */}
+        {timer && (
           <div
             style={{
               ...timerPill,
@@ -392,56 +398,36 @@ export default function GameBoard({
               background: secondsLeft <= 10 ? "rgba(192,57,43,0.9)" : "rgba(20,20,40,0.85)",
             }}
           >
-            ⏱ {Math.ceil(secondsLeft)}s
+            <span data-testid="relogio" data-segundos={Math.ceil(secondsLeft)} style={{ display: "inline-flex", alignItems: "center", gap: U(6) }}>
+              <Pic name="ampulheta" emoji="⏳" size={18} />
+              <PixelBitmap linhas={bitmapDoNumero(Math.ceil(secondsLeft))} cores={{ "#": "currentColor" }} celula={2} titulo={`${Math.ceil(secondsLeft)} segundos`} />
+            </span>
           </div>
         )}
 
         {/* Jogador da vez sem conexão: aviso discreto junto do timer */}
         {view.currentPlayerId && absentIds.includes(view.currentPlayerId) && (
-          <div style={{ ...timerPill, top: 52, color: COLORS.dim, background: "rgba(20,20,40,0.85)" }}>
+          <div style={{ ...timerPill, top: U(52), color: COLORS.dim, background: "rgba(20,20,40,0.85)" }}>
             sem conexão
           </div>
         )}
 
-       </div>
-
         <IntrigueFeed log={events.log} open={feedOpen} onOpenChange={setFeedOpen} />
 
-        {view.phase === "fim_de_jogo" && (
-          <VictoryPanel
-            view={view}
-            onRematch={
-              spectator
-                ? undefined
-                : () => {
-                    setError("");
-                    socket.emit("game_rematch", ack);
-                  }
-            }
-          />
-        )}
 
         {/* Retorno rápido de regra (some sozinho) */}
         {error && <div style={toast}>{error}</div>}
       </div>
-
-      {/* Faixa de status da rodada (portal no cabeçalho da sala) */}
-      <TurnBanner view={view} myId={myId} secondsLeft={secondsLeft} />
-
-      {drag && <DragGhost character={drag.char} x={drag.x} y={drag.y} />}
-
-      {/* Selo de cera — acima de tudo */}
-      <WaxSeal seal={seal} />
 
       {/* DOCK fixo: ações básicas · mão/escolha · reações. Espectador: só o aviso, com a
           mesma altura (a mesa não muda de tamanho). */}
       {spectator ? (
         <div data-testid="dock" data-spectator="sim" style={{ ...dock, display: "flex", justifyContent: "center" }}>
           <div data-testid="spectator-notice" style={spectatorNotice}>
-            <div style={{ fontFamily: CINZEL, fontSize: 18, fontWeight: 800, color: COLORS.turn }}>
+            <div style={{ fontFamily: CINZEL, fontSize: F(18), fontWeight: 800, color: COLORS.turn }}>
               👁 Você está assistindo
             </div>
-            <div style={{ marginTop: 4, color: COLORS.dim, fontSize: 13.5 }}>
+            <div style={{ marginTop: U(4), color: COLORS.dim, fontSize: F(13.5) }}>
               Você vê a mesa, mas não as cartas de ninguém. Entra como jogador na próxima partida.
             </div>
           </div>
@@ -451,10 +437,10 @@ export default function GameBoard({
         <div data-zone="basicas" style={{ justifySelf: "end" }}>
           <BasicActions view={view} myId={myId} canAct={canAct} onAction={onAction} />
         </div>
-        <div data-zone="centro" style={{ display: "flex", justifyContent: "center", minWidth: 380 }}>
+        <div data-zone="centro" style={{ display: "flex", justifyContent: "center", minWidth: U(380) }}>
           {center}
         </div>
-        <div data-zone="reacoes" style={{ justifySelf: "start", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div data-zone="reacoes" style={{ justifySelf: "start", display: "flex", alignItems: "center", gap: U(12) }}>
           <ReactionTray
             view={view}
             myId={myId}
@@ -471,58 +457,93 @@ export default function GameBoard({
               socket.emit("game_pass", ack);
             }}
           />
-          <AutoPassToggle enabled={autoPass} onChange={toggleAutoPass} />
         </div>
       </div>
       )}
+     </div>
+
+      {/* Fim de partida: o véu cobre a área inteira do jogo (mesa, dock e as faixas dos lados) */}
+      {view.phase === "fim_de_jogo" && (
+        <VictoryPanel
+          view={view}
+          onRematch={
+            spectator
+              ? undefined
+              : () => {
+                  setError("");
+                  socket.emit("game_rematch", ack);
+                }
+          }
+        />
+      )}
+
+      {/* Região de status para leitor de tela (portal no cabeçalho da sala) */}
+      <TurnBanner view={view} myId={myId} secondsLeft={secondsLeft} />
+
+      {drag && <DragGhost character={drag.char} x={drag.x} y={drag.y} />}
+
+      {/* Selo de cera — acima de tudo */}
+      <WaxSeal seal={seal} />
     </div>
   );
 }
 
+const palco: CSSProperties = {
+  position: "absolute",
+  left: `calc(50% - ${U(PALCO.largura / 2)})`,
+  top: `calc(50% - ${U(PALCO.altura / 2)})`,
+  width: U(PALCO.largura),
+  height: U(PALCO.altura),
+};
+
 const timerPill: CSSProperties = {
   position: "absolute",
-  top: 12,
-  left: 12,
+  top: U(12),
+  left: U(12),
   zIndex: 5,
-  padding: "6px 12px",
+  padding: `${U(6)} ${U(12)}`,
+  fontSize: F(16),
   border: "1px solid rgba(255,255,255,0.12)",
   borderRadius: 999,
   fontVariantNumeric: "tabular-nums",
-  boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
+  boxShadow: `0 ${U(4)} ${U(14)} rgba(0,0,0,0.4)`,
 };
 const toast: CSSProperties = {
   position: "absolute",
   left: "50%",
-  bottom: 14,
+  bottom: U(14),
   transform: "translateX(-50%)",
   zIndex: 7,
-  padding: "8px 14px",
+  padding: `${U(8)} ${U(14)}`,
+  fontSize: F(16),
   color: "#fff",
   background: "rgba(139,26,26,0.92)",
   border: "1px solid rgba(255,255,255,0.15)",
   borderRadius: 999,
-  boxShadow: "0 4px 14px rgba(0,0,0,0.45)",
+  boxShadow: `0 ${U(4)} ${U(14)} rgba(0,0,0,0.45)`,
   whiteSpace: "nowrap",
 };
 const spectatorNotice: CSSProperties = {
   alignSelf: "center",
-  maxWidth: 520,
-  padding: "14px 22px",
+  maxWidth: U(520),
+  padding: `${U(14)} ${U(22)}`,
   textAlign: "center",
-  borderRadius: 12,
+  borderRadius: U(12),
   background: "rgba(0,0,0,0.28)",
   border: "1px solid rgba(240,165,0,0.3)",
 };
 const dock: CSSProperties = {
-  flex: "none",
+  position: "absolute",
+  left: 0,
+  top: U(PALCO.mesa),
+  width: U(PALCO.largura),
   height: DOCK_HEIGHT,
   display: "grid",
-  gridTemplateColumns: "1fr auto 1fr",
+  // Colunas fixas: as zonas nunca andam quando a mão muda de tamanho (zonas fixas, DESIGN_MESA_V2).
+  gridTemplateColumns: `1fr ${U(520)} 1fr`,
   alignItems: "center",
-  gap: 20,
-  padding: "0 20px",
-  // Balcão de madeira escura com filete dourado em cima (mesmo vocabulário da mesa).
-  background: "linear-gradient(#2b1f1c, #1a1214 70%, #120c0f)",
-  borderTop: "2px solid rgba(240,165,0,0.6)",
-  boxShadow: "inset 0 1px 0 rgba(255,225,160,0.18), 0 -10px 24px rgba(0,0,0,0.45)",
+  gap: U(20),
+  padding: `0 ${U(20)}`,
+  // P09.S1: sem fundo, filete nem sombra de largura total (selos e mão ficam sobre o fundo da sala);
+  // as variações "cavalete" e "bandeja" da Aparência pintam só o necessário, por CSS (globals.css).
 };

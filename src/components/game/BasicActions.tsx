@@ -5,6 +5,7 @@
 
 import type { ActionType, GameView } from "@/src/types/game";
 import ActionSeal from "./ActionSeal";
+import { U } from "./escalaMesa";
 import { ACTION_META, basicSealState, COLORS, type IconName } from "./helpers";
 
 const BASICS: Array<{ action: ActionType; icon: IconName; emoji: string; sub: string; color: string }> = [
@@ -26,7 +27,7 @@ export default function BasicActions({
 }) {
   const coins = view.players.find((p) => p.id === myId)?.coins ?? 0;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, width: 208 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: U(4), width: U(240) }}>
       {BASICS.map(({ action, icon, emoji, sub, color }) => (
         <ActionSeal
           key={action}
@@ -36,6 +37,7 @@ export default function BasicActions({
           sub={sub}
           color={color}
           state={basicSealState(coins, action, canAct)}
+          width={240}
           onClick={() => onAction(action)}
         />
       ))}

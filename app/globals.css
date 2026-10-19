@@ -219,7 +219,7 @@ body {
   height: 20px;
   background: #2b2236;
   border: 2px solid #4a3d5c;
-  border-radius: 999px;
+  border-radius: 0; /* chave em pixel: quadrada */
   transition: background 140ms ease, border-color 140ms ease;
 }
 .toggle-track::after {
@@ -230,7 +230,7 @@ body {
   width: 12px;
   height: 12px;
   background: #bdb0a6;
-  border-radius: 50%;
+  border-radius: 0;
   transition: transform 140ms ease, background 140ms ease;
 }
 .toggle input:checked + .toggle-track {
@@ -514,16 +514,57 @@ html[data-crt="1"] body::after {
 :root[data-fonte="pixelify"] {
   --fonte-ui: var(--font-pixelify), "Courier New", monospace;
   --fe: 1;
+  --fw: 1; /* largura média relativa à Pixelify, medida por tools/visual/larguras.ts (F() da mesa) */
 }
 :root[data-fonte="silkscreen"] {
   --fonte-ui: var(--font-silkscreen), "Courier New", monospace;
   --fe: 0.9;
+  --fw: 0.76; /* largura média relativa à Pixelify, medida por tools/visual/larguras.ts (F() da mesa) */
 }
 :root[data-fonte="vt323"] {
   --fonte-ui: var(--font-vt323), "Courier New", monospace;
   --fe: 1.35;
+  --fw: 1.3; /* largura média relativa à Pixelify, medida por tools/visual/larguras.ts (F() da mesa) */
 }
 :root[data-fonte="press"] {
   --fonte-ui: var(--font-press), "Courier New", monospace;
   --fe: 0.62;
+  --fw: 0.52; /* largura média relativa à Pixelify, medida por tools/visual/larguras.ts (F() da mesa) */
+}
+
+/* Dock em 3 variações (P27.S5), escolhidas na aba de Aparência (html[data-dock]). As três zonas
+   (básicas / centro / reações) ficam onde estão; só muda o que há por baixo. "mesa" é o padrão:
+   selos e mão direto sobre o fundo da sala. */
+[data-dock="cavalete"] [data-testid="dock"] [data-zone="centro"] {
+  padding: 8px 18px;
+  background: var(--k-tinta);
+  border: 3px solid var(--k-filete);
+  box-shadow: 4px 4px 0 var(--k-sombra);
+}
+[data-dock="bandeja"] [data-testid="dock"]:not([data-spectator]) {
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  margin: 0 auto 8px;
+  padding-inline: 28px;
+  background: var(--k-tinta);
+  border: 3px solid var(--k-filete);
+  box-shadow: 4px 4px 0 var(--k-sombra);
+}
+
+/* Fichas (P07.S5/S6): fantasma do que sairia e pilha que tomba quando o dono sai da partida. */
+.ficha-fantasma {
+  opacity: 0.35;
+  filter: grayscale(0.6);
+  animation: fantasma 1.1s ease-in-out infinite alternate;
+}
+@keyframes fantasma {
+  to { opacity: 0.6; transform: translateY(-2px); }
+}
+.pilha-tombada { animation: tomba 0.6s steps(4, end) both; }
+@keyframes tomba {
+  to { transform: rotate(-12deg) translateY(3px); filter: grayscale(1); opacity: 0.6; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ficha-fantasma { animation: none; }
+  .pilha-tombada { animation: none; transform: rotate(-12deg); filter: grayscale(1); opacity: 0.6; }
 }

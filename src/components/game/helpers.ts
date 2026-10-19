@@ -11,9 +11,11 @@ import type {
   PublicPlayer,
 } from "@/src/types/game";
 import { CARDS, CARD_BY_ID, type Expressao } from "@/src/lib/game/cards";
+import { U } from "./escalaMesa";
 
-// Fonte de títulos/marca (carregada em app/layout.tsx via next/font). Única definição.
-export const CINZEL = "var(--font-cinzel), Georgia, serif";
+// Fonte de títulos do jogo. Era o Cinzel; desde a mesa nova (19/10) é a fonte pixel do kit que o
+// jogador escolhe na Aparência (--fonte-ui), para não misturar duas linguagens visuais.
+export const CINZEL = "var(--fonte-ui)";
 
 // Paleta (DESIGN.md "Tipografia e Cores"). Inline styles, sem lib de UI.
 export const COLORS = {
@@ -329,9 +331,9 @@ export function seatStyle(pos: SeatPos): CSSProperties {
   const left = `${pos.x}%`;
   switch (pos.anchor) {
     case "top":
-      return { left, top: 14, transform: "translateX(-50%)" };
+      return { left, top: U(14), transform: "translateX(-50%)" };
     case "bottom":
-      return { left, bottom: 12, transform: "translateX(-50%)" };
+      return { left, bottom: U(12), transform: "translateX(-50%)" };
     case "midHigh":
       return { left, top: "33%", transform: "translate(-50%, -50%)" };
     case "midLow":
@@ -348,4 +350,9 @@ export function actionBlockedReason(coins: number, action: ActionType): string |
   const cost = ACTION_META[action].coinCost ?? 0;
   if (coins < cost) return `Faltam moedas: ${ACTION_META[action].label} custa ${cost}.`;
   return null;
+}
+
+/** Camadas do monte do baralho por faixa (P08.S5): cheio 3, médio 2, quase vazio 1, vazio 0. */
+export function deckLayers(n: number): number {
+  return n >= 10 ? 3 : n >= 4 ? 2 : n >= 1 ? 1 : 0;
 }

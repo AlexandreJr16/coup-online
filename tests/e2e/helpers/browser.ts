@@ -163,6 +163,16 @@ export class Page {
     });
   }
 
+  /**
+   * Muda o tamanho da janela emulada. A emulação do CDP troca innerWidth/innerHeight mas NÃO
+   * dispara o evento `resize` (medido: 0 disparos); um navegador de verdade dispara. Por isso
+   * o helper dispara o evento depois, imitando o que acontece ao arrastar a janela.
+   */
+  async resize(w: number, h: number): Promise<void> {
+    await this.cdp.send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: 1, mobile: false });
+    await this.eval(`window.dispatchEvent(new Event("resize")); 1`);
+  }
+
   /** Liga prefers-reduced-motion: reduce (as animações decorativas devem sumir). */
   async emulateReducedMotion(): Promise<void> {
     await this.cdp.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });

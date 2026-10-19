@@ -5,7 +5,7 @@
 
 import { TIMEOUT_WARNING_SECONDS } from "@/src/lib/game/config";
 import type { GameView } from "@/src/types/game";
-import { ACTION_META, CHAR_LABEL, reactionOptions, reactorIds } from "./helpers";
+import { ACTION_META, CHAR_LABEL, type IconName, reactionOptions, reactorIds } from "./helpers";
 
 export interface RoundStatus {
   /** Quem tem a vez (dono do retrato); null no fim do jogo. */
@@ -172,4 +172,40 @@ export function timeoutWarning(view: GameView, myId: string, secondsLeft: number
     default:
       return null;
   }
+}
+
+/**
+ * Legenda de UMA linha no centro da mesa (P08.S1): o aviso dos últimos segundos toma o lugar do
+ * detalhe; sem detalhe, vale a manchete. Só dados públicos, como o resto deste arquivo.
+ */
+export function centerCaption(
+  view: GameView,
+  myId: string,
+  secondsLeft: number,
+): { text: string; warning: boolean } {
+  const warning = timeoutWarning(view, myId, secondsLeft);
+  if (warning) return { text: warning, warning: true };
+  const s = deriveRoundStatus(view, myId);
+  return { text: s.detail || s.headline, warning: false };
+}
+
+/** Balão da jogada sobre o assento de quem a fez (P08.S3, mockup P03.S2). */
+export interface Balao {
+  actorId: string; // dono do balão (quem declarou ou quem bloqueou)
+  icone: IconName;
+  texto: string; // "Taxas", "Assassinar", "Bloqueio · Condessa"
+  alvoId: string | null;
+}
+
+/**
+ * Balão sobre o assento de quem agiu, enquanto a jogada está em andamento. Na janela de contestar
+ * um bloqueio, o balão é do bloqueador (escudo + personagem alegado, que é público).
+ */
+export function actionBalloon(view: GameView): Balao | null {
+  const p = view.pending;
+  if (!p) return null;
+  if (view.phase === "janela_contestar_bloqueio" && p.block) {
+    return { actorId: p.block.blockerId, icone: "bloquear", texto: `Bloqueio · ${CHAR_LABEL[p.block.character]}`, alvoId: null };
+  }
+  return { actorId: p.actorId, icone: p.action, texto: ACTION_META[p.action].label, alvoId: p.targetId };
 }

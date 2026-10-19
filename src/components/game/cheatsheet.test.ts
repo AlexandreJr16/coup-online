@@ -2,10 +2,12 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 import { CARDS } from "@/src/lib/game/cards";
-import { buildCheatSheet, RULES_SUMMARY } from "./cheatsheet";
-import { ACTION_META } from "./helpers";
+import { buildCheatSheet, RULES_CARD, RULES_SUMMARY, type RegraCurta } from "./cheatsheet";
+import { ACTION_META, ICONS_AVAILABLE } from "./helpers";
 
 const sheet = buildCheatSheet();
 const byId = Object.fromEntries(sheet.characters.map((c) => [c.id, c]));
@@ -113,4 +115,64 @@ test("colinha: resumo das regras menciona Golpe obrigatório com 10+ moedas e co
   assert.match(texto, /Golpe de Estado/);
   assert.match(texto, /contest/i);
   assert.match(texto, /bloque/i);
+});
+
+// ── Regras curtas da peça (RULES_CARD, P22.S3) ───────────────────────────────
+// Cada regra cita fatos conferíveis; os números são lidos do game-rules.md, a fonte da verdade.
+const REGRAS_MD = readFileSync(fileURLToPath(new URL("../../../game-rules.md", import.meta.url)), "utf8");
+const regra = (id: RegraCurta["id"]) => RULES_CARD.find((r) => r.id === id)!.texto;
+const numeroNoMd = (re: RegExp, o: string) => {
+  const m = REGRAS_MD.match(re);
+  assert.ok(m, `game-rules.md não bate com ${o}`);
+  return m[1];
+};
+
+test("RULES_CARD: no máximo 5 regras, ~60 palavras, ids únicos, ícone existente e sem emoji", () => {
+  assert.ok(RULES_CARD.length >= 1 && RULES_CARD.length <= 5, `${RULES_CARD.length} regras`);
+  assert.equal(new Set(RULES_CARD.map((r) => r.id)).size, RULES_CARD.length);
+  const palavras = RULES_CARD.flatMap((r) => r.texto.split(/\s+/)).length;
+  assert.ok(palavras <= 75, `${palavras} palavras (alvo ~60)`);
+  for (const r of RULES_CARD) {
+    assert.ok(ICONS_AVAILABLE.includes(r.icone), `${r.id}: ícone ${r.icone} sem arquivo`);
+    assert.ok(r.texto.length <= 90, `${r.id}: longa demais para uma linha (${r.texto.length})`);
+    assert.equal(r.texto.match(/\p{Extended_Pictographic}/u), null, `${r.id}: emoji no texto`);
+  }
+});
+
+test("RULES_CARD cita fatos do game-rules.md: renda +1, ajuda externa +2, golpe 7 e obrigatório com 10+", () => {
+  const renda = numeroNoMd(/\|\s*Renda\s*\|\s*\+(\d+) moeda/, "Renda");
+  const ajuda = numeroNoMd(/\|\s*Ajuda Externa\s*\|\s*\+(\d+) moedas/, "Ajuda Externa");
+  const golpe = numeroNoMd(/\|\s*Golpe de Estado\s*\|\s*Paga (\d+) moedas/, "Golpe de Estado");
+  const limite = numeroNoMd(/(\d+) ou mais moedas, é OBRIGADO/, "Golpe obrigatório");
+  assert.match(regra("moedas"), new RegExp(`Renda dá \\+${renda} moeda`));
+  assert.match(regra("moedas"), new RegExp(`Ajuda Externa dá \\+${ajuda}`));
+  assert.match(regra("golpe"), new RegExp(`Golpe de Estado custa ${golpe}\\b`));
+  assert.match(regra("golpe"), new RegExp(`${limite} ou mais moedas, é obrigatório`));
+  // E o catálogo concorda com o documento (nenhum número solto no texto).
+  assert.equal(ACTION_META.renda.efeito.includes(renda), true);
+  assert.equal(ACTION_META.ajuda_externa.efeito.includes(ajuda), true);
+  assert.equal(ACTION_META.golpe.coinCost, Number(golpe));
+});
+
+test("RULES_CARD cita fatos do game-rules.md: 2 influências/2 moedas, exílio, contestação e passar", () => {
+  const [, cartas, moedas] = REGRAS_MD.match(/Cada jogador começa com (\d+) cartas viradas para baixo e (\d+) moedas/) ?? [];
+  assert.ok(cartas && moedas, "game-rules.md: preparação não encontrada");
+  assert.match(regra("comeco"), new RegExp(`${moedas} moedas e ${cartas} influências`));
+  assert.match(REGRAS_MD, /exilado/);
+  assert.match(regra("comeco"), /exilado/);
+  // Contestação: nas duas pontas do documento quem erra "perde 1 influência".
+  assert.match(REGRAS_MD, /contestante perde 1 influência/);
+  assert.match(REGRAS_MD, /contestado perde 1 influência/);
+  assert.match(regra("contestar"), /contestar/);
+  assert.match(regra("contestar"), /perde 1 influência/);
+  // Passar é final; estouro do tempo é decidido pelo jogo (servidor).
+  assert.match(REGRAS_MD, /Passar é final/);
+  assert.match(regra("passar"), /Passar é final/);
+  assert.match(REGRAS_MD, /### Quando o tempo estoura/);
+  assert.match(regra("passar"), /tempo estoura/);
+});
+
+test("RULES_CARD não toca no resumo longo: buildCheatSheet() segue devolvendo RULES_SUMMARY", () => {
+  assert.deepEqual(buildCheatSheet().rules, [...RULES_SUMMARY]);
+  assert.notDeepEqual(RULES_CARD.map((r) => r.texto), [...RULES_SUMMARY]);
 });

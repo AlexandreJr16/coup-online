@@ -1,0 +1,370 @@
+/* Tela de fim de partida (P21). Só lê as variáveis do kit (--u, --k-*, --p-*, --fonte-ui).
+   Movimento SOMENTE com transform/opacity; tudo parado/oculto sob prefers-reduced-motion. */
+
+.veu {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: safe center;
+  justify-content: center;
+  overflow: hidden;
+  container-type: size; /* 100cqh = altura da mesa: o painel nunca passa dela */
+  background: rgba(10, 8, 16, 0.72);
+  font-family: var(--fonte-ui);
+}
+
+/* ── Moedas (decoração, não captura clique) ──────────────────────────────── */
+
+.chuva {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.moeda {
+  position: absolute;
+  top: 0;
+  animation: cair var(--dur) linear var(--atraso) infinite;
+  will-change: transform;
+}
+
+.moedaImg {
+  display: block;
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  animation: girar var(--giro) steps(3, end) infinite;
+}
+
+@keyframes cair {
+  from { transform: translate3d(0, -48px, 0); }
+  to { transform: translate3d(var(--dx), calc(100cqh + 16px), 0); }
+}
+
+@keyframes girar {
+  0%, 100% { transform: scaleX(1); }
+  50% { transform: scaleX(0.2); }
+}
+
+/* ── Painel ──────────────────────────────────────────────────────────────── */
+
+.painel {
+  position: relative;
+  z-index: 1;
+  width: min(calc(var(--u) * 320), calc(100cqw - 24px));
+  max-width: 100%;
+}
+
+.rolagem {
+  max-height: max(220px, calc(100cqh - 92px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: calc(var(--u) * 2) calc(var(--u) * 2) 0;
+}
+
+.corpo {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+  gap: calc(var(--u) * 6);
+  align-items: start;
+}
+
+@container (max-width: 760px) {
+  .corpo { grid-template-columns: minmax(0, 1fr); justify-items: stretch; }
+}
+
+.titulo {
+  margin: 0 0 calc(var(--u) * 3);
+  padding-bottom: calc(var(--u) * 2);
+  font-size: calc(var(--u) * 4 * var(--fe));
+  font-weight: 400;
+  letter-spacing: var(--u);
+  color: var(--k-texto-fraco);
+  box-shadow: 0 var(--u) 0 0 var(--k-filete);
+}
+
+/* ── Vencedor ────────────────────────────────────────────────────────────── */
+
+.vencedor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  padding-top: calc(var(--u) * 14); /* espaço da coroa */
+}
+
+.partida {
+  font-size: calc(var(--u) * 4 * var(--fe));
+  letter-spacing: var(--u);
+  color: var(--k-texto-fraco);
+}
+
+.nome {
+  margin: 0;
+  max-width: calc(var(--u) * 52);
+  font-size: calc(var(--u) * 8 * var(--fe));
+  font-weight: 400;
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.retratoBox {
+  position: relative;
+}
+
+/* Brilho que pulsa atrás da moldura: só opacity. */
+.pulso {
+  position: absolute;
+  inset: calc(var(--u) * -3);
+  background: var(--p-ouro-claro);
+  animation: pulsar 1.6s steps(4, end) infinite;
+}
+
+.moldura {
+  position: relative;
+  padding: calc(var(--u) * 2);
+  background: var(--p-ouro);
+  box-shadow:
+    0 0 0 var(--u) var(--k-tinta),
+    calc(var(--u) * 2) calc(var(--u) * 2) 0 var(--u) var(--k-sombra);
+}
+
+.retrato {
+  display: block;
+  width: 128px;
+  height: 184px;
+  image-rendering: pixelated;
+  background: var(--k-tinta);
+}
+
+@container (max-height: 560px) {
+  .retrato { width: 96px; height: 138px; }
+  .vencedor { padding-top: calc(var(--u) * 11); }
+}
+
+.coroa {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--u) * -17);
+  margin-left: -32px;
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  animation: descer 0.7s steps(6, end) both;
+}
+
+.trofeu {
+  position: absolute;
+  right: calc(var(--u) * -6);
+  bottom: calc(var(--u) * -4);
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+}
+
+@keyframes descer {
+  from { transform: translateY(-46px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes pulsar {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 1; }
+}
+
+/* ── Listas (prêmios e placar) ───────────────────────────────────────────── */
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 2);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 3);
+  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  background: var(--k-slot);
+  box-shadow:
+    calc(var(--u) * -1) 0 0 0 var(--k-tinta),
+    var(--u) 0 0 0 var(--k-tinta),
+    0 calc(var(--u) * -1) 0 0 var(--k-tinta),
+    0 var(--u) 0 0 var(--k-tinta);
+}
+
+.itemLider {
+  box-shadow:
+    calc(var(--u) * -1) 0 0 0 var(--p-ouro),
+    var(--u) 0 0 0 var(--p-ouro),
+    0 calc(var(--u) * -1) 0 0 var(--p-ouro),
+    0 var(--u) 0 0 var(--p-ouro);
+}
+
+.icone {
+  display: block;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+}
+
+.texto {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.nomeLinha {
+  display: block;
+  font-size: calc(var(--u) * 5 * var(--fe));
+  overflow-wrap: anywhere;
+}
+
+.linhaNome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+}
+
+.detalhe {
+  display: block;
+  font-size: calc(var(--u) * 4 * var(--fe));
+  color: var(--k-texto-fraco);
+  overflow-wrap: anywhere;
+}
+
+.vazio {
+  margin: 0;
+  font-size: calc(var(--u) * 4 * var(--fe));
+  color: var(--k-texto-fraco);
+}
+
+.avatar {
+  display: block;
+  flex: none;
+  width: 32px;
+  height: 46px;
+  image-rendering: pixelated;
+}
+
+.semAvatar {
+  flex: none;
+  width: 32px;
+  height: 46px;
+}
+
+.vitorias {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 1);
+  font-size: calc(var(--u) * 8 * var(--fe));
+  color: var(--p-ouro);
+}
+
+.rodape {
+  margin: calc(var(--u) * 3) 0 0;
+  font-size: calc(var(--u) * 4 * var(--fe));
+  color: var(--k-texto-fraco);
+}
+
+.titulosNoite {
+  margin-top: calc(var(--u) * 5);
+}
+
+/* ── Rodapé fixo: revanche ───────────────────────────────────────────────── */
+
+.acoes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  padding-top: calc(var(--u) * 4);
+}
+
+.revanche {
+  min-width: min(100%, 320px);
+  min-height: max(56px, calc(var(--u) * 20));
+  font-size: calc(var(--u) * 8 * var(--fe));
+}
+
+.revanche img {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  flex: none;
+}
+
+.atalho {
+  font-size: calc(var(--u) * 4 * var(--fe));
+  color: var(--k-texto-fraco);
+}
+
+.atalho kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 calc(var(--u) * 2);
+  margin: 0 var(--u);
+  text-align: center;
+  font: inherit;
+  color: var(--k-btn-texto);
+  background: var(--k-btn-face);
+  box-shadow:
+    0 var(--u) 0 0 var(--k-btn-baixo),
+    0 calc(var(--u) * 2) 0 0 var(--k-tinta);
+}
+
+.espera {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 3);
+  margin: 0;
+  font-size: calc(var(--u) * 5 * var(--fe));
+  color: var(--k-texto-fraco);
+  text-align: left;
+}
+
+.espera img {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  flex: none;
+}
+
+/* ── Menos movimento: nada se mexe, as moedas somem ──────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .chuva { display: none; }
+  .coroa { animation: none; }
+  .pulso { animation: none; opacity: 0.6; }
+}
+
+/* Títulos da noite em uma linha (cabem com o placar sem rolagem, 19/10). */
+.itemCompacto {
+  padding-block: var(--u);
+}
+.itemCompacto .texto {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  align-items: baseline;
+  gap: calc(var(--u) * 2);
+}
+/* Revanche na coluna do vencedor (ocupa o vão embaixo do nome, 19/10). */
+.vencedor .acoes {
+  width: 100%;
+}
+.vencedor .revanche {
+  min-width: 0;
+  width: 100%;
+  min-height: max(56px, calc(var(--u) * 18));
+  font-size: calc(var(--u) * 6 * var(--fe));
+}

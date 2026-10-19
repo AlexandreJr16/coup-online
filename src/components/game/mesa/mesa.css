@@ -1,0 +1,247 @@
+/* Mesa nova (porte do mockup aprovado em app/dev/v3/mesa, P03.S2). Medidas em --mu (escalaMesa). */
+.m3-mesa {
+  position: absolute;
+  left: calc(var(--mu, 1px) * 70);
+  top: calc(var(--mu, 1px) * 32);
+  box-sizing: border-box;
+  width: calc(var(--mu, 1px) * 1140);
+  height: calc(var(--mu, 1px) * 488);
+  border: calc(var(--mu, 1px) * 10) solid #6b4326;
+  border-radius: calc(var(--mu, 1px) * 244);
+  background-color: #5a1d2c;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.1) 0 calc(var(--mu, 1px) * 2),
+    transparent calc(var(--mu, 1px) * 2) calc(var(--mu, 1px) * 6)
+  );
+  box-shadow:
+    inset 0 0 0 calc(var(--mu, 1px) * 2) #c99a2e,
+    0 calc(var(--mu, 1px) * 6) 0 #20120a;
+}
+
+
+.m3-historico {
+  position: absolute;
+  top: calc(var(--mu, 1px) * 6);
+  right: calc(var(--mu, 1px) * 12);
+  z-index: 10;
+  width: calc(var(--mu, 1px) * 196);
+  padding: calc(var(--mu, 1px) * 6);
+  background: rgba(14, 8, 10, 0.72);
+  border: calc(var(--mu, 1px) * 2) solid #14101a;
+  font-size: calc(var(--mu, 1px) * 10 * var(--fw, 1));
+}
+.m3-historico-titulo {
+  color: #9aa0a6;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.m3-historico-linha {
+  display: flex;
+  gap: calc(var(--mu, 1px) * 6);
+  align-items: center;
+  margin-top: calc(var(--mu, 1px) * 3);
+  color: #bfb6a8;
+}
+.m3-historico-linha[data-atual="sim"] {
+  color: #ffd866;
+}
+
+
+.m3-caixa {
+  --n: calc(var(--mu, 1px) * 2);
+  --m3-recorte: polygon(
+    var(--n) 0,
+    calc(100% - var(--n)) 0,
+    calc(100% - var(--n)) var(--n),
+    100% var(--n),
+    100% calc(100% - var(--n)),
+    calc(100% - var(--n)) calc(100% - var(--n)),
+    calc(100% - var(--n)) 100%,
+    var(--n) 100%,
+    var(--n) calc(100% - var(--n)),
+    0 calc(100% - var(--n)),
+    0 var(--n),
+    var(--n) var(--n)
+  );
+  padding: var(--n);
+  background: var(--m3-borda, #14101a);
+  clip-path: var(--m3-recorte);
+}
+.m3-caixa-in {
+  background: var(--m3-fundo, #f1e3c0);
+  clip-path: var(--m3-recorte);
+}
+
+.m3-assento {
+  z-index: 6;
+}
+.m3-placa-in {
+  display: flex;
+  gap: calc(var(--mu, 1px) * 4);
+  align-items: center;
+  justify-content: center;
+  height: calc(var(--mu, 1px) * 12);
+  padding: 0 calc(var(--mu, 1px) * 2);
+  overflow: hidden;
+  font-size: calc(var(--mu, 1px) * 11 * var(--fw, 1));
+  font-weight: 700;
+  white-space: nowrap;
+}
+.m3-placa-nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.m3-balao-in {
+  display: flex;
+  gap: calc(var(--mu, 1px) * 6);
+  align-items: center;
+  padding: calc(var(--mu, 1px) * 3) calc(var(--mu, 1px) * 8);
+  color: #14101a;
+  font-size: calc(var(--mu, 1px) * 13 * var(--fw, 1));
+  font-weight: 700;
+}
+.m3-legenda-in {
+  display: flex;
+  gap: calc(var(--mu, 1px) * 8);
+  align-items: center;
+  padding: calc(var(--mu, 1px) * 5) calc(var(--mu, 1px) * 12);
+  color: #f4f1e6;
+  font-size: calc(var(--mu, 1px) * 13 * var(--fw, 1));
+  white-space: nowrap;
+}
+
+.m3-numero {
+  padding: 0 calc(var(--mu, 1px) * 3);
+  background: #14101a;
+  color: #ffd866;
+  font-size: calc(var(--mu, 1px) * 11 * var(--fw, 1));
+  font-weight: 700;
+  line-height: 1.25;
+}
+.m3-rotulo-mesa {
+  color: #e0c88a;
+  font-size: calc(var(--mu, 1px) * 11 * var(--fw, 1));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.m3-selo-ultima {
+  position: absolute;
+  top: calc(var(--mu, 1px) * -8);
+  left: calc(var(--mu, 1px) * -4);
+  padding: calc(var(--mu, 1px) * 1) calc(var(--mu, 1px) * 4);
+  background: #c0392b;
+  color: #fff;
+  font-size: calc(var(--mu, 1px) * 9 * var(--fw, 1));
+  text-transform: uppercase;
+}
+
+/* Marca de "a mesa espera": pontinho de areia que pulsa */
+.m3-ponto {
+  display: inline-block;
+  flex: none;
+  width: calc(var(--mu, 1px) * 6);
+  height: calc(var(--mu, 1px) * 6);
+  background: #e0c88a;
+  box-shadow: 0 0 0 calc(var(--mu, 1px) * 1) #14101a;
+}
+.m3-ponto-grande {
+  width: calc(var(--mu, 1px) * 12);
+  height: calc(var(--mu, 1px) * 12);
+}
+
+/* Colchetes do alvo vermelho (10+ moedas) em volta do retrato */
+.m3-alvo-colchetes {
+  position: absolute;
+  inset: calc(var(--mu, 1px) * -4);
+  pointer-events: none;
+}
+.m3-alvo-colchetes i {
+  position: absolute;
+  width: calc(var(--mu, 1px) * 12);
+  height: calc(var(--mu, 1px) * 12);
+  border: 0 solid #e03a2c;
+}
+.m3-alvo-colchetes i:nth-child(1) {
+  top: 0;
+  left: 0;
+  border-width: calc(var(--mu, 1px) * 3) 0 0 calc(var(--mu, 1px) * 3);
+}
+.m3-alvo-colchetes i:nth-child(2) {
+  top: 0;
+  right: 0;
+  border-width: calc(var(--mu, 1px) * 3) calc(var(--mu, 1px) * 3) 0 0;
+}
+.m3-alvo-colchetes i:nth-child(3) {
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 calc(var(--mu, 1px) * 3) calc(var(--mu, 1px) * 3);
+}
+.m3-alvo-colchetes i:nth-child(4) {
+  right: 0;
+  bottom: 0;
+  border-width: 0 calc(var(--mu, 1px) * 3) calc(var(--mu, 1px) * 3) 0;
+}
+
+/* ── Animações (só opacity e transform; 1 Hz, nada acima de 3 flashes/s) ─ */
+@keyframes m3-pisca {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.35;
+  }
+}
+@keyframes m3-ponto {
+  0%,
+  49% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1.5);
+  }
+}
+@keyframes m3-zz {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(calc(var(--mu, 1px) * -16));
+  }
+}
+.m3-pisca,
+.m3-urgente {
+  animation: m3-pisca 1s steps(1, end) infinite;
+}
+.m3-ponto.m3-anima {
+  animation: m3-ponto 1.2s steps(1, end) infinite;
+}
+.m3-zz {
+  animation: m3-zz 2.4s steps(6, end) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .m3-anima {
+    animation: none !important;
+  }
+}
+
+.m3-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+/* ── Folhas de revisão ───────────────────────────────────────────────── */

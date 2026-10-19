@@ -1,5 +1,7 @@
 # Roadmap v2 — Arte, áudio e fluidez (plano executável)
 
+> **Histórico da v2.** A v3 seguiu `docs/PLANO_V3.md` e o plano mestre em `docs/plano/00-MESTRE.md` (v3.0 e v3.1 lançadas; v3.2, das animações, em andamento).
+
 Base: tag `v1` (commit `14cfb45`). Este plano substitui o roadmap v1.
 
 ## Testes (política no `CLAUDE.md`)

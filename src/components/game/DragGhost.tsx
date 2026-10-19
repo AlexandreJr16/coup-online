@@ -3,6 +3,7 @@
 
 import type { Character } from "@/src/types/game";
 import Card from "./Card";
+import { U } from "./escalaMesa";
 
 export default function DragGhost({ character, x, y }: { character: Character; x: number; y: number }) {
   return (
@@ -10,12 +11,12 @@ export default function DragGhost({ character, x, y }: { character: Character; x
       data-testid="drag-ghost"
       style={{
         position: "fixed",
-        left: x - 44,
-        top: y - 62,
+        left: `calc(${x}px - ${U(44)})`, // metade da carta lg (88x124): o mouse segura o centro
+        top: `calc(${y}px - ${U(62)})`,
         zIndex: 100,
         pointerEvents: "none",
         transform: "rotate(-5deg) scale(1.05)",
-        filter: "drop-shadow(0 14px 18px rgba(0,0,0,0.55))",
+        filter: `drop-shadow(0 ${U(14)} ${U(18)} rgba(0,0,0,0.55))`,
       }}
     >
       <Card character={character} size="lg" selected />

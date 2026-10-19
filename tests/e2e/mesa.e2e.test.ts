@@ -123,7 +123,7 @@ test("uma rodada completa clicando: Renda, Taxas com Passar, Assassinar com mira
 
   // Bia declara Taxas clicando na carta do Barão. Ana vê a placa e reage com Passar.
   await b.click('[data-zone="centro"] [title="Barão do Café"]');
-  await a.waitFor(`document.querySelector('[data-testid="claim-plate"]')?.innerText.includes("Bia · Taxas")`, "placa 'Bia · Taxas'");
+  await a.waitFor(`document.querySelector('[data-seat="Bia"] [data-testid="claim-plate"]')?.innerText.includes("Taxas")`, "balão 'Taxas' sobre a Bia");
   await a.click('[data-zone="reacoes"] button', "Passar");
   await waitCoins(b, "Bia", 5);
 
@@ -136,17 +136,17 @@ test("uma rodada completa clicando: Renda, Taxas com Passar, Assassinar com mira
   await a.click('[data-seat="Bia"]'); // escolhe o alvo clicando no assento
 
   // Bia (alvo) vê Contestar / Bloquear / Passar e passa → precisa revelar.
-  await b.waitFor(`document.querySelector('[data-testid="claim-plate"]')?.innerText.includes("Ana · Assassinar")`, "placa do assassinato");
+  await b.waitFor(`document.querySelector('[data-seat="Ana"] [data-testid="claim-plate"]')?.innerText.includes("Assassinar")`, "balão do assassinato");
   const reacoes = await b.eval<string>(`document.querySelector('[data-zone="reacoes"]').innerText`);
   assert.match(reacoes, /Contestar/);
-  assert.match(reacoes, /Bloquear/);
+  assert.ok(await b.eval<boolean>(`!!document.querySelector('[data-zone="reacoes"] [title^="Bloquear com"]')`), "selo de bloqueio na bandeja");
   assert.match(reacoes, /Passar/);
   await b.click('[data-zone="reacoes"] button', "Passar");
 
   // Revelar: o centro do dock mostra SÓ as 2 cartas dela, pulsando; clicar revela.
   await b.waitFor(`document.querySelectorAll('[data-zone="centro"] .urgent-pulse').length === 2`, "2 cartas pulsando para revelar");
   await b.click('[data-zone="centro"] .urgent-pulse [title]');
-  await a.waitFor(`document.querySelectorAll('[data-seat="Bia"] [title]').length === 1`, "carta revelada visível na mesa");
+  await a.waitFor(`document.querySelectorAll('[data-seat="Bia"] [data-card] [title]').length === 1`, "carta revelada visível na mesa");
   await b.waitFor(`document.querySelectorAll('[data-zone="centro"] [title]').length === 5`, "mão normal de volta");
 
   noErrors(a, b);
@@ -244,10 +244,9 @@ test("arrastar: o poder vai até o oponente (assassinar) e a carta jogada aparec
 
   // Ana arrasta a carta do Capoeira até o assento da Bia. Durante o arrasto o fantasma existe.
   await a.drag('[data-zone="centro"] [title="Capoeira"]', '[data-seat="Bia"]');
-  await b.waitFor(`document.querySelector('[data-testid="claim-plate"]')?.innerText.includes("Ana · Assassinar → Bia")`, "carta jogada na mesa");
-  // a carta jogada é uma carta VIRADA (verso) com anel de tempo e o lacre da ação
-  assert.equal(await b.eval<number>(`document.querySelectorAll('[data-testid="claim-plate"] svg rect').length`), 2);
-  assert.ok(await b.eval<boolean>(`!!document.querySelector('[data-testid="claim-plate"] img[src*="verso"]')`), "verso da carta");
+  await b.waitFor(`document.querySelector('[data-seat="Ana"] [data-testid="claim-plate"]')?.innerText.includes("Assassinar")`, "balão da jogada sobre a Ana");
+  // o alvo aparece no balão como retrato (a mesa não precisa de texto para dizer contra quem)
+  assert.ok(await b.eval<boolean>(`!!document.querySelector('[data-seat="Ana"] [data-testid="claim-plate"] img[alt="Alvo: Bia"]')`), "retrato do alvo no balão");
   await a.waitFor(`!document.querySelector('[data-testid="drag-ghost"]') && !document.querySelector('[data-target="sim"]')`, "arrasto encerrado");
   noErrors(a, b);
 });
@@ -262,7 +261,7 @@ test("arrastar: poder sem alvo é declarado soltando na mesa; soltar no dock can
   assert.equal(await a.eval<boolean>(`!document.querySelector('[data-testid="drag-ghost"]')`), true);
   // soltar sobre a mesa: declara Taxas
   await a.drag('[data-zone="centro"] [title="Barão do Café"]', '[data-erario]');
-  await b.waitFor(`document.querySelector('[data-testid="claim-plate"]')?.innerText.includes("Ana · Taxas")`, "Taxas declarada");
+  await b.waitFor(`document.querySelector('[data-seat="Ana"] [data-testid="claim-plate"]')?.innerText.includes("Taxas")`, "Taxas declarada");
   noErrors(a, b);
 });
 
@@ -270,7 +269,58 @@ test("mesa: Erário e baralho têm lugar fixo e a contagem do baralho é a real"
   const { ps } = await game(["Ana", "Bia", "Caio"]);
   await ps[0].waitFor(`document.querySelector('[data-erario]') && document.querySelector('[data-deck]')`, "Erário e baralho");
   const deck = await ps[0].eval<string>(`document.querySelector('[data-deck]').innerText`);
-  assert.match(deck, /Corte · 19/); // 25 − 3×2
+  assert.match(deck, /19\s*corte/i); // 25 − 3×2
+  noErrors(...ps);
+});
+
+test("fichas: assento e Erário mostram sprites carregados de verdade (P07.S4)", async () => {
+  const { ps } = await game(["Ana", "Bia", "Caio"]);
+  await ps[0].waitFor(
+    `(() => { const im = [...document.querySelectorAll('[data-chip-pile] img')]; return im.length >= 3 && im.every(i => i.complete); })()`,
+    "pilhas de fichas na mesa, com as imagens terminadas de carregar",
+  );
+  const quebradas = await ps[0].eval<number>(
+    `[...document.querySelectorAll('[data-chip-pile] img')].filter(i => !i.complete || i.naturalWidth === 0).length`,
+  );
+  assert.equal(quebradas, 0);
+  // P07.S6: passar o mouse mostra o número exato; ninguém começa com fantasma nem aviso de Golpe.
+  assert.equal(await ps[0].eval<string>(`document.querySelector('[data-seat="Ana"] [data-chip-pile]').title`), "2 fichas");
+  assert.equal(await ps[0].eval<number>(`document.querySelectorAll('[data-chip-ghost], [data-testid="selo-alvo"]').length`), 0);
+  noErrors(...ps);
+});
+
+test("dock: sem fundo de largura total e com alvos de pelo menos 40px (P09.S1, S5)", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const r = await ps[0].eval<{ fundo: string; pequenos: string[] }>(`(() => {
+    const dock = document.querySelector('[data-testid="dock"]');
+    const alvos = [...dock.querySelectorAll('button:not([disabled]), label')];
+    return {
+      fundo: getComputedStyle(dock).backgroundColor + '|' + getComputedStyle(dock).backgroundImage,
+      pequenos: alvos.filter(a => a.getBoundingClientRect().height < 40).map(a => a.tagName + ':' + a.innerText.slice(0, 20)),
+    };
+  })()`);
+  assert.equal(r.fundo, "rgba(0, 0, 0, 0)|none");
+  assert.deepEqual(r.pequenos, []);
+  noErrors(...ps);
+});
+
+test("dock: variações cavalete e bandeja pintam só a parte necessária, sem largura total (P27.S5)", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const p = ps[0];
+  const medir = () => p.eval<{ dockW: number; fundo: string; vw: number; centro: string }>(`(() => {
+    const d = document.querySelector('[data-testid="dock"]');
+    return { dockW: d.getBoundingClientRect().width, vw: innerWidth, fundo: getComputedStyle(d).backgroundColor,
+      centro: getComputedStyle(d.querySelector('[data-zone="centro"]')).backgroundColor };
+  })()`);
+  await p.eval(`document.documentElement.setAttribute('data-dock', 'bandeja')`);
+  const b = await medir();
+  assert.notEqual(b.fundo, "rgba(0, 0, 0, 0)");
+  assert.ok(b.dockW < b.vw - 8, "a bandeja não pode ocupar a largura toda");
+  await p.eval(`document.documentElement.setAttribute('data-dock', 'cavalete')`);
+  const c = await medir();
+  assert.equal(c.fundo, "rgba(0, 0, 0, 0)");
+  assert.notEqual(c.centro, "rgba(0, 0, 0, 0)");
+  assert.deepEqual(await layoutIssues(p), []);
   noErrors(...ps);
 });
 
@@ -423,10 +473,14 @@ test("áudio: o contexto nasce no primeiro gesto e o botão de mudo persiste", a
 
 // ── Fim de partida (4.8) ─────────────────────────────────────────────────────
 test("tela de vitória: vencedor, prêmios corretos e botão de revanche (página de revisão)", async () => {
-  const p = await open("/dev/mesa?fase=fim&n=4");
+  const p = await open("/dev/mesa?fase=fim&n=4", { w: 1280, h: 720 });
   await p.waitFor(`document.querySelector('[data-testid="victory"]')`, "tela de vitória");
   const txt = await p.eval<string>(`document.querySelector('[data-testid="victory"]').innerText`);
   assert.match(txt, /Ana vence!/);
+  assert.match(txt, /PARTIDA 4/);
+  assert.equal(/\p{Extended_Pictographic}/u.test(txt), false, `emoji do sistema na tela de vitória: ${txt}`);
+
+  // Prêmios (mesma lógica de antes) e cada um com o seu ícone pixel carregado de verdade.
   const premios = await p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-award]')].map(e => e.getAttribute('data-award') + ':' + e.innerText.replace(/\\s+/g,' ')))`);
   const lista = JSON.parse(premios) as string[];
   assert.ok(lista.some((l) => l.startsWith("mentiroso:") && l.includes("Bia") && l.includes("3 vezes")), premios);
@@ -434,7 +488,73 @@ test("tela de vitória: vencedor, prêmios corretos e botão de revanche (págin
   assert.ok(lista.some((l) => l.startsWith("olho_de_lince:") && l.includes("Ana") && l.includes("3 de 4")), premios);
   assert.ok(lista.some((l) => l.startsWith("carrasco:") && l.includes("Ana")), premios);
   assert.ok(lista.some((l) => l.startsWith("ricaco:") && l.includes("11")), premios);
-  await p.click('[data-testid="victory"] .seal', "Jogar de novo"); // o clique não pode estar coberto
+  await p.waitFor(
+    `[...document.querySelectorAll('[data-award]')].length === 5 && [...document.querySelectorAll('[data-award]')].every(e => { const i = e.querySelector('img'); return i && i.complete && i.naturalWidth > 0 && i.src.includes('/icones/' + e.getAttribute('data-award') + '.sm.png'); })`,
+    "ícone pixel de cada prêmio carregado",
+  );
+
+  // Vencedor: o MESMO retrato da mesa, em moldura, com coroa e troféu em PNG pixel.
+  const retrato = await p.eval<{ slug: string; ok: boolean }>(`(() => {
+    const i = document.querySelector('[data-testid="victory-retrato"]');
+    return { slug: i.getAttribute('data-avatar'), ok: i.complete && i.naturalWidth === 64 };
+  })()`);
+  assert.ok(retrato.ok, "retrato do vencedor não carregou (64x92)");
+  assert.equal(
+    await p.eval<boolean>(`!!document.querySelector('[data-seat] img[src$="/avatares/${retrato.slug}.png"]')`),
+    true,
+    `a mesa deveria usar o mesmo retrato (${retrato.slug}) para a Ana`,
+  );
+  for (const id of ["victory-coroa", "victory-trofeu"]) {
+    await p.waitFor(`(() => { const i = document.querySelector('[data-testid="${id}"]'); return i && i.complete && i.naturalWidth > 0; })()`, `${id} carregado`);
+  }
+
+  // Placar da noite (fictício): uma linha por jogador, líder em destaque, títulos com ícone.
+  await p.waitFor(`document.querySelectorAll('[data-testid="placar-linhas"] li').length === 4`, "4 linhas no placar da noite");
+  const linhas = await p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-testid="placar-linhas"] li')].map(e => ({ id: e.getAttribute('data-player'), lider: e.getAttribute('data-lider'), wins: e.querySelector('[data-testid="placar-vitorias"]').innerText, t: e.innerText.replace(/\\s+/g, ' ') })))`);
+  const placar = JSON.parse(linhas) as Array<{ id: string; lider: string | null; wins: string; t: string }>;
+  assert.deepEqual(placar.map((l) => [l.id, l.wins]), [["p1", "2"], ["p2", "1"], ["p3", "1"], ["p4", "0"]], linhas);
+  assert.deepEqual(placar.map((l) => l.lider), ["sim", null, null, null], "só a Ana lidera");
+  assert.ok(placar[0].t.includes("Ana") && placar[0].t.includes("Líder") && placar[0].t.includes("2 vitórias em 4 partidas"), linhas);
+  assert.ok(placar[3].t.includes("0 vitórias em 4 partidas"), linhas);
+  const titulos = await p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-title]')].map(e => e.getAttribute('data-title') + ':' + e.innerText.replace(/\\s+/g,' ') + ':' + (e.querySelector('img')?.naturalWidth ?? 0)))`);
+  const tit = JSON.parse(titulos) as string[];
+  assert.ok(tit.some((t) => t.startsWith("mentiroso:") && t.includes("Mentiroso da noite") && t.includes("Bia") && t.includes("2 vezes") && t.endsWith(":32")), titulos);
+  assert.ok(tit.some((t) => t.startsWith("ricaco:") && t.includes("Ana e Bia") && t.includes("1 vez") && t.endsWith(":32")), titulos);
+  assert.match(txt, /4 partidas nesta sala/);
+
+  // Moedas: existem, respeitam o teto e estão animadas (movimento só por transform).
+  const fx = await p.eval<{ n: number; anim: string; eventos: string }>(`(() => {
+    const f = document.querySelector('[data-testid="victory-fx"]');
+    const m = f.firstElementChild;
+    return { n: f.children.length, anim: getComputedStyle(m).animationName, eventos: getComputedStyle(f).pointerEvents };
+  })()`);
+  assert.ok(fx.n >= 1 && fx.n <= 24, `moedas: ${fx.n}`);
+  assert.notEqual(fx.anim, "none");
+  assert.equal(fx.eventos, "none"); // a chuva nunca cobre o botão
+
+  // Revanche: botão grande, com atalho anunciado, clicável (nada por cima).
+  const btn = await p.eval<{ h: number; keys: string | null }>(`(() => {
+    const b = document.querySelector('[data-testid="revanche"]');
+    return { h: b.getBoundingClientRect().height, keys: b.getAttribute('aria-keyshortcuts') };
+  })()`);
+  assert.ok(btn.h >= 56, `botão de revanche pequeno: ${btn.h}px`);
+  assert.equal(btn.keys, "Enter R");
+  assert.ok(txt.includes("Enter") && txt.includes("Jogar de novo"));
+  assert.equal(
+    await p.eval<boolean>(`(() => { const r = document.querySelector('[data-testid="victory-panel"]').getBoundingClientRect(); const b = document.querySelector('[data-testid="revanche"]').getBoundingClientRect(); return r.top >= 0 && b.bottom <= innerHeight && b.top >= r.top; })()`),
+    true,
+    "o botão de revanche tem de aparecer inteiro na tela 1280x720",
+  );
+  await p.click('[data-testid="revanche"]', "Jogar de novo"); // o clique não pode estar coberto
+  noErrors(p);
+});
+
+test("tela de vitória com 2 jogadores e reduced-motion: placar sem sobra e moedas ocultas", async () => {
+  const p = await open("/dev/mesa?fase=fim&n=2", { w: 1280, h: 720 }, { reducedMotion: true });
+  await p.waitFor(`document.querySelectorAll('[data-testid="placar-linhas"] li').length === 2`, "2 linhas no placar");
+  assert.equal(await p.eval<string>(`getComputedStyle(document.querySelector('[data-testid="victory-fx"]')).display`), "none");
+  assert.equal(await p.eval<string>(`getComputedStyle(document.querySelector('[data-testid="victory-coroa"]')).animationName`), "none");
+  await p.click('[data-testid="revanche"]', "Jogar de novo");
   noErrors(p);
 });
 
@@ -448,7 +568,7 @@ test("F5 no meio da partida mantém o assento e a mesma mão", async () => {
   await b.waitFor(`document.querySelectorAll('[data-zone="centro"] [title]').length === 5`, "mão com 5 cartas");
   const antes = await mao(b);
   await b.reload();
-  await b.waitText("Bia (você)");
+  await b.waitFor(`document.querySelector('[data-seat="Bia"] [data-testid="placa-nome"]')?.innerText.trim() === "Você"`, "Bia de volta no próprio assento");
   await b.waitFor(`document.querySelectorAll('[data-zone="centro"] [title]').length === 5`, "mão depois do F5");
   assert.equal(await mao(b), antes);
   noErrors(b);
@@ -475,9 +595,55 @@ for (const n of [2, 3, 4, 5, 6]) {
   });
 }
 
-test("layout 1920×1080 com 6 jogadores", async () => {
-  const { ps } = await game(["Ana", "Bia", "Caio", "Davi", "Eva", "Fábio"], { w: 1920, h: 1080 });
-  await ps[0].waitFor(`document.querySelectorAll('[data-seat]').length === 6`, "6 assentos");
+// Escala contínua (mesa nova, 19/10): o palco de 1280x680 unidades cabe na área da mesa e cresce
+// com a tela. Confere que o fator chegou de verdade ao DOM (dock = 144u, carta da mão = 88u×124u,
+// assento = 176u), que o palco cabe na janela e que nada fica cortado, sobreposto ou no dock.
+const TELAS: Array<{ w: number; h: number; min: number }> = [
+  { w: 1600, h: 900, min: 1.1 },
+  { w: 1920, h: 1080, min: 1.3 },
+  { w: 2560, h: 1440, min: 1.8 },
+];
+const fatorDaMesa = (p: Page) =>
+  p.eval<number>(`parseFloat(getComputedStyle(document.querySelector('[data-testid="dock"]')).getPropertyValue('--mu'))`);
+for (const { w, h, min } of TELAS) {
+  for (const n of [2, 6]) {
+    test(`layout ${w}×${h} com ${n} jogadores: a mesa preenche a tela sem nada cortado, sobreposto nem no dock`, async () => {
+      const names = ["Ana", "Bia", "Caio", "Davi", "Eva", "Fábio"].slice(0, n);
+      const { ps } = await game(names, { w, h });
+      await ps[0].waitFor(`document.querySelectorAll('[data-seat]').length === ${n}`, `${n} assentos`);
+      await ps[0].waitFor(`document.querySelectorAll('[data-zone="centro"] .hand-card').length === 5`, "mão");
+      const m = await fatorDaMesa(ps[0]);
+      assert.ok(m >= min, `mesa pequena demais em ${w}×${h}: fator ${m}`);
+      const medidas = await ps[0].eval<{ dock: number; carta: number[]; assento: number; palco: { l: number; t: number; r: number; b: number } }>(`(() => {
+        const dock = document.querySelector('[data-testid="dock"]');
+        const carta = document.querySelector('[data-zone="centro"] .hand-card');
+        const pr = document.querySelector('[data-palco]').getBoundingClientRect();
+        return {
+          dock: dock.getBoundingClientRect().height,
+          // a carta tem rotate/scale no transform: usa o tamanho de layout, não o do retângulo girado
+          carta: [carta.offsetWidth, carta.offsetHeight],
+          assento: document.querySelector('[data-seat]').getBoundingClientRect().width,
+          palco: { l: pr.left, t: pr.top, r: pr.right, b: pr.bottom },
+        };
+      })()`);
+      assert.ok(Math.abs(medidas.dock - 144 * m) < 1, `dock ${medidas.dock} != ${144 * m}`);
+      assert.ok(Math.abs(medidas.carta[0] - 88 * m) <= 1 && Math.abs(medidas.carta[1] - 124 * m) <= 1, `carta da mão fora da escala: ${medidas.carta}`);
+      assert.ok(Math.abs(medidas.assento - 176 * m) < 1, `assento fora da escala: ${medidas.assento}`);
+      assert.ok(medidas.palco.l >= -0.5 && medidas.palco.r <= w + 0.5 && medidas.palco.b <= h + 0.5, `palco fora da janela: ${JSON.stringify(medidas.palco)}`);
+      assert.deepEqual(await layoutIssues(ps[0]), []);
+      noErrors(...ps);
+    });
+  }
+}
+
+test("escala: redimensionar a janela aumenta e devolve o fator da mesa sem erros", async () => {
+  const { ps } = await game(["Ana", "Bia"], { w: 1280, h: 720 });
+  const antes = await fatorDaMesa(ps[0]);
+  await ps[0].resize(1920, 1080);
+  await ps[0].waitFor(`parseFloat(getComputedStyle(document.querySelector('[data-testid="dock"]')).getPropertyValue('--mu')) > ${antes}`, "mesa maior");
+  assert.deepEqual(await layoutIssues(ps[0]), []);
+  await ps[0].resize(1280, 720);
+  await ps[0].waitFor(`parseFloat(getComputedStyle(document.querySelector('[data-testid="dock"]')).getPropertyValue('--mu')) === ${antes}`, "mesa de volta ao fator inicial");
   assert.deepEqual(await layoutIssues(ps[0]), []);
   noErrors(...ps);
 });
@@ -623,10 +789,38 @@ test("colinha: abre por clique e por '?', mostra os 5 personagens e fecha por X,
   assert.equal(aria.expanded, "true");
   const corpo = await p.eval<string>(`document.querySelector('[data-testid="cheatsheet"]').innerText`);
   for (const n of NOMES_PERSONAGENS) assert.ok(corpo.includes(n), `falta ${n} na colinha`);
-  for (const t of ["Renda", "Ajuda Externa", "Golpe de Estado", "Pode ser contestada", "Bloqueada por", "10 ou mais moedas"]) {
+  for (const t of ["Renda", "Ajuda Externa", "Golpe de Estado", "Contestável", "Bloqueável", "10 ou mais moedas"]) {
     assert.ok(corpo.includes(t), `falta "${t}" na colinha`);
   }
   assert.ok(!/Duque|Capitão|Condessa|Embaixador|Inquisidor/.test(corpo), "nome original do Coup vazou na UI");
+
+  // P22: "contestável" e "bloqueável" são ícones certo/errado (data-mark), não chips de texto.
+  const marcas = await p.eval<Record<string, string>>(`(() => {
+    const out = {};
+    const pega = (el) => ['contestar', 'bloquear'].map((f) => el.querySelector('[data-flag="' + f + '"] [data-mark]')?.getAttribute('data-mark') ?? '-').join('/');
+    for (const el of document.querySelectorAll('[data-testid="cheatsheet"] [data-testid="colinha-personagens"] [data-character]')) out[el.getAttribute('data-character')] = pega(el);
+    for (const el of document.querySelectorAll('[data-testid="cheatsheet"] [data-testid="colinha-gerais"] [data-action]')) out[el.getAttribute('data-action')] = pega(el);
+    return out;
+  })()`);
+  assert.deepEqual(marcas, {
+    duque: "sim/nao", // Taxas: contestável, ninguém bloqueia
+    assassino: "sim/sim", // Assassinar: a Benzedeira bloqueia
+    capitao: "sim/sim", // Extorquir: Coronel ou Regatão bloqueiam
+    embaixador: "sim/nao", // Trocar
+    condessa: "-/-", // sem ação de turno: só defende
+    renda: "nao/nao",
+    ajuda_externa: "nao/sim", // o Barão do Café bloqueia
+    golpe: "nao/nao",
+  });
+  // (A página /dev/colinha mostra o corpo embutido E o diálogo: as consultas olham só o diálogo.)
+  // Quem bloqueia aparece como mini-retrato (Extorquir: 2; Assassinar e Ajuda Externa: 1).
+  const minis = await p.eval<Record<string, number>>(`({
+    capitao: document.querySelectorAll('[data-testid="cheatsheet"] [data-character="capitao"] [data-flag="bloquear"] img[alt]:not([data-mark])').length,
+    assassino: document.querySelectorAll('[data-testid="cheatsheet"] [data-character="assassino"] [data-flag="bloquear"] img[alt]:not([data-mark])').length,
+    ajuda_externa: document.querySelectorAll('[data-testid="cheatsheet"] [data-action="ajuda_externa"] [data-flag="bloquear"] img[alt]:not([data-mark])').length,
+  })`);
+  assert.deepEqual(minis, { capitao: 2, assassino: 1, ajuda_externa: 1 });
+  assert.equal(await p.eval<number>(`document.querySelectorAll('[data-testid="cheatsheet"] [data-testid="colinha-regras"] [data-regra]').length`), 5, "5 regras curtas");
 
   // Fecha pelo X (foco volta ao botão ?).
   await p.click('[data-testid="cheatsheet-close"]');
@@ -692,9 +886,9 @@ test("colinha: na mesa, Esc com o painel aberto NÃO cancela a mira por baixo; d
   assert.equal(await a.eval<boolean>(`!!document.querySelector('[data-seat="Bia"][data-target="sim"]')`), true, "mira some ao abrir a colinha");
 
   // O jogo segue vivo e o relógio do servidor continua correndo com o painel aberto.
-  const t1 = await a.eval<string>(`document.body.innerText.match(/⏱\\s*(\\d+)/)?.[1] ?? ''`);
+  const t1 = await a.eval<string>(`document.querySelector('[data-testid="relogio"]')?.getAttribute('data-segundos') ?? ''`);
   await new Promise((r) => setTimeout(r, 2200));
-  const t2 = await a.eval<string>(`document.body.innerText.match(/⏱\\s*(\\d+)/)?.[1] ?? ''`);
+  const t2 = await a.eval<string>(`document.querySelector('[data-testid="relogio"]')?.getAttribute('data-segundos') ?? ''`);
   if (t1 && t2) assert.ok(Number(t2) < Number(t1), `timer parado com a colinha aberta: ${t1} → ${t2}`);
 
   // Esc fecha SÓ a colinha: a mira segue armada.
@@ -705,6 +899,55 @@ test("colinha: na mesa, Esc com o painel aberto NÃO cancela a mira por baixo; d
   // Com a colinha fechada, o Esc volta a cancelar a mira.
   await a.key("Escape");
   await a.waitFor(`!document.querySelector('[data-target="sim"]')`, "Esc cancelou a mira com a colinha fechada");
+  noErrors(...ps);
+});
+
+test("colinha (P22): numa sala em 1280x720 a peça cabe sem rolagem, nos estilos A e B, com todas as imagens carregadas", async () => {
+  const { ps } = await game(["Ana", "Bia"], { w: 1280, h: 720 });
+  const [a] = ps;
+  const medir = () =>
+    a.eval<{
+      vw: number; vh: number; w: number; h: number; top: number; bottom: number; left: number; right: number;
+      dialogoRola: boolean; corpoRola: boolean; corpoRolaLado: boolean; vazando: string[]; semImagem: string[];
+      colunas: number; regras: number; gerais: number;
+    }>(`(() => {
+      const d = document.querySelector('[data-testid="cheatsheet"]');
+      const corpo = document.querySelector('[data-testid="cheatsheet-body"]');
+      const r = d.getBoundingClientRect();
+      const vazando = [...d.querySelectorAll('[data-character], [data-regra], [data-action]')]
+        .filter((el) => { const b = el.getBoundingClientRect(); return b.bottom > r.bottom + 0.5 || b.right > r.right + 0.5 || b.top < r.top - 0.5 || b.left < r.left - 0.5; })
+        .map((el) => el.getAttribute('data-character') || el.getAttribute('data-regra') || el.getAttribute('data-action'));
+      const semImagem = [...d.querySelectorAll('img')].filter((i) => !i.complete || i.naturalWidth === 0).map((i) => i.getAttribute('src') || '?');
+      return {
+        vw: innerWidth, vh: innerHeight, w: d.offsetWidth, h: d.offsetHeight,
+        top: r.top, bottom: r.bottom, left: r.left, right: r.right,
+        dialogoRola: d.scrollHeight > d.clientHeight, corpoRola: corpo.scrollHeight > corpo.clientHeight,
+        corpoRolaLado: corpo.scrollWidth > corpo.clientWidth,
+        vazando, semImagem,
+        colunas: d.querySelectorAll('[data-testid="colinha-personagens"] [data-character]').length,
+        regras: d.querySelectorAll('[data-regra]').length,
+        gerais: d.querySelectorAll('[data-testid="colinha-gerais"] [data-action]').length,
+      };
+    })()`);
+
+  for (const estilo of ["A", "B"]) {
+    await a.eval(`document.documentElement.setAttribute('data-estilo', '${estilo}')`);
+    await a.click('[data-testid="cheatsheet-toggle"]');
+    await a.waitFor(`!!document.querySelector('[data-testid="cheatsheet"]')`, `colinha aberta (estilo ${estilo})`);
+    // A peça sobe com uma animação de ~0.5s: só mede o retângulo depois dela.
+    await new Promise((r) => setTimeout(r, 900));
+    const m = await medir();
+    assert.ok(m.w <= m.vw && m.h <= m.vh, `${estilo}: painel ${m.w}x${m.h} maior que a viewport ${m.vw}x${m.vh}`);
+    assert.ok(m.top >= 0 && m.left >= 0 && m.bottom <= m.vh + 0.5 && m.right <= m.vw + 0.5, `${estilo}: painel fora da tela ${JSON.stringify(m)}`);
+    assert.equal(m.dialogoRola, false, `${estilo}: o painel tem rolagem (scrollHeight > clientHeight)`);
+    assert.equal(m.corpoRola, false, `${estilo}: o corpo da colinha tem rolagem vertical`);
+    assert.equal(m.corpoRolaLado, false, `${estilo}: o corpo da colinha tem rolagem horizontal`);
+    assert.deepEqual(m.vazando, [], `${estilo}: blocos fora do painel`);
+    assert.deepEqual(m.semImagem, [], `${estilo}: imagens que não carregaram`);
+    assert.deepEqual([m.colunas, m.regras, m.gerais], [5, 5, 3]);
+    await a.key("Escape");
+    await a.waitFor(`!document.querySelector('[data-testid="cheatsheet"]')`, `colinha fechada (estilo ${estilo})`);
+  }
   noErrors(...ps);
 });
 
@@ -883,17 +1126,20 @@ for (const [fase, head, detail] of FASES_STATUS) {
     const p = await open(`/dev/mesa?fase=${fase}&n=4`, { w: 1280, h: 720 });
     await headIs(p, head);
     await detailIs(p, detail);
-    // A faixa vive no miolo do cabeçalho (portal), com o retrato de quem tem a vez.
-    const dom = await p.eval<{ inSlot: boolean; phase: string; turn: string; portrait: boolean }>(`(() => {
+    // P08.S2: a região de status segue no cabeçalho (portal), mas oculta; o texto visível é a legenda do centro.
+    const dom = await p.eval<{ inSlot: boolean; phase: string; turn: string; oculta: boolean; legenda: boolean }>(`(() => {
       const b = document.querySelector('[data-testid="round-status"]');
+      const r = b.getBoundingClientRect();
       return {
         inSlot: !!document.querySelector('[data-testid="round-status-slot"] [data-testid="round-status"]'),
         phase: b.getAttribute('data-phase'), turn: b.getAttribute('data-turn-id'),
-        portrait: !!b.querySelector('[data-testid="round-status-portrait"]'),
+        oculta: r.width <= 1 && r.height <= 1,
+        legenda: !!document.querySelector('[data-testid="center-caption"]'),
       };
     })()`);
-    assert.equal(dom.inSlot, true, "faixa fora do slot do cabeçalho");
-    assert.equal(dom.portrait, fase !== "fim", fase === "fim" ? "no fim ninguém tem a vez" : "falta o retrato de quem tem a vez");
+    assert.equal(dom.inSlot, true, "região fora do slot do cabeçalho");
+    assert.equal(dom.oculta, true, "o status não deve aparecer como texto no cabeçalho");
+    assert.equal(dom.legenda, fase !== "fim", "legenda do centro presente (menos no fim)");
     if (fase === "turno") assert.equal(dom.turn, "p1");
     if (fase === "reacao") assert.equal(dom.turn, "p2");
     noErrors(p);
@@ -942,16 +1188,15 @@ test("faixa de status: partida real — turno, declaração, passar, contestaç�
   await headIs(b, "Ana declarou Taxas (Barão do Café)");
   await detailIs(b, "Aguardando você e Caio: contestar ou passar");
 
-  // A faixa não invade os botões do cabeçalho nem mexe no layout da mesa.
-  const geo = await b.eval<{ bannerInHeader: boolean; clearOfButtons: boolean; headerH: number }>(`(() => {
-    const ban = document.querySelector('[data-testid="round-status"]').getBoundingClientRect();
-    const hdr = document.querySelector('header').getBoundingClientRect();
-    const btn = document.querySelector('[data-testid="cheatsheet-toggle"]').getBoundingClientRect();
-    return { bannerInHeader: ban.top >= hdr.top && ban.bottom <= hdr.bottom + 0.5, clearOfButtons: ban.right <= btn.left, headerH: hdr.height };
-  })()`);
-  assert.equal(geo.bannerInHeader, true, "faixa vaza do cabeçalho");
-  assert.equal(geo.clearOfButtons, true, "faixa sobre os botões do cabeçalho");
+  // O cabeçalho não cresce e a legenda do centro e o balão da jogada aparecem na mesa.
+  const geo = await b.eval<{ headerH: number; legenda: string; balao: string }>(`(() => ({
+    headerH: document.querySelector('header').getBoundingClientRect().height,
+    legenda: document.querySelector('[data-testid="center-caption"]')?.innerText ?? '',
+    balao: document.querySelector('[data-seat="Ana"] [data-seat-balloon]')?.innerText ?? '',
+  }))()`);
   assert.ok(geo.headerH <= 64, `cabeçalho cresceu demais: ${geo.headerH}px`);
+  assert.match(geo.legenda, /Aguardando você e Caio/);
+  assert.equal(geo.balao, "Taxas");
   assert.deepEqual(await layoutIssues(b), []);
 
   // Bia passa: sai da espera e a mesa só espera o Caio.
@@ -1023,6 +1268,8 @@ test("espectador (/dev/mesa): na vitória não há 'Jogar de novo', só o aviso 
   const p = await open("/dev/mesa?fase=fim&n=4&espectador=1", { w: 1280, h: 720 });
   await p.waitFor(`!!document.querySelector('[data-testid="victory-wait"]')`, "aviso de espera da revanche");
   assert.equal((await p.text()).includes("Jogar de novo"), false);
+  assert.equal(await p.eval<boolean>(`!document.querySelector('[data-testid="revanche"]')`), true);
+  await p.waitFor(`document.querySelectorAll('[data-testid="placar-linhas"] li').length === 4`, "espectador também vê o placar da noite");
   noErrors(p);
 });
 

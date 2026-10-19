@@ -6,6 +6,8 @@ import { type CSSProperties, useEffect, useState, useSyncExternalStore } from "r
 import { CheatSheetButton } from "@/src/components/game/CheatSheet";
 import GameBoard from "@/src/components/game/GameBoard";
 import { assignAvatars, avatarUrl, COLORS, iconUrl } from "@/src/components/game/helpers";
+import { visaoDoPlacar } from "@/src/components/game/placar";
+import { useScore } from "@/src/components/game/useScore";
 import TableBackdrop, { SalonBg } from "@/src/components/game/TableBackdrop";
 import { RoundStatusSlot } from "@/src/components/game/TurnBanner";
 import TimerSettings, { DEFAULT_TIMERS } from "@/src/components/game/TimerSettings";
@@ -115,6 +117,8 @@ export default function RoomPage() {
   // Sair de propósito: libera o assento (no lobby) e esquece a sessão desta sala.
   // Mesmo retrato no lobby e na mesa: o sorteio usa só a lista de ids, que é a mesma.
   const avatarSlugs = assignAvatars(players.map((p) => p.id));
+  // P23.S3: placar da noite também na sala de espera (some enquanto a sala não jogou nenhuma partida).
+  const placarLobby = visaoDoPlacar(useScore(), { matchNumber: 0, playerIds: players.map((p) => p.id), avatares: {} });
 
   function leave() {
     getSocket().emit("room:leave");
@@ -125,7 +129,9 @@ export default function RoomPage() {
   return (
     <main
       style={{
-        height: "100%",
+        // Na partida, a altura precisa ser DEFINIDA (o palco mede a área e centraliza nela); o
+        // body só tem min-height, então "100%" virava auto e a mesa media 0 (bug de 19/10).
+        height: view ? "100dvh" : "100%",
         display: "flex",
         flexDirection: "column",
         background: COLORS.bg,
@@ -240,6 +246,20 @@ export default function RoomPage() {
                   </li>
                 ))}
               </ul>
+
+              {placarLobby && placarLobby.partidas > 0 && (
+                <div data-testid="lobby-placar">
+                  <h3 style={subtitulo}>Placar da noite</h3>
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: fonteKit(5) }}>
+                    {placarLobby.linhas.map((l) => (
+                      <li key={l.id} data-testid="lobby-placar-linha">
+                        {l.name}: {l.wins} {l.wins === 1 ? "vitória" : "vitórias"}
+                      </li>
+                    ))}
+                  </ul>
+                  <p style={{ margin: 0, fontSize: fonteKit(5), color: "var(--k-texto-fraco)" }}>{placarLobby.rotulo}</p>
+                </div>
+              )}
 
               {spectators.length > 0 && (
                 <>

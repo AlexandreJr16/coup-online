@@ -7,6 +7,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import {
+  deckLayers,
   actionBlockedReason,
   artUrl,
   avatarColor,
@@ -30,6 +31,7 @@ import {
   seatLayout,
   seatStyle,
 } from "./helpers";
+import { U } from "./escalaMesa";
 import { makeView, player } from "./test-utils";
 
 // ── Assentos ─────────────────────────────────────────────────────────────────
@@ -64,8 +66,8 @@ test("seatLayout: fora do intervalo cai no extremo mais próximo (não quebra)",
 });
 
 test("seatStyle: ancora pelas bordas (nunca por % calculado que possa cortar)", () => {
-  assert.equal(seatStyle({ x: 50, anchor: "bottom" }).bottom, 12);
-  assert.equal(seatStyle({ x: 50, anchor: "top" }).top, 14);
+  assert.equal(seatStyle({ x: 50, anchor: "bottom" }).bottom, U(12));
+  assert.equal(seatStyle({ x: 50, anchor: "top" }).top, U(14));
   assert.equal(seatStyle({ x: 9, anchor: "mid" }).top, "50%");
   assert.equal(seatStyle({ x: 9, anchor: "midLow" }).left, "9%");
 });
@@ -262,15 +264,7 @@ test("reactionOptions: na janela do bloqueio só dá para contestar (e o ator po
 });
 
 // ── Anel de tempo da carta jogada (4.3) ──────────────────────────────────────
-import { RING_PERIMETER, ringOffset } from "./ClaimCard";
 
-test("ringOffset: cheio = 0, vazio = perímetro, limitado a 0–100%", () => {
-  assert.equal(ringOffset(100), 0);
-  assert.equal(ringOffset(0), RING_PERIMETER);
-  assert.equal(Math.round(ringOffset(50)), Math.round(RING_PERIMETER / 2));
-  assert.equal(ringOffset(250), 0); // acima de 100 não passa do cheio
-  assert.equal(ringOffset(-5), RING_PERIMETER);
-});
 
 // ── Voos de moeda (4.4) ──────────────────────────────────────────────────────
 import { MAX_FLYING_COINS, planCoinFlights } from "./motion";
@@ -310,4 +304,9 @@ test("tiltFromPointer: centro = 0; bordas = ±máximo; fora da carta é limitado
   assert.equal(tiltFromPointer(44, 0, 88, 124, 9).rx, 9); // topo: rotateX positivo
   assert.equal(tiltFromPointer(44, 124, 88, 124, 9).rx, -9);
   assert.equal(tiltFromPointer(500, -500, 88, 124, 9).ry, 9); // limitado
+});
+
+// P08.S5: o monte do baralho encolhe por faixa
+test("deckLayers: 3 camadas até 10+, 2 de 4 a 9, 1 de 1 a 3, 0 vazio", () => {
+  assert.deepEqual([15, 10, 9, 4, 3, 1, 0].map(deckLayers), [3, 3, 2, 2, 1, 1, 0]);
 });

@@ -7,6 +7,7 @@
 import { CARD_BY_ID } from "@/src/lib/game/cards";
 import type { Character, GameView } from "@/src/types/game";
 import Card from "./Card";
+import { U } from "./escalaMesa";
 import { ALL_CHARACTERS, myFaceDownChars } from "./helpers";
 import { reducedMotion, tiltFromPointer } from "./motion";
 
@@ -29,7 +30,7 @@ export default function HandView({
 }) {
   const owned = myFaceDownChars(view, myId);
   return (
-    <div style={{ display: "flex", justifyContent: "center", paddingTop: 26 }}>
+    <div style={{ display: "flex", justifyContent: "center", paddingTop: U(4) }}>
       {ALL_CHARACTERS.map((char, i) => {
         const have = owned.includes(char);
         const isArmed = armed === char;
@@ -61,10 +62,10 @@ export default function HandView({
             }}
             style={
               {
-                marginLeft: i === 0 ? 0 : 3,
+                marginLeft: i === 0 ? 0 : U(3),
                 // --lift só é fixado inline quando armada; senão o :hover da classe manda.
-                ...(isArmed ? { "--lift": "-26px" } : {}),
-                transform: `rotate(${(i - 2) * 3}deg) translateY(${Math.abs(i - 2) * 3}px) translateY(var(--lift, 0px)) scale(${isArmed ? 1.1 : 1}) perspective(520px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))`,
+                ...(isArmed ? { "--lift": U(-26) } : {}),
+                transform: `rotate(${(i - 2) * 3}deg) translateY(${U(Math.abs(i - 2) * 3)}) translateY(var(--lift, 0px)) scale(${isArmed ? 1.1 : 1}) perspective(${U(520)}) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))`,
                 transformOrigin: "bottom center",
                 zIndex: isArmed ? 10 : i,
                 opacity: dragging === char ? 0.35 : canAct || isArmed ? 1 : 0.92,

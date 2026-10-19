@@ -52,40 +52,40 @@
   - [x] P05.S4 Ícones de prêmios e registro em ICONS_AVAILABLE
   - [ ] P05.S5 Zero emoji do sistema (busca em src/ e app/)
 - [ ] **[P06](planos/P06-escala.md) Escala em degraus inteiros** · onda 2 · risco médio
-  - [ ] P06.S1 Unidade de escala e hook
-  - [ ] P06.S2 Aplicar em Card DIMS, Seat e DOCK_HEIGHT
-  - [ ] P06.S3 layoutIssues nas 4 resoluções (teste escrito)
+  - [x] P06.S1 Unidade de escala e hook
+  - [x] P06.S2 Aplicar em Card DIMS, Seat e DOCK_HEIGHT
+  - [x] P06.S3 layoutIssues nas 4 resoluções (teste escrito)
 - [ ] **[P27](planos/P27-aba-de-aparencia.md) Aba de Aparência (jogador escolhe)** · onda 3 · risco médio
   - [x] P27.S1 Preferências de aparência puras (fonte, estilo, dock) com padrão, validação e storage protegido
   - [x] P27.S2 Tokens por tema: estilo A (madeira e latão) e B (pergaminho e tinta) como conjuntos de variáveis
   - [x] P27.S3 As 4 fontes pixel carregadas sem pesar (preload só da escolhida)
-  - [ ] P27.S4 Aba de configurações no HUD (abre como peça do kit) com prévia ao vivo
-  - [ ] P27.S5 Dock em 3 variações selecionáveis (cavalete, mão sobre a mesa, bandeja) sobre as 3 zonas fixas
+  - [x] P27.S4 Aba de configurações no HUD (abre como peça do kit) com prévia ao vivo
+  - [x] P27.S5 Dock em 3 variações selecionáveis (cavalete, mão sobre a mesa, bandeja) sobre as 3 zonas fixas
   - [ ] P27.S6 Gancho para a linha de efeitos (completo, reduzido, desligado) do P11.S6
 
 ### Programa B Mesa
 
 - [ ] **[P07](planos/P07-fichas.md) Fichas** · onda 3 · risco alto
-  - [ ] P07.S1 Gerador procedural fichas.ts com seed fixa
-  - [ ] P07.S2 Curadoria de 3 variantes por quantidade `[H]`
-  - [ ] P07.S3 chipSprite(count, playerId) com testes
-  - [ ] P07.S4 Pilha no assento e montes no Erário
-  - [ ] P07.S5 Animações pop, voo e desmoronar
-  - [ ] P07.S6 Hover na pilha (E8), fichas fantasma, fichas que pousam (E9) e aviso de 10+ (dono único)
+  - [x] P07.S1 Gerador procedural fichas.ts com seed fixa
+  - [x] P07.S2 Variantes sorteadas por pilha, sem curadoria fixa (decisão do Alexandre, 19/10)
+  - [x] P07.S3 chipSprite(count, playerId) com testes
+  - [x] P07.S4 Pilha no assento e montes no Erário
+  - [x] P07.S5 Animações pop, voo e desmoronar
+  - [x] P07.S6 Hover na pilha (E8), fichas fantasma, fichas que pousam (E9) e aviso de 10+ (dono único)
 - [ ] **[P08](planos/P08-informacao-no-assento.md) Informação no assento e no centro** · onda 3 · risco médio
-  - [ ] P08.S1 Legenda curta no centro (reusa deriveRoundStatus e timeoutWarning)
-  - [ ] P08.S2 Cabeçalho sem texto de status e role=status oculto
-  - [ ] P08.S3 Balão da jogada sobre o assento
-  - [ ] P08.S4 Marca de quem a mesa espera
-  - [ ] P08.S5 Baralho por faixa e Erário com baú
-  - [ ] P08.S6 Histórico de Intrigas no kit
-  - [ ] P08.S7 Dígitos do relógio em sprite
+  - [x] P08.S1 Legenda curta no centro (reusa deriveRoundStatus e timeoutWarning)
+  - [x] P08.S2 Cabeçalho sem texto de status e role=status oculto
+  - [x] P08.S3 Balão da jogada sobre o assento
+  - [x] P08.S4 Marca de quem a mesa espera
+  - [x] P08.S5 Baralho por faixa e Erário com baú
+  - [x] P08.S6 Histórico de Intrigas no kit
+  - [x] P08.S7 Dígitos do relógio em sprite
 - [ ] **[P09](planos/P09-dock.md) Dock imersivo** · onda 3 · risco médio
-  - [ ] P09.S1 Casca do dock sem fundo de largura total (variação escolhida)
-  - [ ] P09.S2 Ações básicas como selos sobre a madeira
-  - [ ] P09.S3 Reações como selos perto da jogada
-  - [ ] P09.S4 Chave de passar automático e dicas de tecla menores
-  - [ ] P09.S5 Alvos de 44 px e atalhos C, B, Espaço intactos
+  - [x] P09.S1 Casca do dock sem fundo de largura total (variação escolhida)
+  - [x] P09.S2 Ações básicas como selos sobre a madeira
+  - [x] P09.S3 Reações como selos perto da jogada (decisão 19/10: não mover; zonas fixas e atalhos C/B/Espaço. Ideia vai ao backlog pós-v3)
+  - [x] P09.S4 Chave de passar automático e dicas de tecla menores
+  - [x] P09.S5 Alvos de 44 px e atalhos C, B, Espaço intactos
 - [ ] **[P10](planos/P10-microanimacoes.md) Microanimações de intuição** · onda 5 · risco médio
   - [ ] P10.S1 Hover na carta da mão com custo e ganho (E7; as fichas fantasma são de P07.S6)
   - [ ] P10.S2 Mira com linha pontilhada e alvo escolhido (E2, E12)
@@ -168,25 +168,25 @@
 ### Programa D Telas
 
 - [ ] **[P21](planos/P21-fim-de-partida.md) Fim de partida** · onda 3 · risco médio
-  - [ ] P21.S1 Retrato do vencedor no PixelPanel
-  - [ ] P21.S2 Troféu e prêmios em ícones
-  - [ ] P21.S3 Botão de revanche grande com atalho
-  - [ ] P21.S4 Espaço do placar da noite
-  - [ ] P21.S5 Animação leve de moedas/confete respeitando reduced motion (a cena de vitória do P16 vem depois)
+  - [x] P21.S1 Retrato do vencedor no PixelPanel
+  - [x] P21.S2 Troféu e prêmios em ícones
+  - [x] P21.S3 Botão de revanche grande com atalho
+  - [x] P21.S4 Espaço do placar da noite
+  - [x] P21.S5 Animação leve de moedas/confete respeitando reduced motion (a cena de vitória do P16 vem depois)
 - [ ] **[P22](planos/P22-colinha.md) Colinha como objeto** · onda 3 · risco baixo
-  - [ ] P22.S1 Peça única que abre como carta
-  - [ ] P22.S2 Retrato maior e ícones de contestável e bloqueável
-  - [ ] P22.S3 No máximo 5 regras curtas
-  - [ ] P22.S4 Cabe em 1280x720 sem rolagem
-  - [ ] P22.S5 Atalhos ? e Esc preservados
+  - [x] P22.S1 Peça única que abre como carta
+  - [x] P22.S2 Retrato maior e ícones de contestável e bloqueável
+  - [x] P22.S3 No máximo 5 regras curtas
+  - [x] P22.S4 Cabe em 1280x720 sem rolagem
+  - [x] P22.S5 Atalhos ? e Esc preservados
 
 ### Programa E Retenção
 
 - [ ] **[P23](planos/P23-placar-e-medicao.md) Placar, títulos, revanche e medição** · onda 2 · risco médio
   - [x] P23.S1 Log JSON de revanches e linha de base (R7) `[H]`
   - [x] P23.S2 room.scoreboard e room:score (unit e integração) (R1)
-  - [ ] P23.S3 Placar no fim de partida e no lobby
-  - [ ] P23.S4 Revanche sem atrito (R2)
+  - [x] P23.S3 Placar no fim de partida e no lobby
+  - [x] P23.S4 Revanche sem atrito (R2)
   - [x] P23.S5 Títulos da noite (R3)
 - [ ] **[P24](planos/P24-ritmo-e-personalidade.md) Ritmo, personalidade e 2 jogadores** · onda 8 · risco médio
   - [ ] P24.S1 Ritmo: turno padrão e animações que atrasam (R4)
@@ -209,16 +209,16 @@
   - [ ] P26.S5 Validação no ar do build final (branch ou serviço de teste no Render) `[H]`
   - [ ] P26.S6 Documentação e prints novos `[H]`
   - [ ] P26.S7 Merge na main, tag v3 e deploy (aprovação explícita) `[H]`
-- [ ] **[P28](planos/P28-release-v3-0.md) Release v3.0: visual novo** · onda 3 · risco alto · `[H]`
-  - [ ] P28.S1 E2E completo e checagens (só com pedido do Alexandre)
-  - [ ] P28.S2 Partida de teste com amigos
-  - [ ] P28.S3 README e prints novos
-  - [ ] P28.S4 Merge na main, tag v3.0 e deploy (aprovação explícita)
-- [ ] **[P29](planos/P29-release-v3-1.md) Release v3.1: mesa nova** · onda 3 · risco alto · `[H]`
-  - [ ] P29.S1 E2E completo e layoutIssues nas 4 resoluções (só com pedido do Alexandre)
-  - [ ] P29.S2 Teste dos 3 segundos em 1280x720 e 1920x1080
-  - [ ] P29.S3 Partida de teste com amigos
-  - [ ] P29.S4 Merge na main, tag v3.1 e deploy (aprovação explícita)
+- [ ] **[P28](planos/P28-release-v3-0.md) Release v3.0: visual novo (mesclada na main em 18/10/2026)** · onda 3 · risco alto · `[H]`
+  - [ ] P28.S1 E2E completo (feito: 68/68)
+  - [ ] P28.S2 Merge na main (feito)
+  - [x] P28.S3 Tag v3.0, push e deploy (Alexandre)
+  - [ ] P28.S4 Partida de teste com amigos no ar
+- [x] **[P29](planos/P29-release-v3-1.md) Release v3.1: mesa nova (mesclada na main e com tag em 19/10/2026)** · onda 3 · risco alto · `[H]`
+  - [x] P29.S1 E2E completo e layoutIssues nas 4 resoluções (79/79 em `d779828`)
+  - [x] P29.S2 Teste dos 3 segundos em 1280x720 e 1920x1080 (Alexandre)
+  - [ ] P29.S3 Partida de teste com amigos (no ar, depois do deploy)
+  - [x] P29.S4 Merge na main, tag v3.1 e deploy (aprovação explícita)
 
 ## Grafo de dependências
 
@@ -252,8 +252,8 @@
 | P25 | — |
 | P26 | todos os planos P03 a P29 |
 | P27 | P04, P09 |
-| P28 | P04, P05, P21, P22, P27 |
-| P29 | P06, P07, P08, P09, P28 |
+| P28 | P04, P05, P27 |
+| P29 | P06, P07, P08, P09, P21, P22, P28 |
 
 ## Ondas
 

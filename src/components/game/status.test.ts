@@ -255,3 +255,33 @@ test("aviso: janelas de reação e fim de jogo NÃO avisam (passar já resolve /
 test("aviso: sem timer na view não há aviso", () => {
   assert.equal(timeoutWarning(makeView({ timer: null }), ANA, 0), null);
 });
+
+// ── P08: legenda do centro e balão da jogada ─────────────────────────────────
+import { actionBalloon, centerCaption } from "./status";
+
+test("centerCaption: sem aviso usa o detalhe; com 3s sobrando o aviso toma o lugar", () => {
+  const v = makeView();
+  assert.equal(centerCaption(v, ANA, 30).warning, false);
+  assert.equal(centerCaption(v, ANA, 30).text, deriveRoundStatus(v, ANA).detail || deriveRoundStatus(v, ANA).headline);
+  const urgente = centerCaption(v, ANA, 3);
+  assert.equal(urgente.warning, true);
+  assert.match(urgente.text, /joga Renda em 3/);
+});
+
+test("actionBalloon: null sem jogada; ação com ícone e alvo; bloqueio vira balão do bloqueador", () => {
+  assert.equal(actionBalloon(makeView()), null);
+  assert.deepEqual(actionBalloon(makeView({ pending: pending({}) })), { actorId: ANA, icone: "taxas", texto: "Taxas", alvoId: null });
+  assert.deepEqual(
+    actionBalloon(makeView({ pending: pending({ action: "assassinar", targetId: BIA, claimedCharacter: "assassino" }) })),
+    { actorId: ANA, icone: "assassinar", texto: "Assassinar", alvoId: BIA },
+  );
+  const bloqueio = actionBalloon(
+    makeView({
+      phase: "janela_contestar_bloqueio",
+      pending: pending({ action: "ajuda_externa", claimedCharacter: null, block: { blockerId: CAIO, character: "duque" } }),
+    }),
+  );
+  assert.equal(bloqueio?.actorId, CAIO);
+  assert.equal(bloqueio?.icone, "bloquear");
+  assert.match(bloqueio?.texto ?? "", /^Bloqueio · /);
+});

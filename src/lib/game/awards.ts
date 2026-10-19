@@ -1,9 +1,23 @@
 // Prêmios de fim de partida, calculados das estatísticas públicas (engine.stats).
 // Função pura: fácil de testar e igual para todos os jogadores.
+import type { IconName } from "../../components/game/helpers"; // só o tipo: some na compilação
 import type { PlayerStats } from "../../types/game";
 
+export type AwardId = "mentiroso" | "desconfiado" | "olho_de_lince" | "carrasco" | "ricaco";
+
+// Ícone pixel de cada prêmio (public/art/<tema>/icones/<nome>.png). Todos precisam estar em
+// ICONS_AVAILABLE: awards.test.ts garante, para a tela de fim de partida nunca cair em emoji.
+export const ICONE_DO_PREMIO: Record<AwardId, IconName> = {
+  mentiroso: "mentiroso",
+  desconfiado: "desconfiado",
+  olho_de_lince: "olho_de_lince",
+  carrasco: "carrasco",
+  ricaco: "ricaco",
+};
+
 export interface Award {
-  id: "mentiroso" | "desconfiado" | "olho_de_lince" | "carrasco" | "ricaco";
+  id: AwardId;
+  icone: IconName; // nome do ícone pixel (ICONS_AVAILABLE)
   titulo: string;
   detalhe: string; // ex.: "pego mentindo 3 vezes"
   names: string[]; // empate divide o prêmio
@@ -34,6 +48,7 @@ export function computeAwards(
   if (mentiroso) {
     out.push({
       id: "mentiroso",
+      icone: ICONE_DO_PREMIO.mentiroso,
       titulo: "Mentiroso do ano",
       detalhe: `pego mentindo ${vezes(mentiroso.value, "vez", "vezes")}`,
       names: nomes(mentiroso.ids),
@@ -44,6 +59,7 @@ export function computeAwards(
   if (desconfiado) {
     out.push({
       id: "desconfiado",
+      icone: ICONE_DO_PREMIO.desconfiado,
       titulo: "Maior desconfiado",
       detalhe: `${vezes(desconfiado.value, "contestação", "contestações")}`,
       names: nomes(desconfiado.ids),
@@ -57,6 +73,7 @@ export function computeAwards(
     const ex = elegiveis.find(([id]) => id === lince.ids[0])![1];
     out.push({
       id: "olho_de_lince",
+      icone: ICONE_DO_PREMIO.olho_de_lince,
       titulo: "Olho de lince",
       detalhe: `acertou ${ex.challengesRight} de ${ex.challengesMade} contestações`,
       names: nomes(lince.ids),
@@ -67,6 +84,7 @@ export function computeAwards(
   if (carrasco) {
     out.push({
       id: "carrasco",
+      icone: ICONE_DO_PREMIO.carrasco,
       titulo: "Carrasco",
       detalhe: `derrubou ${vezes(carrasco.value, "influência", "influências")} na força`,
       names: nomes(carrasco.ids),
@@ -77,6 +95,7 @@ export function computeAwards(
   if (ricaco) {
     out.push({
       id: "ricaco",
+      icone: ICONE_DO_PREMIO.ricaco,
       titulo: "Ricaço",
       detalhe: `chegou a ${ricaco.value} moedas`,
       names: nomes(ricaco.ids),
