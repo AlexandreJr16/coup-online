@@ -81,11 +81,11 @@
   - [x] P08.S6 Histórico de Intrigas no kit
   - [ ] P08.S7 Dígitos do relógio em sprite
 - [ ] **[P09](planos/P09-dock.md) Dock imersivo** · onda 3 · risco médio
-  - [ ] P09.S1 Casca do dock sem fundo de largura total (variação escolhida)
+  - [x] P09.S1 Casca do dock sem fundo de largura total (variação escolhida)
   - [ ] P09.S2 Ações básicas como selos sobre a madeira
   - [ ] P09.S3 Reações como selos perto da jogada
-  - [ ] P09.S4 Chave de passar automático e dicas de tecla menores
-  - [ ] P09.S5 Alvos de 44 px e atalhos C, B, Espaço intactos
+  - [x] P09.S4 Chave de passar automático e dicas de tecla menores
+  - [x] P09.S5 Alvos de 44 px e atalhos C, B, Espaço intactos
 - [ ] **[P10](planos/P10-microanimacoes.md) Microanimações de intuição** · onda 5 · risco médio
   - [ ] P10.S1 Hover na carta da mão com custo e ganho (E7; as fichas fantasma são de P07.S6)
   - [ ] P10.S2 Mira com linha pontilhada e alvo escolhido (E2, E12)

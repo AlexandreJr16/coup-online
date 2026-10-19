@@ -284,6 +284,21 @@ test("fichas: assento e Erário mostram sprites carregados de verdade (P07.S4)",
   noErrors(...ps);
 });
 
+test("dock: sem fundo de largura total e com alvos de pelo menos 44px (P09.S1, S5)", async () => {
+  const { ps } = await game(["Ana", "Bia"]);
+  const r = await ps[0].eval<{ fundo: string; pequenos: string[] }>(`(() => {
+    const dock = document.querySelector('[data-testid="dock"]');
+    const alvos = [...dock.querySelectorAll('button:not([disabled]), label')];
+    return {
+      fundo: getComputedStyle(dock).backgroundColor + '|' + getComputedStyle(dock).backgroundImage,
+      pequenos: alvos.filter(a => a.getBoundingClientRect().height < 43.5).map(a => a.tagName + ':' + a.innerText.slice(0, 20)),
+    };
+  })()`);
+  assert.equal(r.fundo, "rgba(0, 0, 0, 0)|none");
+  assert.deepEqual(r.pequenos, []);
+  noErrors(...ps);
+});
+
 // ── Animações de baralho (4.4) ───────────────────────────────────────────────
 /** Conta quantas moedas voadoras já foram criadas na camada (e quantas ainda estão no ar). */
 const espiarMoedas = (p: Page) =>

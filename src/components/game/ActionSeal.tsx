@@ -65,7 +65,7 @@ export default function ActionSeal({
       </span>
       {sub !== undefined && <b style={{ fontVariantNumeric: "tabular-nums", opacity: locked ? 0.7 : 1 }}>{sub}</b>}
       {hotkey && !disabled && (
-        <kbd className="seal-key" style={{ top: U(-9), left: U(10), fontSize: U(10), lineHeight: U(14), padding: `${U(1)} ${U(6)}` }}>
+        <kbd className="seal-key" style={{ top: U(-9), left: U(10), fontSize: U(9), lineHeight: U(12), padding: `${U(1)} ${U(6)}` }}>
           {hotkey}
         </kbd>
       )}

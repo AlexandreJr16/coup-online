@@ -219,7 +219,7 @@ body {
   height: 20px;
   background: #2b2236;
   border: 2px solid #4a3d5c;
-  border-radius: 999px;
+  border-radius: 0; /* chave em pixel: quadrada */
   transition: background 140ms ease, border-color 140ms ease;
 }
 .toggle-track::after {
@@ -230,7 +230,7 @@ body {
   width: 12px;
   height: 12px;
   background: #bdb0a6;
-  border-radius: 50%;
+  border-radius: 0;
   transition: transform 140ms ease, background 140ms ease;
 }
 .toggle input:checked + .toggle-track {

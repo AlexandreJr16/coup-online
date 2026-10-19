@@ -531,8 +531,6 @@ const dock: CSSProperties = {
   alignItems: "center",
   gap: U(20),
   padding: `0 ${U(20)}`,
-  // Balcão de madeira escura com filete dourado em cima (mesmo vocabulário da mesa).
-  background: "linear-gradient(#2b1f1c, #1a1214 70%, #120c0f)",
-  borderTop: `${U(2)} solid rgba(240,165,0,0.6)`,
-  boxShadow: `inset 0 1px 0 rgba(255,225,160,0.18), 0 ${U(-10)} ${U(24)} rgba(0,0,0,0.45)`,
+  // P09.S1: sem fundo, filete nem sombra de largura total: selos e mão ficam sobre o fundo da sala.
+  background: "transparent",
 };

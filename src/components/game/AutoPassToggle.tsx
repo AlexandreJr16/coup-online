@@ -16,7 +16,7 @@ export default function AutoPassToggle({
     <label
       data-testid="autopass"
       className="toggle"
-      style={{ width: U(208), fontSize: U(13), gap: U(10) }}
+      style={{ width: U(208), minHeight: 44, fontSize: U(12), gap: U(10) }}
       title="Passa sozinho nas jogadas que não são contra você (você deixa de poder contestá-las)"
     >
       <input type="checkbox" checked={enabled} onChange={(e) => onChange(e.target.checked)} />
