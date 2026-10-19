@@ -185,8 +185,8 @@
 - [ ] **[P23](planos/P23-placar-e-medicao.md) Placar, títulos, revanche e medição** · onda 2 · risco médio
   - [x] P23.S1 Log JSON de revanches e linha de base (R7) `[H]`
   - [x] P23.S2 room.scoreboard e room:score (unit e integração) (R1)
-  - [ ] P23.S3 Placar no fim de partida e no lobby
-  - [ ] P23.S4 Revanche sem atrito (R2)
+  - [x] P23.S3 Placar no fim de partida e no lobby
+  - [x] P23.S4 Revanche sem atrito (R2)
   - [x] P23.S5 Títulos da noite (R3)
 - [ ] **[P24](planos/P24-ritmo-e-personalidade.md) Ritmo, personalidade e 2 jogadores** · onda 8 · risco médio
   - [ ] P24.S1 Ritmo: turno padrão e animações que atrasam (R4)
