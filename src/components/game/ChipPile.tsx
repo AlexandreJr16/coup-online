@@ -1,8 +1,13 @@
 // Pilha de fichas como imagem (P07.S4): o sprite muda com a quantidade; o número fica pequeno ao lado.
-// O sprite vem de chipSprite (puro, determinístico por jogador e quantidade).
+// O sprite vem de chipSprite (puro). P07.S2 (decisão do Alexandre, 19/10): sem curadoria fixa, a
+// variante é SORTEADA: cada pilha sorteia um "sal" ao montar e o soma ao id do dono. Muda de partida
+// para partida (o tabuleiro remonta) e a cada quantidade, mas não pisca enquanto a quantidade fica.
+// É só enfeite local: o sal não sai do cliente e não depende de nada oculto.
 // P07.S5/S6: "pop" ao trocar de sprite, pilha tombada para quem saiu da partida, fichas fantasma
 // (o que sairia com a ação em foco, só na pilha de quem olha) e o aviso de Golpe obrigatório (10+).
 "use client";
+
+import { useState } from "react";
 
 import { Pic } from "./ActionSeal";
 import { U } from "./escalaMesa";
@@ -26,9 +31,11 @@ export function ChipPile({
   custo?: number; // custo da ação em foco (fichas fantasma); só para a pilha de quem olha
   tombada?: boolean; // dono fora da partida: a pilha tomba e apaga
 }) {
+  const [sal] = useState(() => Math.random().toString(36).slice(2, 8));
+  const id = `${ownerId}:${sal}`;
   const { resto, fantasma } = pilhaComFantasma(count, custo);
-  const src = chipSprite(resto, ownerId);
-  const fantasmaSrc = fantasma > 0 ? chipSprite(fantasma, ownerId) : null;
+  const src = chipSprite(resto, id);
+  const fantasmaSrc = fantasma > 0 ? chipSprite(fantasma, id) : null;
   const golpe = !bau && !tombada && avisoDeGolpe(count);
   const img = { height: U(height), imageRendering: "pixelated" } as const;
   return (

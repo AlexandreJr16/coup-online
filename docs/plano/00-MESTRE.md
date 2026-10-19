@@ -67,7 +67,7 @@
 
 - [ ] **[P07](planos/P07-fichas.md) Fichas** · onda 3 · risco alto
   - [x] P07.S1 Gerador procedural fichas.ts com seed fixa
-  - [ ] P07.S2 Curadoria de 3 variantes por quantidade `[H]`
+  - [x] P07.S2 Variantes sorteadas por pilha, sem curadoria fixa (decisão do Alexandre, 19/10)
   - [x] P07.S3 chipSprite(count, playerId) com testes
   - [x] P07.S4 Pilha no assento e montes no Erário
   - [x] P07.S5 Animações pop, voo e desmoronar

@@ -159,3 +159,11 @@ test("pilhaComFantasma: separa o que sobra do que sairia; sem custo ou sem saldo
 test("avisoDeGolpe: só a partir de 10 fichas", () => {
   assert.deepEqual([0, 9, 10, 14].map(avisoDeGolpe), [false, false, true, true]);
 });
+
+// ── P07.S2: variante sorteada por pilha (sal aleatório somado ao id do dono) ────
+test("com sais diferentes, a mesma quantidade do mesmo jogador usa as 3 variantes", () => {
+  for (let q = 1; q <= MAX_CHIP_SPRITE; q++) {
+    const vistas = new Set(Array.from({ length: 60 }, (_, i) => chipSprite(q, `barao:${i}`)));
+    assert.equal(vistas.size, 3, `quantidade ${q}`);
+  }
+});
