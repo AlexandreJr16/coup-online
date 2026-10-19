@@ -18,6 +18,10 @@ export interface Room {
   players: Player[];
 }
 
+// Papel de quem está na sala: joga, ou só assiste (entrou com a partida em andamento ou
+// com a sala cheia) e vira jogador na próxima partida. Espectador nunca recebe cartas.
+export type Role = "player" | "spectator";
+
 // Respostas de ack (callback) usadas em create/join.
 export interface CreateRoomAck {
   roomId: string;
@@ -27,15 +31,45 @@ export interface CreateRoomAck {
 // cliente dele, em sessionStorage) e permite voltar ao mesmo assento depois de F5
 // ou queda de rede. O `id` é público (aparece nas views).
 export type JoinRoomAck =
-  | { ok: true; players: Player[]; you: { id: string; token: string } }
+  | { ok: true; role: Role; players: Player[]; spectators: Player[]; you: { id: string; token: string } }
   | { ok: false; error: string };
 
 // Ack genérico dos eventos de jogo: erro de regra volta privado a quem agiu.
 export type GameActionAck = { ok: true } | { ok: false; error: string };
 
+// ── Placar da noite (room:score) ─────────────────────────────────────────────
+// Só números e nomes públicos: NUNCA carrega carta (nem oculta, nem revelada).
+export interface ScoreRow {
+  id: string; // playerId estável
+  name: string;
+  wins: number;
+  played: number; // partidas terminadas em que esteve na mesa
+}
+
+// Quem lidera um título acumulado na sala ("Mentiroso da noite"). Empate divide o título.
+export interface TitleLeader {
+  id: "mentiroso" | "desconfiado" | "olho_de_lince" | "carrasco" | "ricaco";
+  titulo: string;
+  count: number; // quantas partidas essa(s) pessoa(s) levou o prêmio
+  leaders: Array<{ id: string; name: string }>;
+}
+
+export interface ScorePayload {
+  matches: number; // partidas terminadas na sala
+  lastWinnerId: string | null; // vencedor da última partida (null = nenhuma ou sem vencedor)
+  rows: ScoreRow[]; // ordenado: mais vitórias primeiro
+  titles: TitleLeader[];
+}
+
 // Eventos enviados pelo servidor para o client.
 export interface ServerToClientEvents {
+  // Placar da noite: ao terminar cada partida (para a sala) e ao entrar/reconectar (para quem entrou).
+  // Ordem garantida: no fim da partida chega o `game_state` final ANTES deste evento. A UI não
+  // deve disparar nada visual (animação, toast, som) com `room:score` antes de exibir o estado final.
+  "room:score": (score: ScorePayload) => void;
   "room:players": (players: Player[]) => void;
+  // Quem está assistindo (nunca é jogador da partida em curso).
+  "room:spectators": (spectators: Player[]) => void;
   // Estado do jogo já FILTRADO para este socket (nunca vaza cartas alheias).
   game_state: (view: GameView) => void;
 }

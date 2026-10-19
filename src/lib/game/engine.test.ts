@@ -185,6 +185,147 @@ test("Taxas contestada e ator NÃO tem Duque (blefe): ator perde 1, sem +3", () 
   assert.equal(coins(s, "p1"), 2); // não ganhou nada
 });
 
+// ── Troca de carta ao vencer uma contestação (replaceCard) ───────────────────
+// Regra (game-rules.md): quem PROVA a carta devolve-a à Corte, reembaralha e saca
+// outra. Aqui checamos a conservação do baralho e que a carta de fato passou pela Corte.
+function allCharacters(s: GameState): Character[] {
+  return [...s.deck, ...s.players.flatMap((p) => p.cards.map((c) => c.character))];
+}
+
+function countBy(chars: Character[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const c of chars) out[c] = (out[c] ?? 0) + 1;
+  return out;
+}
+
+function hiddenCount(s: GameState, id: string): number {
+  return s.players.find((x) => x.id === id)!.cards.filter((c) => !c.revealed).length;
+}
+
+function runWith(rng: Rng, s: GameState, ...events: GameEvent[]): GameState {
+  let st = s;
+  for (const e of events) {
+    const r = applyEvent(st, e, rng);
+    assert.equal(r.error, null, `evento inválido: ${JSON.stringify(e)} → ${r.error}`);
+    st = r.state;
+  }
+  return st;
+}
+
+function newGameSeeded(seed: number, n = 3): GameState {
+  return createGame(
+    Array.from({ length: n }, (_, i) => ({ id: `p${i + 1}`, name: `P${i + 1}` })),
+    {},
+    seeded(seed),
+  );
+}
+
+test("contestação provada (ação): ator devolve o Duque à Corte e saca outra carta", () => {
+  let changed = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const rng = seeded(seed * 7919);
+    const s0 = newGameSeeded(seed);
+    setHand(s0, "p1", ["duque", "assassino"]);
+    setHand(s0, "p2", ["capitao", "condessa"]);
+    const deckBefore = [...s0.deck];
+    const total = countBy(allCharacters(s0));
+
+    const s = runWith(
+      rng,
+      s0,
+      { type: "action", playerId: "p1", action: "taxas" },
+      { type: "challenge", playerId: "p2" },
+      { type: "reveal", playerId: "p2", cardIndex: 0 },
+    );
+
+    // O baralho mantém o tamanho e a mão do ator segue com 2 cartas ocultas.
+    assert.equal(s.deck.length, deckBefore.length, `seed ${seed}: tamanho do baralho`);
+    assert.equal(hiddenCount(s, "p1"), 2, `seed ${seed}: mão do ator`);
+    // Conservação: nenhuma carta some nem aparece (mesma contagem por personagem).
+    assert.deepEqual(countBy(allCharacters(s)), total, `seed ${seed}: conservação`);
+
+    // A carta sacada veio de (baralho antigo + Duque devolvido); o resto fica na Corte.
+    const novaCarta = s.players.find((p) => p.id === "p1")!.cards[0].character;
+    const pool = countBy([...deckBefore, "duque"]);
+    assert.ok((pool[novaCarta] ?? 0) > 0, `seed ${seed}: carta nova fora da Corte`);
+    pool[novaCarta] -= 1;
+    const deckAfter = countBy(s.deck);
+    for (const c of new Set([...Object.keys(pool), ...Object.keys(deckAfter)])) {
+      assert.equal(deckAfter[c] ?? 0, pool[c] ?? 0, `seed ${seed}: baralho após a troca (${c})`);
+    }
+    // A outra carta do ator não é tocada.
+    assert.equal(s.players.find((p) => p.id === "p1")!.cards[1].character, "assassino");
+    if (novaCarta !== "duque") changed++;
+  }
+  assert.ok(changed > 0, "em 40 sementes, ao menos uma troca devia sacar carta diferente");
+});
+
+test("contestação provada: a carta nova pode ser igual à devolvida (RNG sem trocas)", () => {
+  const s0 = newGameSeeded(5);
+  setHand(s0, "p1", ["duque", "assassino"]);
+  setHand(s0, "p2", ["capitao", "condessa"]);
+  const deckBefore = [...s0.deck];
+  // rng ≈ 1: Fisher-Yates mantém a ordem e a carta devolvida (topo) é a sacada.
+  const s = runWith(
+    () => 0.999999,
+    s0,
+    { type: "action", playerId: "p1", action: "taxas" },
+    { type: "challenge", playerId: "p2" },
+    { type: "reveal", playerId: "p2", cardIndex: 0 },
+  );
+  assert.equal(s.players.find((p) => p.id === "p1")!.cards[0].character, "duque");
+  assert.deepEqual(s.deck, deckBefore);
+});
+
+test("bloqueio contestado e provado: bloqueador devolve a carta e saca outra", () => {
+  let changed = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const rng = seeded(seed * 104729);
+    const s0 = newGameSeeded(seed);
+    setHand(s0, "p1", ["capitao", "assassino"]);
+    setHand(s0, "p2", ["duque", "condessa"]); // p2 bloqueia Ajuda Externa com Duque de verdade
+    const deckBefore = [...s0.deck];
+    const total = countBy(allCharacters(s0));
+
+    const s = runWith(
+      rng,
+      s0,
+      { type: "action", playerId: "p1", action: "ajuda_externa" },
+      { type: "block", playerId: "p2", character: "duque" },
+      { type: "challenge", playerId: "p1" },
+      { type: "reveal", playerId: "p1", cardIndex: 0 },
+    );
+
+    assert.equal(s.deck.length, deckBefore.length, `seed ${seed}: tamanho do baralho`);
+    assert.equal(hiddenCount(s, "p2"), 2, `seed ${seed}: mão do bloqueador`);
+    assert.equal(hiddenCount(s, "p1"), 1, `seed ${seed}: quem contestou e perdeu`);
+    assert.deepEqual(countBy(allCharacters(s)), total, `seed ${seed}: conservação`);
+    assert.equal(coins(s, "p1"), 2, `seed ${seed}: bloqueio valeu, sem +2`);
+    const novaCarta = s.players.find((p) => p.id === "p2")!.cards[0].character;
+    if (novaCarta !== "duque") changed++;
+  }
+  assert.ok(changed > 0, "em 40 sementes, ao menos uma troca devia sacar carta diferente");
+});
+
+test("contestação perdida (blefe): ninguém troca de carta e o baralho não muda", () => {
+  const s0 = newGameSeeded(11);
+  setHand(s0, "p1", ["capitao", "assassino"]); // sem Duque
+  setHand(s0, "p2", ["duque", "condessa"]);
+  const deckBefore = [...s0.deck];
+  const s = runWith(
+    seeded(3),
+    s0,
+    { type: "action", playerId: "p1", action: "taxas" },
+    { type: "challenge", playerId: "p2" },
+    { type: "reveal", playerId: "p1", cardIndex: 0 },
+  );
+  assert.deepEqual(s.deck, deckBefore);
+  assert.deepEqual(
+    s.players.find((p) => p.id === "p2")!.cards.map((c) => c.character),
+    ["duque", "condessa"],
+  );
+});
+
 // ── Ações targeted ────────────────────────────────────────────────────────────
 test("Extorquir: timeout → rouba 2 (ou 1 se vítima só tem 1)", () => {
   let s = newGame(3);

@@ -4,6 +4,11 @@
 
 import type { GameConfig } from "../../types/game";
 
+// Nos últimos N segundos de uma fase de decisão (turno, revelação, troca) a mesa avisa
+// o que o servidor vai jogar pelo jogador. Fixo (não entra na tela de tempos do lobby)
+// e só de UI: o relógio e a jogada automática continuam sendo do servidor.
+export const TIMEOUT_WARNING_SECONDS = 5;
+
 export interface ConfigField {
   label: string;
   hint: string;

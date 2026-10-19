@@ -58,3 +58,21 @@ Revisar em `http://localhost:3000/dev/cartas` (com `npm run dev`).
 - **Expressões:** `--from neutro --strength 0.55..0.75` (img2img) preserva a identidade mas **quase não muda o rosto**; por isso o jogo usa 1 retrato por personagem e traduz reações em efeito.
 - Se uma cor do retrato virar vermelho/laranja demais, meça com a paleta e acrescente o tom que falta em `palette.json` (foi assim que entraram os cobres).
 - **Cuidado no shell:** `ls` aqui é alias do `eza` e pode travar em segundo plano; use `command ls`.
+
+## Arte de UI (procedural)
+Ícones de interface, prêmios, logo e favicon **não usam IA de imagem**: são bitmaps desenhados em texto e renderizados por script, 100% determinísticos.
+
+```bash
+npx tsx tools/art/ui-icons.ts                    # regrava ícones, logo e favicon
+npx tsx tools/art/ui-icons.ts --contato /tmp/contato-ui.png   # + folha de contato p/ curar
+node --import tsx --test tools/art/ui-icons.test.ts           # confere tudo
+```
+
+- **Determinismo / seed:** não há semente nem aleatoriedade. Mesma entrada, mesmos bytes (o teste roda duas vezes e compara, e compara também com o que está em disco; se editar um bitmap, rode o comando acima antes de testar).
+- **Método:** `tools/art/ui-bitmaps.ts` guarda a legenda (1 caractere = 1 cor da `palette.json`; `.` = transparente), os bitmaps dos ícones, a fonte 5x7 do logo e alguns geradores de forma (engrenagem, moeda, lupa, machado, saco). `tools/art/ui-icons.ts` centraliza cada miolo em 14x14, **acrescenta o contorno tinta de 1 px automaticamente** (vizinhança 4; `contorno: 8` para traços diagonais finos), amplia por vizinho mais próximo e grava com `tools/art/png.ts`. O PNG só tem pixels da paleta mestra, alfa 0 ou 255.
+- **Tamanhos:** base 16x16 (miolo 14 + contorno). `<nome>.png` = base x4 = 64x64; `<nome>.sm.png` = base x2 = 32x32 (mesmo padrão dos ícones de ação).
+- **Nomes:** `public/art/imperio/icones/<nome>.png` + `<nome>.sm.png`, `snake_case` sem acento. Todo nome novo entra em `IconName` e `ICONS_AVAILABLE` (`src/components/game/helpers.ts`); o teste falha se algo gerado não estiver registrado ou se a lista apontar para arquivo inexistente.
+- **Ícones gerados (19):** `contestar`, `trofeu`, `olho` (espectador), `ajuda` (?), `som`, `mudo`, `sair`, `engrenagem`, `crt`, `coroa`, `certo`, `errado`, `ampulheta`, `moeda` e os prêmios `carrasco`, `ricaco`, `mentiroso`, `desconfiado`, `olho_de_lince`. Os ícones de ação (renda, golpe, trocar, ...) continuam vindo do pipeline de IA e **não** são regerados aqui.
+- **Logo:** `public/art/imperio/logo.png` (x4) e `logo.sm.png` (x2, ~42 px de altura): coroa de 5 pontas sobre `COUP IMPÉRIO` na fonte 5x7 própria (hastes de 2 px, face ouro em degradê, sombra bronze, contorno tinta).
+- **Favicon:** `app/icon.png` (64x64, o Next usa sozinho). `app/favicon.ico` (antigo) continua existindo; remover se quiser só o novo.
+- **Adicionar um ícone:** inclua o bitmap (até 14x14) em `ICONES` e o nome em `ORDEM_ICONES` (`ui-bitmaps.ts`), rode o comando, registre em `IconName`/`ICONS_AVAILABLE` e olhe a folha de contato.

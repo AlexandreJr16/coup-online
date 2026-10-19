@@ -17,6 +17,7 @@ import {
   assignAvatars,
   avatarUrl,
   ICONS_AVAILABLE,
+  type IconName,
   iconUrl,
   CHAR_SHORT,
   CHARACTER_ACTION,
@@ -201,7 +202,8 @@ test("assignAvatars: sem repetição, determinístico e todos os arquivos existe
 test("iconUrl: sm/lg e ícone sem arquivo devolve null (o selo cai no emoji)", () => {
   assert.equal(iconUrl("renda", "sm"), "/art/imperio/icones/renda.sm.png");
   assert.equal(iconUrl("renda", "lg"), "/art/imperio/icones/renda.png");
-  assert.equal(iconUrl("contestar", "sm"), null); // ainda sem arte
+  assert.equal(iconUrl("contestar", "sm"), "/art/imperio/icones/contestar.sm.png"); // arte procedural (P05)
+  assert.equal(iconUrl("sem_arte" as IconName, "sm"), null); // fora de ICONS_AVAILABLE
 });
 
 test("guarda: todo ícone declarado em ICONS_AVAILABLE existe em public/art (nos 2 tamanhos)", () => {

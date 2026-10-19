@@ -3,10 +3,20 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { type CSSProperties, useEffect, useState, useSyncExternalStore } from "react";
 
+import { CheatSheetButton } from "@/src/components/game/CheatSheet";
 import GameBoard from "@/src/components/game/GameBoard";
-import { assignAvatars, avatarColor, avatarUrl, CINZEL, COLORS } from "@/src/components/game/helpers";
+import { assignAvatars, avatarUrl, COLORS, iconUrl } from "@/src/components/game/helpers";
 import TableBackdrop, { SalonBg } from "@/src/components/game/TableBackdrop";
+import { RoundStatusSlot } from "@/src/components/game/TurnBanner";
 import TimerSettings, { DEFAULT_TIMERS } from "@/src/components/game/TimerSettings";
+import { AparenciaButton } from "@/src/components/ui/AparenciaPanel";
+import { Leitura, QuadroEscuro } from "@/src/components/ui/Campo";
+import { fonteKit } from "@/src/components/ui/escala";
+import { Hud } from "@/src/components/ui/Hud";
+import { IconButton } from "@/src/components/ui/IconButton";
+import { PixelButton } from "@/src/components/ui/PixelButton";
+import { PixelPanel } from "@/src/components/ui/PixelPanel";
+import { Tag } from "@/src/components/ui/Tag";
 import { clearToken, readCrt, readToken, saveCrt, saveToken, subscribeCrt } from "@/src/lib/session";
 import { usePrefs } from "@/src/lib/audio/usePrefs";
 import { getSocket } from "@/src/lib/socket";
@@ -20,6 +30,7 @@ export default function RoomPage() {
   const roomId = (params.id ?? "").toUpperCase();
   const name = searchParams.get("name") ?? "";
   const [players, setPlayers] = useState<Player[]>([]);
+  const [spectators, setSpectators] = useState<Player[]>([]);
   const [view, setView] = useState<GameView | null>(null);
   const [myId, setMyId] = useState("");
   const [error, setError] = useState("");
@@ -52,10 +63,14 @@ export default function RoomPage() {
     function onPlayers(list: Player[]) {
       setPlayers(list);
     }
+    function onSpectators(list: Player[]) {
+      setSpectators(list);
+    }
     function onState(v: GameView) {
       setView(v);
     }
     socket.on("room:players", onPlayers);
+    socket.on("room:spectators", onSpectators);
     socket.on("game_state", onState);
 
     function join() {
@@ -67,6 +82,7 @@ export default function RoomPage() {
         }
         setError("");
         setPlayers(ack.players);
+        setSpectators(ack.spectators);
         setMyId(ack.you.id);
         saveToken(roomId, ack.you.token);
       });
@@ -78,12 +94,16 @@ export default function RoomPage() {
 
     return () => {
       socket.off("room:players", onPlayers);
+      socket.off("room:spectators", onSpectators);
       socket.off("game_state", onState);
       socket.off("connect", join);
     };
   }, [roomId, name, router]);
 
   const isHost = players[0]?.id === myId;
+  // Só assiste: entrou com a partida em andamento (ou a sala cheia). O papel sai da lista de
+  // jogadores, então a promoção na próxima partida vira jogador sem evento extra.
+  const isSpectator = myId !== "" && !players.some((p) => p.id === myId);
 
   function startGame() {
     setError("");
@@ -111,43 +131,44 @@ export default function RoomPage() {
         background: COLORS.bg,
       }}
     >
-      {/* Barra superior slim: identidade, sala e sair */}
-      <header style={topBar}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-          <span
-            style={{ fontFamily: CINZEL, fontWeight: 800, letterSpacing: 0.5, whiteSpace: "nowrap" }}
-          >
-            <span style={{ color: COLORS.gold }}>Coup</span> Online
-          </span>
-          <span style={roomChip}>Sala {roomId}</span>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button
-            onClick={() => setAudio({ muted: !audio.muted })}
-            className="game-btn"
-            style={toggleBtn}
-            data-testid="mute-toggle"
-            aria-pressed={audio.muted}
-            title={audio.muted ? "Ligar o som" : "Silenciar"}
-          >
-            {audio.muted ? "🔇" : "🔊"}
-          </button>
-          <button
-            onClick={() => saveCrt(!crt)}
-            className="game-btn"
-            style={toggleBtn}
-            data-testid="crt-toggle"
-            aria-pressed={crt}
-            title="Filtro CRT (scanlines)"
-          >
-            📺 CRT {crt ? "on" : "off"}
-          </button>
-          <button onClick={leave} className="game-btn" style={leaveBtn}>
-            Sair
-          </button>
-        </div>
-      </header>
+      {/* HUD enxuto: logo, sala e botões do kit. A faixa de status da rodada entra no miolo
+          (portal do TurnBanner). */}
+      <Hud
+        codigo={roomId}
+        extra={
+          spectators.length > 0 ? (
+            <Tag
+              tom="fora"
+              data-testid="spectators-chip"
+              title={`Assistindo: ${spectators.map((s) => s.name).join(", ")}`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={iconUrl("olho") ?? undefined} alt="Espectadores" width={16} height={16} style={pixelImg} />
+              {spectators.length}
+            </Tag>
+          ) : null
+        }
+        centro={<RoundStatusSlot />}
+      >
+        <IconButton
+          icone={audio.muted ? "mudo" : "som"}
+          rotulo={audio.muted ? "Ligar o som" : "Silenciar"}
+          onClick={() => setAudio({ muted: !audio.muted })}
+          data-testid="mute-toggle"
+          aria-pressed={audio.muted}
+        />
+        <IconButton
+          icone="crt"
+          rotulo="Filtro CRT (scanlines)"
+          forcado={crt ? "pressionado" : undefined}
+          onClick={() => saveCrt(!crt)}
+          data-testid="crt-toggle"
+          aria-pressed={crt}
+        />
+        <CheatSheetButton />
+        <AparenciaButton />
+        <IconButton icone="sair" rotulo="Sair" onClick={leave} data-testid="leave-button" />
+      </Hud>
 
       {view ? (
         // Partida em andamento: o tabuleiro ocupa todo o espaço restante.
@@ -157,89 +178,100 @@ export default function RoomPage() {
             view={view}
             myId={myId}
             absentIds={players.filter((p) => !p.connected).map((p) => p.id)}
+            spectator={isSpectator}
           />
         </TableBackdrop>
       ) : (
-        // Lobby: card centralizado com link, jogadores e início.
-        <div
-          style={{
-            flex: 1,
-            position: "relative",
-            overflow: "hidden",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-          }}
-        >
+        // Lobby: painel do kit centralizado com link, jogadores e início.
+        <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
           <SalonBg />
-          <div className="panel-salon" style={lobbyCard}>
-            <h2 style={{ margin: "0 0 4px", fontFamily: CINZEL, fontSize: 24, fontWeight: 800 }}>
-              Sala de espera
-            </h2>
-            <p style={{ color: COLORS.dim, fontSize: 14, marginTop: 0 }}>
-              Compartilhe o link para os amigos entrarem:
-            </p>
-            <code style={shareBox} suppressHydrationWarning>
-              {shareUrl || `…/room/${roomId}`}
-            </code>
+          {/* Rola por dentro se o painel não couber (o cenário de fundo fica parado). */}
+          <div
+            style={{
+              position: "relative",
+              height: "100%",
+              overflowY: "auto",
+              display: "flex",
+              alignItems: "safe center",
+              justifyContent: "center",
+              padding: 24,
+            }}
+          >
+            <PixelPanel titulo="Sala de espera" data-testid="lobby-panel" style={lobbyCard}>
+              <p style={{ color: "var(--k-texto-fraco)", fontSize: fonteKit(5), marginTop: 0 }}>
+                Compartilhe o link para os amigos entrarem:
+              </p>
+              <Leitura suppressHydrationWarning>{shareUrl || `…/room/${roomId}`}</Leitura>
 
-            {error && <p style={{ color: COLORS.red, fontSize: 14 }}>{error}</p>}
+              {error && <p style={{ color: "var(--k-pg-face)", fontSize: fonteKit(5) }}>{error}</p>}
 
-            <h3 style={{ margin: "20px 0 8px", fontSize: 15, color: COLORS.dim }}>
-              Jogadores ({players.length})
-            </h3>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-              {players.map((p) => (
-                <li key={p.id} data-player={p.name} data-avatar={avatarSlugs[players.indexOf(p)]} style={playerItem}>
-                  <span
-                    style={{
-                      width: 30,
-                      height: 36,
-                      borderRadius: 6,
-                      border: `2px solid ${p.connected ? COLORS.gold : "#555"}`,
-                      background: avatarColor(p.name),
-                      flex: "none",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={avatarUrl(avatarSlugs[players.indexOf(p)])}
-                      alt=""
-                      draggable={false}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", imageRendering: "pixelated", display: "block" }}
-                    />
-                  </span>
-                  <span style={{ fontWeight: p.id === myId ? 700 : 500, opacity: p.connected ? 1 : 0.5 }}>
-                    {p.name}
-                    {p.id === myId ? " (você)" : ""}
-                    {!p.connected ? " · reconectando…" : ""}
-                  </span>
-                  {players[0]?.id === p.id && (
-                    <span style={{ marginLeft: "auto", fontSize: 12, color: COLORS.gold }}>
-                      host
+              <h3 style={subtitulo}>Jogadores ({players.length})</h3>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+                {players.map((p) => (
+                  <li key={p.id} data-player={p.name} data-avatar={avatarSlugs[players.indexOf(p)]} style={playerItem}>
+                    <span
+                      style={{
+                        width: 30,
+                        height: 36,
+                        border: `3px solid ${p.connected ? "var(--k-filete)" : "var(--k-tinta)"}`,
+                        background: "var(--k-tinta)",
+                        flex: "none",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={avatarUrl(avatarSlugs[players.indexOf(p)])}
+                        alt=""
+                        draggable={false}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", imageRendering: "pixelated", display: "block" }}
+                      />
                     </span>
-                  )}
-                </li>
-              ))}
-            </ul>
+                    <span style={{ fontWeight: p.id === myId ? 700 : 500, opacity: p.connected ? 1 : 0.5 }}>
+                      {p.name}
+                      {p.id === myId ? " (você)" : ""}
+                      {!p.connected ? " · reconectando…" : ""}
+                    </span>
+                    {players[0]?.id === p.id && (
+                      <Tag tom="ouro" style={{ marginLeft: "auto" }}>
+                        host
+                      </Tag>
+                    )}
+                  </li>
+                ))}
+              </ul>
 
-            {isHost ? (
-              <>
-                <TimerSettings value={timers} onChange={setTimers} />
-                <button
-                  onClick={startGame}
-                  disabled={players.length < 2}
-                  className="game-btn"
-                  style={startBtn}
-                >
-                  Iniciar jogo
-                </button>
-              </>
-            ) : (
-              <p style={{ color: COLORS.dim, marginTop: 20 }}>Aguardando o host iniciar…</p>
-            )}
+              {spectators.length > 0 && (
+                <>
+                  <h3 style={subtitulo}>Assistindo ({spectators.length})</h3>
+                  <p data-testid="lobby-spectators" style={{ margin: 0, fontSize: fonteKit(5), color: "var(--k-texto-fraco)" }}>
+                    {spectators.map((s) => `${s.name}${s.id === myId ? " (você)" : ""}`).join(", ")}
+                  </p>
+                </>
+              )}
+
+              {isSpectator ? (
+                <p data-testid="spectator-notice" style={{ color: "var(--k-texto)", marginTop: 20, fontSize: fonteKit(5) }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={iconUrl("olho") ?? undefined} alt="" width={16} height={16} style={{ ...pixelImg, marginRight: 6 }} />
+                  Sala cheia: você está assistindo. Entra como jogador quando abrir uma vaga ou na
+                  próxima partida.
+                </p>
+              ) : isHost ? (
+                <>
+                  <QuadroEscuro>
+                    <TimerSettings value={timers} onChange={setTimers} />
+                  </QuadroEscuro>
+                  <div style={{ marginTop: 16 }}>
+                    <PixelButton cheio onClick={startGame} disabled={players.length < 2}>
+                      Iniciar jogo
+                    </PixelButton>
+                  </div>
+                </>
+              ) : (
+                <p style={{ color: "var(--k-texto-fraco)", marginTop: 20, fontSize: fonteKit(5) }}>Aguardando o host iniciar…</p>
+              )}
+            </PixelPanel>
           </div>
         </div>
       )}
@@ -247,77 +279,19 @@ export default function RoomPage() {
   );
 }
 
-const topBar: CSSProperties = {
-  flex: "none",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 12,
-  padding: "10px 16px",
-  background: "linear-gradient(#2b1f1c, #1a1214)",
-  borderBottom: "2px solid rgba(240,165,0,0.6)",
-  boxShadow: "0 6px 18px rgba(0,0,0,0.45)",
-  color: COLORS.text,
-};
-const roomChip: CSSProperties = {
-  padding: "3px 10px",
-  fontSize: 12,
-  fontWeight: 700,
-  letterSpacing: 1,
-  color: COLORS.gold,
-  background: "rgba(240,165,0,0.12)",
-  border: "1px solid rgba(240,165,0,0.4)",
-  borderRadius: 999,
-  whiteSpace: "nowrap",
-};
-// Cor base via --c; o gradiente/sombra/press vêm da classe .game-btn.
-const toggleBtn = {
-  padding: "7px 12px",
-  fontSize: 13,
-  color: COLORS.text,
-  borderRadius: 8,
-  whiteSpace: "nowrap",
-  "--c": COLORS.neutral,
-} as CSSProperties;
-const leaveBtn = {
-  padding: "7px 12px",
-  fontSize: 13,
-  color: COLORS.text,
-  borderRadius: 8,
-  "--c": "#3a3550",
-} as CSSProperties;
+const pixelImg: CSSProperties = { display: "inline-block", verticalAlign: "-3px", marginRight: 4, imageRendering: "pixelated" };
 const lobbyCard: CSSProperties = {
   position: "relative",
   width: "100%",
   maxWidth: 440,
-  padding: 28,
-  color: COLORS.text,
 };
-const shareBox: CSSProperties = {
-  display: "block",
-  padding: "10px 12px",
-  fontSize: 13,
-  color: COLORS.text,
-  background: "rgba(14,8,10,0.7)",
-  border: "1px solid rgba(240,165,0,0.35)",
-  borderRadius: 10,
-  userSelect: "all",
-  wordBreak: "break-all",
-};
+const subtitulo: CSSProperties = { margin: "16px 0 8px", fontSize: fonteKit(5), fontWeight: 400, color: "var(--k-texto-fraco)" };
 const playerItem: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 10,
-  padding: "8px 12px",
-  background: "rgba(255,255,255,0.04)",
-  borderRadius: 8,
+  padding: "6px 10px",
+  fontSize: fonteKit(5),
+  background: "var(--k-slot)",
+  color: "var(--k-texto)",
 };
-const startBtn = {
-  width: "100%",
-  marginTop: 20,
-  padding: "12px 16px",
-  fontSize: 15,
-  color: "#1a1a2e",
-  borderRadius: 10,
-  "--c": COLORS.gold,
-} as CSSProperties;

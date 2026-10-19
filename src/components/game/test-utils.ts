@@ -1,7 +1,9 @@
 // Construtor de GameView para os testes de UI (não entra no bundle do app).
-import type { Character, GameView, PublicPlayer } from "@/src/types/game";
+import { applyEvent, createGame } from "@/src/lib/game/engine";
+import type { Rng } from "@/src/lib/game/deck";
+import type { ActionType, Character, GameState, GameView, PublicPlayer } from "@/src/types/game";
 
-const card = (character: Character | null, revealed = false) => ({ character, revealed });
+const card = (character: Character | null, revealed = false) => ({ revealed, character });
 
 export function player(
   id: string,
@@ -40,4 +42,108 @@ export function makeView(over: Partial<GameView> = {}): GameView {
     timer: { phase: "aguardando_acao", seconds: 45, remainingMs: 45000 },
     ...over,
   };
+}
+
+// ── Helpers para cenários repetíveis (P02.S2) ───────────────────────────────
+
+// N jogadores p1..pN (nomes "P1".."PN"), todos com a mão oculta.
+export function playersN(n: number): PublicPlayer[] {
+  return Array.from({ length: n }, (_, i) => player(`p${i + 1}`));
+}
+
+// Troca a mão (visível) de um jogador; os demais ficam como estão.
+export function withHand(
+  view: GameView,
+  playerId: string,
+  hand: [Character | null, Character | null],
+): GameView {
+  return {
+    ...view,
+    players: view.players.map((p) =>
+      p.id === playerId ? { ...p, cards: [card(hand[0]), card(hand[1])] } : p,
+    ),
+  };
+}
+
+// Ação em andamento (janela de reação) sobre a view.
+export function withPending(
+  view: GameView,
+  over: Partial<NonNullable<GameView["pending"]>> & { actorId: string; action: ActionType },
+): GameView {
+  return {
+    ...view,
+    phase: "janela_reacao_global",
+    pending: { targetId: null, claimedCharacter: null, block: null, passedIds: [], ...over },
+  };
+}
+
+// RNG determinístico (mulberry32) para a engine nos testes de cena.
+export function seededRng(seed: number): Rng {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Dá a mão `hand` ao jogador trocando com cartas do baralho: mantém as 25 cartas.
+function giveHand(s: GameState, playerId: string, hand: [Character, Character]): void {
+  const p = s.players.find((x) => x.id === playerId)!;
+  hand.forEach((want, i) => {
+    if (p.cards[i].character === want) return;
+    const j = s.deck.indexOf(want);
+    if (j === -1) throw new Error(`sem ${want} no baralho para a mão de ${playerId}`);
+    s.deck[j] = p.cards[i].character;
+    p.cards[i].character = want;
+  });
+}
+
+// Par verdade/blefe gerado PELA ENGINE: mesmo pré-estado (3 jogadores, p1 abre, rng fixo),
+// p1 declara `action` e p2 contesta. Só a mão de p1 muda: em `truth` ela tem a carta
+// alegada; em `bluff` não. Ações suportadas (sem alvo, alegam personagem): taxas (duque) e
+// trocar (embaixador). O veredito é VALIDADO contra a engine (truth = verdade, bluff = blefe).
+//  - `pre`: estado inicial (3 jogadores, antes de `giveHand` e da ação).
+//  - `afterAction`: logo após a declaração e ANTES da contestação; os dois ramos diferem
+//    SÓ no oculto (mão de p1): é o par certo para testar cenas de declaração/tensão, mas
+//    SÓ com o observador p1 (para p2 e p3 as views saem idênticas e `assertNoLeak` recusa
+//    o par como vácuo).
+//  - `truth`/`bluff`: após a contestação (diferem em dado público: lastChallenge, stats...).
+// Para a view de um observador: `viewForPlayer(par.truth, "p3")`.
+const CLAIM_OF = { taxas: "duque", trocar: "embaixador" } as const;
+
+export function challengePair(opts: { action?: keyof typeof CLAIM_OF; seed?: number } = {}): {
+  pre: GameState;
+  afterAction: { truth: GameState; bluff: GameState };
+  truth: GameState;
+  bluff: GameState;
+} {
+  const { action = "taxas", seed = 7 } = opts;
+  const claimed: Character = CLAIM_OF[action];
+  const ids = [
+    { id: "p1", name: "Ana" },
+    { id: "p2", name: "Bia" },
+    { id: "p3", name: "Caio" },
+  ];
+  const pre = createGame(ids, {}, seededRng(seed), { firstPlayerId: "p1" });
+  const other = (["duque", "assassino", "capitao", "embaixador", "condessa"] as Character[]).filter(
+    (c) => c !== claimed,
+  );
+  const run = (hand: [Character, Character], hadCard: boolean) => {
+    const s = structuredClone(pre);
+    giveHand(s, "p1", hand);
+    const a = applyEvent(s, { type: "action", playerId: "p1", action }, seededRng(seed));
+    if (a.error) throw new Error(a.error);
+    const c = applyEvent(a.state, { type: "challenge", playerId: "p2" }, seededRng(seed));
+    if (c.error) throw new Error(c.error);
+    if (c.state.lastChallenge?.accusedHadCard !== hadCard) {
+      throw new Error(`challengePair: veredito inesperado (${action}, seed ${seed})`);
+    }
+    return { afterAction: a.state, final: c.state };
+  };
+  const t = run([claimed, other[0]], true);
+  const b = run([other[0], other[1]], false);
+  return { pre, afterAction: { truth: t.afterAction, bluff: b.afterAction }, truth: t.final, bluff: b.final };
 }

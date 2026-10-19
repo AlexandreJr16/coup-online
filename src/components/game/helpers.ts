@@ -83,13 +83,20 @@ export function reactionOptions(view: GameView, myId: string): ReactionOptions {
 // ── Ícones dos selos de ação (public/art/<tema>/icones/) ─────────────────────
 export type IconName =
   | "renda" | "ajuda_externa" | "golpe" | "taxas" | "assassinar" | "extorquir"
-  | "trocar" | "contestar" | "bloquear" | "passar" | "mascara" | "cadeado";
+  | "trocar" | "contestar" | "bloquear" | "passar" | "mascara" | "cadeado"
+  // arte de UI procedural (tools/art/ui-icons.ts)
+  | "trofeu" | "olho" | "ajuda" | "som" | "mudo" | "sair" | "engrenagem" | "crt" | "coroa"
+  | "certo" | "errado" | "ampulheta" | "moeda"
+  | "carrasco" | "ricaco" | "mentiroso" | "desconfiado" | "olho_de_lince";
 
-// Ícones que JÁ existem como arquivo; os demais caem no emoji do selo (contestar
-// entra quando a 2ª leva de geração for curada).
+// Ícones que JÁ existem como arquivo; os demais caem no emoji do selo.
 export const ICONS_AVAILABLE: readonly IconName[] = [
   "renda", "ajuda_externa", "golpe", "taxas", "assassinar", "extorquir", "trocar",
   "bloquear", "passar", "mascara", "cadeado",
+  // arte de UI procedural
+  "contestar", "trofeu", "olho", "ajuda", "som", "mudo", "sair", "engrenagem", "crt", "coroa",
+  "certo", "errado", "ampulheta", "moeda",
+  "carrasco", "ricaco", "mentiroso", "desconfiado", "olho_de_lince",
 ];
 
 export function iconUrl(name: IconName, size: "sm" | "lg" = "sm"): string | null {
@@ -147,17 +154,45 @@ export interface ActionMeta {
   category: ActionCategory;
   needsTarget: boolean;
   coinCost?: number;
+  efeito: string; // o que a ação faz (texto da colinha; fiel ao game-rules.md)
 }
 
-// Metadado de AÇÃO (não de carta): rótulo, categoria de cor, alvo, custo.
+// Metadado de AÇÃO (não de carta): rótulo, categoria de cor, alvo, custo, efeito.
 export const ACTION_META: Record<ActionType, ActionMeta> = {
-  renda: { label: "Renda", category: "coin", needsTarget: false },
-  ajuda_externa: { label: "Ajuda Externa", category: "coin", needsTarget: false },
-  taxas: { label: "Taxas", category: "coin", needsTarget: false },
-  assassinar: { label: "Assassinar", category: "aggressive", needsTarget: true, coinCost: 3 },
-  extorquir: { label: "Extorquir", category: "aggressive", needsTarget: true },
-  golpe: { label: "Golpe de Estado", category: "coup", needsTarget: true, coinCost: 7 },
-  trocar: { label: "Trocar", category: "neutral", needsTarget: false },
+  renda: { label: "Renda", category: "coin", needsTarget: false, efeito: "Pega 1 moeda do Tesouro." },
+  ajuda_externa: {
+    label: "Ajuda Externa",
+    category: "coin",
+    needsTarget: false,
+    efeito: "Pega 2 moedas do Tesouro.",
+  },
+  taxas: { label: "Taxas", category: "coin", needsTarget: false, efeito: "Pega 3 moedas do Tesouro." },
+  assassinar: {
+    label: "Assassinar",
+    category: "aggressive",
+    needsTarget: true,
+    coinCost: 3,
+    efeito: "Paga 3 moedas. O alvo perde 1 influência.",
+  },
+  extorquir: {
+    label: "Extorquir",
+    category: "aggressive",
+    needsTarget: true,
+    efeito: "Pega 2 moedas de um alvo (1, se ele só tiver 1).",
+  },
+  golpe: {
+    label: "Golpe de Estado",
+    category: "coup",
+    needsTarget: true,
+    coinCost: 7,
+    efeito: "Paga 7 moedas. O alvo perde 1 influência. Nunca falha.",
+  },
+  trocar: {
+    label: "Trocar",
+    category: "neutral",
+    needsTarget: false,
+    efeito: "Compra 2 cartas da Corte, escolhe quais manter e devolve o resto.",
+  },
 };
 
 // Personagem exigido por cada ação (inverso de CardDef.acao) — derivado do catálogo.

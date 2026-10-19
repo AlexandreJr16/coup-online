@@ -2,7 +2,8 @@
 // FIXAS (DESIGN_MESA_V2): a mesa ocupa o espaço de cima; o DOCK de baixo tem altura
 // fixa e três zonas que nunca mudam de lugar — ações básicas (esq.), mão ou escolha
 // da hora (centro) e reações (dir.). O estado do jogo aparece na própria mesa
-// (brilho no turno, mira nos alvos, ✔ em quem passou), não em banners de texto.
+// (brilho no turno, mira nos alvos, ✔ em quem passou) e, em texto, na faixa de status
+// do cabeçalho (TurnBanner: de quem é a vez e o que a mesa espera).
 "use client";
 
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
@@ -24,16 +25,19 @@ import IntrigueFeed from "./IntrigueFeed";
 import VictoryPanel from "./VictoryPanel";
 import ReactionTray from "./ReactionTray";
 import Table from "./Table";
+import TurnBanner from "./TurnBanner";
 import WaxSeal, { type SealData } from "./WaxSeal";
 import {
   ACTION_META,
   actionBlockedReason,
   CHAR_LABEL,
   CHARACTER_ACTION,
+  CINZEL,
   COLORS,
   reactionOptions,
   requiredCharacter,
 } from "./helpers";
+import { PixelButton } from "@/src/components/ui/PixelButton";
 import { useGameAudio } from "./useGameAudio";
 import { useGameEvents } from "./useGameEvents";
 
@@ -50,10 +54,12 @@ export default function GameBoard({
   view,
   myId,
   absentIds = [],
+  spectator = false,
 }: {
   view: GameView;
   myId: string;
   absentIds?: string[]; // jogadores desconectados (a vez deles passa sozinha)
+  spectator?: boolean; // só assiste: sem mão, sem ações e sem revanche; entra na próxima partida
 }) {
   const socket = getSocket();
   const [error, setError] = useState("");
@@ -123,8 +129,9 @@ export default function GameBoard({
   // ── Passar automático: o servidor guarda; aqui só o interruptor (reenviado ao montar) ──
   const [autoPass, setAutoPass] = useState(readAutoPass);
   useEffect(() => {
+    if (spectator) return; // o servidor recusa; espectador não tem "passar automático"
     socket.emit("game_autopass", { enabled: autoPass }, () => {});
-  }, [socket, autoPass]);
+  }, [socket, autoPass, spectator]);
   const toggleAutoPass = (enabled: boolean) => {
     setAutoPass(enabled);
     saveAutoPass(enabled);
@@ -332,18 +339,16 @@ export default function GameBoard({
             <div key={i} style={{ display: "flex" }}>{card}</div>
           );
         })}
-        <button
+        <PixelButton
           onClick={() => {
             setError("");
             socket.emit("game_exchange", { keep: keepSel.map((i) => pool[i]) }, ack);
             setKeepSel([]);
           }}
           disabled={keepSel.length !== keepCount}
-          className="game-btn"
-          style={{ padding: "10px 16px", fontSize: 14, color: "#1a1a2e", "--c": COLORS.gold } as CSSProperties}
         >
           Manter {keepCount}
-        </button>
+        </PixelButton>
       </div>
     );
   } else {
@@ -405,10 +410,14 @@ export default function GameBoard({
         {view.phase === "fim_de_jogo" && (
           <VictoryPanel
             view={view}
-            onRematch={() => {
-              setError("");
-              socket.emit("game_rematch", ack);
-            }}
+            onRematch={
+              spectator
+                ? undefined
+                : () => {
+                    setError("");
+                    socket.emit("game_rematch", ack);
+                  }
+            }
           />
         )}
 
@@ -416,12 +425,28 @@ export default function GameBoard({
         {error && <div style={toast}>{error}</div>}
       </div>
 
+      {/* Faixa de status da rodada (portal no cabeçalho da sala) */}
+      <TurnBanner view={view} myId={myId} secondsLeft={secondsLeft} />
+
       {drag && <DragGhost character={drag.char} x={drag.x} y={drag.y} />}
 
       {/* Selo de cera — acima de tudo */}
       <WaxSeal seal={seal} />
 
-      {/* DOCK fixo: ações básicas · mão/escolha · reações */}
+      {/* DOCK fixo: ações básicas · mão/escolha · reações. Espectador: só o aviso, com a
+          mesma altura (a mesa não muda de tamanho). */}
+      {spectator ? (
+        <div data-testid="dock" data-spectator="sim" style={{ ...dock, display: "flex", justifyContent: "center" }}>
+          <div data-testid="spectator-notice" style={spectatorNotice}>
+            <div style={{ fontFamily: CINZEL, fontSize: 18, fontWeight: 800, color: COLORS.turn }}>
+              👁 Você está assistindo
+            </div>
+            <div style={{ marginTop: 4, color: COLORS.dim, fontSize: 13.5 }}>
+              Você vê a mesa, mas não as cartas de ninguém. Entra como jogador na próxima partida.
+            </div>
+          </div>
+        </div>
+      ) : (
       <div data-testid="dock" style={dock}>
         <div data-zone="basicas" style={{ justifySelf: "end" }}>
           <BasicActions view={view} myId={myId} canAct={canAct} onAction={onAction} />
@@ -449,6 +474,7 @@ export default function GameBoard({
           <AutoPassToggle enabled={autoPass} onChange={toggleAutoPass} />
         </div>
       </div>
+      )}
     </div>
   );
 }
@@ -477,6 +503,15 @@ const toast: CSSProperties = {
   borderRadius: 999,
   boxShadow: "0 4px 14px rgba(0,0,0,0.45)",
   whiteSpace: "nowrap",
+};
+const spectatorNotice: CSSProperties = {
+  alignSelf: "center",
+  maxWidth: 520,
+  padding: "14px 22px",
+  textAlign: "center",
+  borderRadius: 12,
+  background: "rgba(0,0,0,0.28)",
+  border: "1px solid rgba(240,165,0,0.3)",
 };
 const dock: CSSProperties = {
   flex: "none",

@@ -194,10 +194,10 @@ test("reação: a bandeja usa selos (Contestar/Passar) e some depois de passar",
 test("página /dev/selos: 5 estados × 4 selos, ícones e fallback de emoji sem erros", async () => {
   const p = await open("/dev/selos");
   await p.waitFor(`document.querySelectorAll('[data-testid="selos"] .seal').length === 20`, "20 selos");
-  // só contestar ainda não tem arte → emoji; os 11 existentes carregam.
+  // todos os ícones têm arte (a de contestar veio do P05); nenhum cai no fallback de emoji.
   await p.waitFor(`[...document.querySelectorAll('[data-testid="icones"] img')].every(i => i.complete && i.naturalWidth > 0)`, "ícones carregados");
   const semArte = await p.eval<number>(`[...document.querySelectorAll('[data-testid="icones"] > div')].filter(d => d.innerText.includes("(emoji)")).length`);
-  assert.equal(semArte, 1);
+  assert.equal(semArte, 0);
   noErrors(p);
 });
 
@@ -535,17 +535,536 @@ test("mão: o nome e o poder de cada carta ficam visíveis (nenhuma carta cobre 
   noErrors(...ps);
 });
 
-test("menu: o leque dos 5 personagens carrega e o painel tem fundo próprio (não transparente)", async () => {
+test("menu: o leque dos 5 personagens carrega e o painel do kit tem fundo próprio (não transparente)", async () => {
   const p = await open("/");
   await p.waitFor(`document.querySelectorAll('[data-testid="home-fan"] img').length === 5`, "5 retratos no menu");
   await p.waitFor(`[...document.querySelectorAll('[data-testid="home-fan"] img')].every(i => i.complete && i.naturalWidth > 0)`, "retratos carregados");
-  const bg = await p.eval<string>(`getComputedStyle(document.querySelector('.panel-salon')).backgroundImage`);
-  assert.ok(bg.includes("gradient"), "painel sem fundo: " + bg);
+  // PixelPanel = borda > face; a face é quem pinta o fundo (cor chapada do tema, sem gradiente).
+  const bg = await p.eval<string>(`getComputedStyle(document.querySelector('[data-testid="home-panel"]').firstElementChild.firstElementChild).backgroundColor`);
+  assert.ok(bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent", "painel sem fundo: " + bg);
   noErrors(p);
 });
 
+test("home: link do GitHub aponta para o repositório, abre em outra aba e não cobre o painel", async () => {
+  for (const size of [{ w: 1280, h: 720 }, { w: 375, h: 667 }]) {
+    const p = await open("/", size);
+    await p.waitFor(`!!document.querySelector('[data-testid="github-link"]')`, "ícone do GitHub");
+    const link = await p.eval<{ href: string; target: string; rel: string; label: string }>(`(() => {
+      const a = document.querySelector('[data-testid="github-link"]');
+      return { href: a.href, target: a.target, rel: a.rel, label: a.getAttribute('aria-label') || '' };
+    })()`);
+    assert.equal(link.href, "https://github.com/AlexandreJr16/coup-online");
+    assert.equal(link.target, "_blank");
+    assert.match(link.rel, /noopener/);
+    assert.match(link.rel, /noreferrer/);
+    assert.match(link.label, /GitHub/);
+    // Visível e sem encostar no painel de entrada (nem em celular).
+    const geo = await p.eval<{ a: number[]; b: number[]; vw: number; visible: boolean; hit: boolean }>(`(() => {
+      const a = document.querySelector('[data-testid="github-link"]').getBoundingClientRect();
+      const b = document.querySelector('[data-testid="home-panel"]').getBoundingClientRect();
+      const visible = a.width > 0 && a.left >= 0 && a.right <= innerWidth;
+      const hit = !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+      return { a: [a.left, a.top, a.right, a.bottom], b: [b.left, b.top, b.right, b.bottom], vw: innerWidth, visible, hit };
+    })()`);
+    assert.ok(geo.visible && !geo.hit, `ícone invisível ou sobre o painel em ${size.w}x${size.h}: ${JSON.stringify(geo)}`);
+    // Em tela baixa o conteúdo não pode ser cortado: o início aparece e a página rola até o link.
+    const scroll = await p.eval<{ panelTop: number; overflowY: string; canScroll: boolean }>(`(() => {
+      const m = document.querySelector('main');
+      return {
+        panelTop: document.querySelector('[data-testid="home-panel"]').getBoundingClientRect().top,
+        overflowY: getComputedStyle(m).overflowY,
+        canScroll: m.scrollHeight > m.clientHeight,
+      };
+    })()`);
+    assert.ok(scroll.panelTop >= 0, `topo da home cortado em ${size.w}x${size.h}: ${JSON.stringify(scroll)}`);
+    if (scroll.canScroll) assert.notEqual(scroll.overflowY, "hidden", `conteúdo sem scroll em ${size.w}x${size.h}`);
+    // Desktop 1280x720 (notebook comum): tudo cabe, sem barra de rolagem na home.
+    if (size.w >= 1280) assert.equal(scroll.canScroll, false, `home com scroll em ${size.w}x${size.h}`);
+    // Rola até o link (em celular ele fica abaixo da dobra) e confere que nada o cobre.
+    const topIsLink = await p.eval<{ ok: boolean; bottom: number; vh: number }>(`(() => {
+      const a = document.querySelector('[data-testid="github-link"]');
+      a.scrollIntoView({ block: 'center' });
+      const r = a.getBoundingClientRect();
+      return {
+        ok: a.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)),
+        bottom: r.bottom,
+        vh: innerHeight,
+      };
+    })()`);
+    assert.equal(topIsLink.ok, true, `algo cobre o link do GitHub em ${size.w}x${size.h}: ${JSON.stringify(topIsLink)}`);
+    noErrors(p);
+  }
+});
+
+// ── Colinha (botão "?") ──────────────────────────────────────────────────────
+const NOMES_PERSONAGENS = ["Barão do Café", "Capoeira", "Coronel", "Regatão", "Benzedeira"];
+const dialogAberto = (p: Page) => p.eval<boolean>(`!!document.querySelector('[data-testid="cheatsheet"][role="dialog"]')`);
+
+test("colinha: abre por clique e por '?', mostra os 5 personagens e fecha por X, Esc, '?' e clique fora", async () => {
+  const p = await open("/dev/colinha", { w: 1280, h: 720 });
+  await p.waitFor(`!!document.querySelector('[data-testid="cheatsheet-toggle"]')`, "botão ?");
+  assert.equal(await dialogAberto(p), false);
+
+  // Abre por clique de mouse real; o painel é um diálogo modal acessível e tem o conteúdo.
+  await p.click('[data-testid="cheatsheet-toggle"]');
+  await p.waitFor(`!!document.querySelector('[data-testid="cheatsheet"]')`, "painel aberto");
+  const aria = await p.eval<{ modal: string; labelled: string; title: string; focusInside: boolean; expanded: string }>(`(() => {
+    const d = document.querySelector('[data-testid="cheatsheet"]');
+    const t = document.getElementById(d.getAttribute('aria-labelledby'));
+    return {
+      modal: d.getAttribute('aria-modal'), labelled: d.getAttribute('aria-labelledby') || '',
+      title: t ? t.innerText : '', focusInside: d.contains(document.activeElement),
+      expanded: document.querySelector('[data-testid="cheatsheet-toggle"]').getAttribute('aria-expanded'),
+    };
+  })()`);
+  assert.equal(aria.modal, "true");
+  assert.equal(aria.title, "Colinha");
+  assert.equal(aria.focusInside, true, "foco deve ir para dentro do painel");
+  assert.equal(aria.expanded, "true");
+  const corpo = await p.eval<string>(`document.querySelector('[data-testid="cheatsheet"]').innerText`);
+  for (const n of NOMES_PERSONAGENS) assert.ok(corpo.includes(n), `falta ${n} na colinha`);
+  for (const t of ["Renda", "Ajuda Externa", "Golpe de Estado", "Pode ser contestada", "Bloqueada por", "10 ou mais moedas"]) {
+    assert.ok(corpo.includes(t), `falta "${t}" na colinha`);
+  }
+  assert.ok(!/Duque|Capitão|Condessa|Embaixador|Inquisidor/.test(corpo), "nome original do Coup vazou na UI");
+
+  // Fecha pelo X (foco volta ao botão ?).
+  await p.click('[data-testid="cheatsheet-close"]');
+  await p.waitFor(`!document.querySelector('[data-testid="cheatsheet"]')`, "fechou pelo X");
+  await p.waitFor(`document.activeElement === document.querySelector('[data-testid="cheatsheet-toggle"]')`, "foco devolvido ao botão ?");
+
+  // Abre e fecha pela tecla '?'.
+  await p.key("?");
+  await p.waitFor(`!!document.querySelector('[data-testid="cheatsheet"]')`, "abriu com ?");
+  await p.key("?");
+  await p.waitFor(`!document.querySelector('[data-testid="cheatsheet"]')`, "fechou com ?");
+
+  // Esc fecha.
+  await p.key("?");
+  await p.waitFor(`!!document.querySelector('[data-testid="cheatsheet"]')`, "reabriu");
+  await p.key("Escape");
+  await p.waitFor(`!document.querySelector('[data-testid="cheatsheet"]')`, "fechou com Esc");
+
+  // Clique fora do painel (no fundo escuro) fecha; clique dentro NÃO fecha.
+  await p.key("?");
+  await p.waitFor(`!!document.querySelector('[data-testid="cheatsheet"]')`, "reabriu de novo");
+  const r = await p.eval<{ inX: number; inY: number; outX: number; outY: number }>(`(() => {
+    const d = document.querySelector('[data-testid="cheatsheet"]').getBoundingClientRect();
+    return { inX: d.left + d.width / 2, inY: d.top + 40, outX: Math.max(4, d.left / 2), outY: innerHeight / 2 };
+  })()`);
+  await p.clickAt(r.inX, r.inY);
+  assert.equal(await dialogAberto(p), true, "clique dentro do painel não pode fechar");
+  await p.clickAt(r.outX, r.outY);
+  await p.waitFor(`!document.querySelector('[data-testid="cheatsheet"]')`, "fechou clicando fora");
+
+  noErrors(p);
+});
+
+test("colinha: '?' digitado num campo de texto não abre o painel (home)", async () => {
+  const p = await open("/", { w: 1280, h: 720 });
+  await p.waitFor(`!!document.querySelector('input')`, "campo de nome");
+  await p.click("input");
+  await p.key("?");
+  await new Promise((r) => setTimeout(r, 300));
+  assert.equal(await dialogAberto(p), false, "digitar ? no campo não pode abrir a colinha");
+  const valor = await p.eval<string>(`document.querySelector('input').value`);
+  assert.equal(valor, "?", "o ? deve ter sido digitado no campo");
+  // Fora do campo, abre; o botão ? também existe na home.
+  assert.equal(await p.eval<boolean>(`!!document.querySelector('[data-testid="cheatsheet-toggle"]')`), true);
+  noErrors(p);
+});
+
+test("colinha: na mesa, Esc com o painel aberto NÃO cancela a mira por baixo; depois do painel fechado o Esc cancela", async () => {
+  const { ps } = await game(["Ana", "Bia", "Caio"], { w: 1280, h: 720 });
+  const [a] = ps;
+  // Ana (da vez) arma o Assassinar → mira nos alvos.
+  await a.click('[data-zone="basicas"] button', "Renda"); // 2→3 moedas (precisa de 3 para Assassinar)
+  await waitCoins(a, "Ana", 3);
+  await ps[1].click('[data-zone="basicas"] button', "Renda");
+  await ps[2].click('[data-zone="basicas"] button', "Renda");
+  await a.waitFor(`document.querySelector('[data-testid="dock"]') && document.querySelector('[data-seat="Ana"]')?.getAttribute('data-coins') === "3"`, "volta a vez da Ana");
+  await a.click('[data-zone="centro"] [title="Capoeira"]');
+  await a.waitFor(`document.querySelector('[data-seat="Bia"][data-target="sim"]')`, "mira em Bia");
+
+  // Abre a colinha pelo botão do cabeçalho (a mira continua armada por baixo).
+  await a.click('[data-testid="cheatsheet-toggle"]');
+  await a.waitFor(`!!document.querySelector('[data-testid="cheatsheet"]')`, "colinha aberta na mesa");
+  assert.equal(await a.eval<boolean>(`!!document.querySelector('[data-seat="Bia"][data-target="sim"]')`), true, "mira some ao abrir a colinha");
+
+  // O jogo segue vivo e o relógio do servidor continua correndo com o painel aberto.
+  const t1 = await a.eval<string>(`document.body.innerText.match(/⏱\\s*(\\d+)/)?.[1] ?? ''`);
+  await new Promise((r) => setTimeout(r, 2200));
+  const t2 = await a.eval<string>(`document.body.innerText.match(/⏱\\s*(\\d+)/)?.[1] ?? ''`);
+  if (t1 && t2) assert.ok(Number(t2) < Number(t1), `timer parado com a colinha aberta: ${t1} → ${t2}`);
+
+  // Esc fecha SÓ a colinha: a mira segue armada.
+  await a.key("Escape");
+  await a.waitFor(`!document.querySelector('[data-testid="cheatsheet"]')`, "Esc fechou a colinha");
+  assert.equal(await a.eval<boolean>(`!!document.querySelector('[data-seat="Bia"][data-target="sim"]')`), true, "Esc com a colinha aberta cancelou a mira");
+
+  // Com a colinha fechada, o Esc volta a cancelar a mira.
+  await a.key("Escape");
+  await a.waitFor(`!document.querySelector('[data-target="sim"]')`, "Esc cancelou a mira com a colinha fechada");
+  noErrors(...ps);
+});
+
+// ── Aba de Aparência (P27.S4) ────────────────────────────────────────────────
+const html = (p: Page) =>
+  p.eval<{ fonte: string | null; estilo: string | null; dock: string | null }>(`({
+    fonte: document.documentElement.getAttribute('data-fonte'),
+    estilo: document.documentElement.getAttribute('data-estilo'),
+    dock: document.documentElement.getAttribute('data-dock'),
+  })`);
+const painelAberto = (p: Page) => p.eval<boolean>(`!!document.querySelector('[data-testid="aparencia-panel"][role="dialog"]')`);
+
+test("aparência: na home abre a aba, troca fonte e estilo ao vivo, persiste ao recarregar e fecha por Esc e clique fora", async () => {
+  const p = await open("/", { w: 1280, h: 720 });
+  await p.waitFor(`!!document.querySelector('[data-testid="aparencia-toggle"]')`, "botão de Aparência na home");
+  try {
+    // Parte do padrão (o perfil do navegador pode ter sobra de outro teste).
+    await p.eval(`localStorage.removeItem("coup:aparencia")`);
+    await p.reload();
+    await p.waitFor(`!!document.querySelector('[data-testid="aparencia-toggle"]')`, "home recarregada");
+    assert.deepEqual(await html(p), { fonte: "pixelify", estilo: "A", dock: "mesa" });
+    assert.equal(await painelAberto(p), false);
+
+    // Abre por clique de mouse real: diálogo modal acessível, com as 4 fontes, 2 estilos e 3 docks.
+    await p.click('[data-testid="aparencia-toggle"]');
+    await p.waitFor(`!!document.querySelector('[data-testid="aparencia-panel"]')`, "aba aberta");
+    const info = await p.eval<{ modal: string; title: string; fontes: number; estilos: number; docks: number; focoDentro: boolean; expanded: string }>(`(() => {
+      const d = document.querySelector('[data-testid="aparencia-panel"]');
+      const t = document.getElementById(d.getAttribute('aria-labelledby'));
+      return {
+        modal: d.getAttribute('aria-modal'), title: t ? t.innerText : '',
+        fontes: d.querySelectorAll('[data-testid^="aparencia-fonte-"]').length,
+        estilos: d.querySelectorAll('[data-testid^="aparencia-estilo-"]').length,
+        docks: d.querySelectorAll('[data-testid^="aparencia-dock-"]').length,
+        focoDentro: d.contains(document.activeElement),
+        expanded: document.querySelector('[data-testid="aparencia-toggle"]').getAttribute('aria-expanded'),
+      };
+    })()`);
+    assert.deepEqual(info, { modal: "true", title: "Aparência", fontes: 4, estilos: 2, docks: 3, focoDentro: true, expanded: "true" });
+
+    // Cada opção de fonte é desenhada na própria fonte e mostra a frase de amostra.
+    const fontes = await p.eval<Array<{ id: string; familia: string; texto: string }>>(`[...document.querySelectorAll('[data-testid^="aparencia-fonte-"]')].map(b => ({
+      id: b.getAttribute('data-testid'), familia: getComputedStyle(b).fontFamily, texto: b.innerText }))`);
+    for (const f of fontes) assert.ok(f.texto.includes("Barão do Café, ação"), `${f.id} sem a amostra: ${f.texto}`);
+    const fam = (id: string) => fontes.find((f) => f.id === `aparencia-fonte-${id}`)?.familia ?? "";
+    assert.match(fam("vt323"), /VT323/i);
+    assert.match(fam("press"), /Press Start 2P/i);
+    assert.notEqual(fam("vt323"), fam("press"));
+
+    // Prévia ao vivo: o <html> muda na hora, sem fechar a aba.
+    await p.click('[data-testid="aparencia-fonte-vt323"]');
+    await p.waitFor(`document.documentElement.getAttribute('data-fonte') === "vt323"`, "fonte VT323 aplicada");
+    await p.click('[data-testid="aparencia-estilo-B"]');
+    await p.waitFor(`document.documentElement.getAttribute('data-estilo') === "B"`, "estilo B aplicado");
+    await p.click('[data-testid="aparencia-dock-cavalete"]');
+    await p.waitFor(`document.documentElement.getAttribute('data-dock') === "cavalete"`, "dock cavalete salvo");
+    assert.equal(await painelAberto(p), true, "escolher uma opção não pode fechar a aba");
+    assert.ok((await p.text()).includes("em breve"), "docks sem visual devem avisar 'em breve'");
+    assert.equal(
+      await p.eval<string>(`document.querySelector('[data-testid="aparencia-estilo-B"]').getAttribute('aria-pressed')`),
+      "true",
+    );
+
+    // A preferência fica no localStorage e a tela não perde nada ao recarregar (sem flash: o
+    // script do <head> já aplica os data-* antes da hidratação).
+    assert.deepEqual(
+      JSON.parse(await p.eval<string>(`localStorage.getItem("coup:aparencia")`)),
+      { fonte: "vt323", estilo: "B", dock: "cavalete" },
+    );
+    await p.key("Escape");
+    await p.waitFor(`!document.querySelector('[data-testid="aparencia-panel"]')`, "Esc fechou a aba");
+    await p.waitFor(`document.activeElement === document.querySelector('[data-testid="aparencia-toggle"]')`, "foco devolvido à engrenagem");
+    await p.reload();
+    await p.waitFor(`!!document.querySelector('[data-testid="aparencia-toggle"]')`, "home após reload");
+    assert.deepEqual(await html(p), { fonte: "vt323", estilo: "B", dock: "cavalete" });
+
+    // Clique fora (no véu) fecha; clique dentro não.
+    await p.click('[data-testid="aparencia-toggle"]');
+    await p.waitFor(`!!document.querySelector('[data-testid="aparencia-panel"]')`, "reabriu");
+    const r = await p.eval<{ inX: number; inY: number }>(`(() => {
+      const d = document.querySelector('[data-testid="aparencia-panel"]').getBoundingClientRect();
+      return { inX: d.left + d.width / 2, inY: d.top + 60 };
+    })()`);
+    await p.clickAt(r.inX, r.inY);
+    assert.equal(await painelAberto(p), true, "clique dentro da aba não pode fechar");
+    await p.clickAt(8, 8);
+    await p.waitFor(`!document.querySelector('[data-testid="aparencia-panel"]')`, "fechou clicando fora");
+    noErrors(p);
+  } finally {
+    await p.eval(`localStorage.removeItem("coup:aparencia")`); // não vaza o tema para os outros testes
+  }
+});
+
+test("aparência: na mesa, o Esc fecha só a aba (a mira segue armada) e as escolhas não travam o jogo", async () => {
+  const { ps } = await game(["Ana", "Bia", "Caio"], { w: 1280, h: 720 });
+  const [a] = ps;
+  try {
+    await a.click('[data-zone="basicas"] button', "Renda");
+    await waitCoins(a, "Ana", 3);
+    await ps[1].click('[data-zone="basicas"] button', "Renda");
+    await ps[2].click('[data-zone="basicas"] button', "Renda");
+    await a.waitFor(`document.querySelector('[data-seat="Ana"]')?.getAttribute('data-coins') === "3" && !!document.querySelector('[data-testid="dock"]')`, "volta a vez da Ana");
+    await a.click('[data-zone="centro"] [title="Capoeira"]');
+    await a.waitFor(`document.querySelector('[data-seat="Bia"][data-target="sim"]')`, "mira em Bia");
+
+    // Abre a aba pela engrenagem do HUD, troca o estilo e a fonte: a mira continua armada.
+    await a.click('[data-testid="aparencia-toggle"]');
+    await a.waitFor(`!!document.querySelector('[data-testid="aparencia-panel"]')`, "aba aberta na mesa");
+    await a.click('[data-testid="aparencia-estilo-B"]');
+    await a.waitFor(`document.documentElement.getAttribute('data-estilo') === "B"`, "estilo B na mesa");
+    await a.click('[data-testid="aparencia-fonte-silkscreen"]');
+    await a.waitFor(`document.documentElement.getAttribute('data-fonte') === "silkscreen"`, "fonte Silkscreen na mesa");
+    assert.equal(await a.eval<boolean>(`!!document.querySelector('[data-seat="Bia"][data-target="sim"]')`), true, "mira some ao mexer na aparência");
+
+    // Esc fecha SÓ a aba; a mira segue. Depois, com a aba fechada, o Esc cancela a mira.
+    await a.key("Escape");
+    await a.waitFor(`!document.querySelector('[data-testid="aparencia-panel"]')`, "Esc fechou a aba");
+    assert.equal(await a.eval<boolean>(`!!document.querySelector('[data-seat="Bia"][data-target="sim"]')`), true, "Esc com a aba aberta cancelou a mira");
+    await a.key("Escape");
+    await a.waitFor(`!document.querySelector('[data-target="sim"]')`, "Esc cancelou a mira com a aba fechada");
+
+    // Com o tema trocado a mesa continua utilizável (nada cortado nem sobreposto).
+    assert.deepEqual(await layoutIssues(a), []);
+    noErrors(...ps);
+  } finally {
+    await a.eval(`localStorage.removeItem("coup:aparencia")`);
+  }
+});
+
+test("HUD da sala: logo, código, um só estilo de botão (5 botões) e nenhum emoji do sistema", async () => {
+  const p = await open(`/room/${room()}?name=Ana`, { w: 1280, h: 720 });
+  await p.waitText("Sala de espera");
+  const hud = await p.eval<{ logo: boolean; codigo: string; botoes: string[]; classes: number; altura: number; emoji: boolean }>(`(() => {
+    const h = document.querySelector('header');
+    const bs = [...h.querySelectorAll('button')];
+    return {
+      logo: !!h.querySelector('[data-testid="logo"] img') && h.querySelector('[data-testid="logo"] img').naturalWidth > 0,
+      codigo: h.querySelector('[data-testid="sala-codigo"]')?.innerText ?? '',
+      botoes: bs.map(b => b.getAttribute('data-testid') || '?'),
+      classes: new Set(bs.map(b => b.className.split(' ').filter(c => !/forca/.test(c)).join(' '))).size,
+      altura: h.getBoundingClientRect().height,
+      emoji: /\\p{Extended_Pictographic}/u.test(h.innerText),
+    };
+  })()`);
+  assert.equal(hud.logo, true, "logo do HUD não carregou");
+  assert.match(hud.codigo, /^[A-Z0-9]{3,}$/);
+  assert.deepEqual(hud.botoes, ["mute-toggle", "crt-toggle", "cheatsheet-toggle", "aparencia-toggle", "leave-button"]);
+  assert.equal(hud.classes, 1, "os botões do HUD devem ter um único estilo");
+  assert.ok(hud.altura <= 64, `HUD alto demais: ${hud.altura}px`);
+  assert.equal(hud.emoji, false, "emoji do sistema no cabeçalho");
+  noErrors(p);
+});
+
+// ── Faixa de status da rodada (retrato da vez + o que a mesa espera) ─────────
+const headIs = (p: Page, text: string) =>
+  p.waitFor(`document.querySelector('[data-testid="round-status-headline"]')?.innerText === ${JSON.stringify(text)}`, `faixa: "${text}"`);
+const detailIs = (p: Page, text: string) =>
+  p.waitFor(`document.querySelector('[data-testid="round-status-detail"]')?.innerText === ${JSON.stringify(text)}`, `detalhe: "${text}"`);
+const statusText = (p: Page) =>
+  p.eval<{ head: string; detail: string }>(`({
+    head: document.querySelector('[data-testid="round-status-headline"]')?.innerText ?? '',
+    detail: document.querySelector('[data-testid="round-status-detail"]')?.innerText ?? '',
+  })`);
+
+// /dev/mesa (n=4): eu sou a Ana (p1). Cada fase tem o texto certo, dentro do cabeçalho.
+const FASES_STATUS: Array<[fase: string, head: string, detail: string]> = [
+  ["turno", "Sua vez", "Escolha uma ação"],
+  ["reacao", "Bia declarou Taxas (Barão do Café)", "Aguardando você e Davi: contestar ou passar"],
+  ["contestar", "Caio bloqueou Ajuda Externa com Barão do Café", "Aguardando você, Bia e Davi: contestar o bloqueio ou passar"],
+  ["revelar", "Você perdeu uma influência", "Escolha qual carta revelar"],
+  ["troca", "Você está trocando cartas", "Escolha quais cartas manter"],
+  ["fim", "Você venceu!", "Partida encerrada"],
+];
+for (const [fase, head, detail] of FASES_STATUS) {
+  test(`faixa de status: fase "${fase}" mostra "${head}"`, async () => {
+    const p = await open(`/dev/mesa?fase=${fase}&n=4`, { w: 1280, h: 720 });
+    await headIs(p, head);
+    await detailIs(p, detail);
+    // A faixa vive no miolo do cabeçalho (portal), com o retrato de quem tem a vez.
+    const dom = await p.eval<{ inSlot: boolean; phase: string; turn: string; portrait: boolean }>(`(() => {
+      const b = document.querySelector('[data-testid="round-status"]');
+      return {
+        inSlot: !!document.querySelector('[data-testid="round-status-slot"] [data-testid="round-status"]'),
+        phase: b.getAttribute('data-phase'), turn: b.getAttribute('data-turn-id'),
+        portrait: !!b.querySelector('[data-testid="round-status-portrait"]'),
+      };
+    })()`);
+    assert.equal(dom.inSlot, true, "faixa fora do slot do cabeçalho");
+    assert.equal(dom.portrait, fase !== "fim", fase === "fim" ? "no fim ninguém tem a vez" : "falta o retrato de quem tem a vez");
+    if (fase === "turno") assert.equal(dom.turn, "p1");
+    if (fase === "reacao") assert.equal(dom.turn, "p2");
+    noErrors(p);
+  });
+}
+
+// Aviso dos últimos 5s (/dev/mesa?restante=N fixa o tempo restante da fase).
+for (const [fase, restante, texto] of [
+  ["turno", 3, "Você joga Renda em"],
+  ["revelar", 4, "Você revela uma carta sorteada em"],
+  ["troca", 2, "Você mantém as próprias cartas em"],
+] as const) {
+  test(`aviso dos últimos segundos: fase "${fase}" com ${restante}s avisa "${texto}…"`, async () => {
+    const p = await open(`/dev/mesa?fase=${fase}&n=4&restante=${restante}`, { w: 1280, h: 720 });
+    await p.waitFor(`document.querySelector('[data-testid="round-status"]')?.getAttribute('data-warning') === 'sim'`, "faixa em modo aviso");
+    const detalhe = await p.eval<string>(`document.querySelector('[data-testid="round-status-detail"]').innerText`);
+    assert.ok(detalhe.startsWith(texto), `aviso inesperado: ${detalhe}`);
+    noErrors(p);
+  });
+}
+
+test("aviso dos últimos segundos: com tempo de sobra (32s) a faixa não avisa", async () => {
+  const p = await open(`/dev/mesa?fase=turno&n=4`, { w: 1280, h: 720 });
+  await headIs(p, "Sua vez");
+  await detailIs(p, "Escolha uma ação");
+  assert.equal(await p.eval<boolean>(`document.querySelector('[data-testid="round-status"]').getAttribute('data-warning') === null`), true);
+  noErrors(p);
+});
+
+test("faixa de status: partida real — turno, declaração, passar, contestação e layout intacto", async () => {
+  const { ps } = await game(["Ana", "Bia", "Caio"], { w: 1280, h: 720 });
+  const [a, b, c] = ps;
+
+  // Turno: Ana "Sua vez"; os outros "Vez de Ana". O retrato é o de quem tem a vez.
+  await headIs(a, "Sua vez");
+  await headIs(b, "Vez de Ana");
+  await headIs(c, "Vez de Ana");
+  await detailIs(b, "Escolhendo uma ação");
+  const anaId = await a.eval<string>(`document.querySelector('[data-seat="Ana"]').getAttribute('data-seat-id')`);
+  assert.equal(await b.eval<string>(`document.querySelector('[data-testid="round-status"]').getAttribute('data-turn-id')`), anaId);
+
+  // Ana declara Taxas: cada um vê a frase do seu ponto de vista.
+  await a.click('[data-zone="centro"] [title="Barão do Café"]');
+  await headIs(a, "Você declarou Taxas (Barão do Café)");
+  await detailIs(a, "Aguardando Bia e Caio: contestar ou passar");
+  await headIs(b, "Ana declarou Taxas (Barão do Café)");
+  await detailIs(b, "Aguardando você e Caio: contestar ou passar");
+
+  // A faixa não invade os botões do cabeçalho nem mexe no layout da mesa.
+  const geo = await b.eval<{ bannerInHeader: boolean; clearOfButtons: boolean; headerH: number }>(`(() => {
+    const ban = document.querySelector('[data-testid="round-status"]').getBoundingClientRect();
+    const hdr = document.querySelector('header').getBoundingClientRect();
+    const btn = document.querySelector('[data-testid="cheatsheet-toggle"]').getBoundingClientRect();
+    return { bannerInHeader: ban.top >= hdr.top && ban.bottom <= hdr.bottom + 0.5, clearOfButtons: ban.right <= btn.left, headerH: hdr.height };
+  })()`);
+  assert.equal(geo.bannerInHeader, true, "faixa vaza do cabeçalho");
+  assert.equal(geo.clearOfButtons, true, "faixa sobre os botões do cabeçalho");
+  assert.ok(geo.headerH <= 64, `cabeçalho cresceu demais: ${geo.headerH}px`);
+  assert.deepEqual(await layoutIssues(b), []);
+
+  // Bia passa: sai da espera e a mesa só espera o Caio.
+  await b.key(" ");
+  await detailIs(b, "Aguardando Caio: contestar ou passar");
+  await detailIs(a, "Aguardando Caio: contestar ou passar");
+  await detailIs(c, "Aguardando você: contestar ou passar");
+
+  // Caio contesta: alguém perde influência; quem perdeu vê "Você perdeu", os outros veem o nome.
+  await c.key("c");
+  for (const p of ps) await p.waitFor(`/perdeu uma influência$/.test(document.querySelector('[data-testid="round-status-headline"]')?.innerText ?? '')`, "alguém perdeu influência");
+  const heads = await Promise.all(ps.map(async (p) => (await statusText(p)).head));
+  assert.equal(heads.filter((h) => h === "Você perdeu uma influência").length, 1, `só o perdedor vê 'Você': ${heads.join(" | ")}`);
+  const loser = ["Ana", "Bia", "Caio"][heads.indexOf("Você perdeu uma influência")];
+  for (const [i, p] of ps.entries()) {
+    const esperado = heads[i] === "Você perdeu uma influência" ? "Escolha qual carta revelar" : "Escolhendo qual carta revelar";
+    await detailIs(p, esperado);
+    if (heads[i] !== "Você perdeu uma influência") assert.equal(heads[i], `${loser} perdeu uma influência`);
+  }
+  noErrors(...ps);
+});
+
+test("faixa de status: bloqueio da Ajuda Externa e volta ao turno ao passar", async () => {
+  const { ps } = await game(["Ana", "Bia"], { w: 1280, h: 720 });
+  const [a, b] = ps;
+  await a.click('[data-zone="basicas"] .seal', "Ajuda");
+  await headIs(b, "Ana declarou Ajuda Externa");
+  await detailIs(b, "Aguardando você: bloquear ou passar");
+
+  // Bia bloqueia com o Barão (atalho B): a janela vira "contestar o bloqueio".
+  await b.key("b");
+  await headIs(b, "Você bloqueou Ajuda Externa com Barão do Café");
+  await detailIs(b, "Aguardando Ana: contestar o bloqueio ou passar");
+  await headIs(a, "Bia bloqueou Ajuda Externa com Barão do Café");
+  await detailIs(a, "Aguardando você: contestar o bloqueio ou passar");
+
+  // Ana deixa passar: o bloqueio vale e a vez é da Bia.
+  await a.key(" ");
+  await headIs(b, "Sua vez");
+  await headIs(a, "Vez de Bia");
+  noErrors(...ps);
+});
+
+// ── Espectador ───────────────────────────────────────────────────────────────
+test("espectador (/dev/mesa): mesa só de leitura, sem mão, sem ações e sem 'Você' na faixa", async () => {
+  const p = await open("/dev/mesa?fase=turno&n=4&espectador=1", { w: 1280, h: 720 });
+  await p.waitFor(`!!document.querySelector('[data-testid="spectator-notice"]')`, "aviso de espectador");
+  const dom = await p.eval<{ dockSpectator: string | null; zones: number; cards: number; passAuto: boolean; notice: string }>(`(() => ({
+    dockSpectator: document.querySelector('[data-testid="dock"]').getAttribute('data-spectator'),
+    zones: document.querySelectorAll('[data-zone]').length,
+    cards: document.querySelectorAll('[data-zone="centro"] [title]').length,
+    passAuto: document.body.innerText.includes('Passar automático'),
+    notice: document.querySelector('[data-testid="spectator-notice"]').innerText,
+  }))()`);
+  assert.equal(dom.dockSpectator, "sim");
+  assert.equal(dom.zones, 0, "espectador não tem ações, mão nem reações");
+  assert.equal(dom.cards, 0);
+  assert.equal(dom.passAuto, false);
+  assert.match(dom.notice, /assistindo/i);
+  // A faixa usa nomes (ele não é ninguém da mesa) e nenhum assento diz "(você)".
+  await headIs(p, "Vez de Ana");
+  assert.equal((await p.text()).includes("(você)"), false);
+  // Nenhuma carta oculta mostra personagem (view pública), e o layout continua inteiro.
+  assert.deepEqual(await layoutIssues(p), []);
+  noErrors(p);
+});
+
+test("espectador (/dev/mesa): na vitória não há 'Jogar de novo', só o aviso de espera", async () => {
+  const p = await open("/dev/mesa?fase=fim&n=4&espectador=1", { w: 1280, h: 720 });
+  await p.waitFor(`!!document.querySelector('[data-testid="victory-wait"]')`, "aviso de espera da revanche");
+  assert.equal((await p.text()).includes("Jogar de novo"), false);
+  noErrors(p);
+});
+
+test("espectador: quem abre a sala em andamento assiste, os jogadores veem o 👁 e ninguém erra", async () => {
+  const { id, ps } = await game(["Ana", "Bia", "Caio"], { w: 1280, h: 720 });
+  const vigia = await open(`/room/${id}?name=Vigia`, { w: 1280, h: 720 });
+  await vigia.waitFor(`!!document.querySelector('[data-testid="spectator-notice"]')`, "espectador vê o aviso");
+  const dom = await vigia.eval<{ zones: number; seats: number; voce: boolean }>(`(() => ({
+    zones: document.querySelectorAll('[data-zone]').length,
+    seats: document.querySelectorAll('[data-seat]').length,
+    voce: document.body.innerText.includes('(você)'),
+  }))()`);
+  assert.equal(dom.zones, 0, "espectador com botões de jogo");
+  assert.equal(dom.seats, 3, "ele vê os 3 jogadores");
+  assert.equal(dom.voce, false);
+  // Os jogadores veem o contador de espectadores no cabeçalho.
+  await ps[0].waitFor(`document.querySelector('[data-testid="spectators-chip"]')?.innerText.includes('1')`, "👁 1 na sala");
+  // A partida segue normal para quem joga: Ana joga Renda e o espectador acompanha.
+  await ps[0].click('[data-zone="basicas"] button', "Renda");
+  await waitCoins(vigia, "Ana", 3);
+  assert.deepEqual(await layoutIssues(vigia), []);
+  noErrors(vigia, ...ps);
+});
+
+test("espectador: com 6 jogadores no lobby, o 7º vê a sala de espera como espectador", async () => {
+  const id = room();
+  const jogadores: Page[] = [];
+  for (const n of ["A1", "B2", "C3", "D4", "E5", "F6"]) {
+    const p = await open(`/room/${id}?name=${n}`);
+    await p.waitText(`${n} (você)`);
+    jogadores.push(p);
+  }
+  const extra = await open(`/room/${id}?name=Sobrando`);
+  await extra.waitFor(`!!document.querySelector('[data-testid="spectator-notice"]')`, "aviso de sala cheia");
+  assert.match(await extra.text(), /Sala cheia/);
+  assert.equal((await extra.text()).includes("Iniciar jogo"), false);
+  await jogadores[0].waitFor(`!!document.querySelector('[data-testid="lobby-spectators"]')`, "lista de espectadores no lobby");
+  noErrors(extra, ...jogadores);
+});
+
 // ── Páginas de revisão não podem quebrar ─────────────────────────────────────
-for (const path of ["/dev/cartas", "/dev/mesa", "/dev/mesa?fase=reacao&n=6", "/dev/mesa?fase=revelar&n=3", "/dev/mesa?fase=troca&n=2", "/dev/mesa?fase=fim&n=4", "/dev/mesa?fase=contestar&n=4"]) {
+for (const path of ["/dev/cartas", "/dev/colinha", "/dev/mesa", "/dev/mesa?fase=reacao&n=6", "/dev/mesa?fase=revelar&n=3", "/dev/mesa?fase=troca&n=2", "/dev/mesa?fase=fim&n=4", "/dev/mesa?fase=contestar&n=4"]) {
   test(`página de revisão ${path} renderiza sem erros`, async () => {
     const p = await open(path);
     await p.waitFor(`document.body.innerText.length > 40`, "conteúdo");

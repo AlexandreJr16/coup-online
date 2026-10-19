@@ -101,6 +101,15 @@ Em qualquer janela de reação o jogador pode **passar** ("deixo passar": não b
 - `CHOICE_TIME` na revelação: revela uma das cartas ainda ocultas, sorteada.
 - `CHOICE_TIME` na Troca: mantém as próprias cartas (troca neutra).
 
+### Aviso antes da jogada automática
+Nos **últimos 5 segundos** de uma fase de decisão (turno, revelação, Troca), a mesa avisa a todos o
+que o servidor vai jogar pelo jogador, com contagem regressiva (ex.: "Ana joga Renda em 3…", "Bia
+revela uma carta sorteada em 2…"). Com 10+ moedas o aviso é de Golpe em alguém sorteado. As janelas
+de reação não têm aviso (nelas "passar" já resolve e o estouro só fecha a janela).
+- O valor (5s) é fixo, não entra na tela de tempos do lobby (`TIMEOUT_WARNING_SECONDS` em `config.ts`).
+- É só aviso de UI: não estende o tempo e a jogada automática continua sendo do servidor.
+- Jogador ausente: o servidor já reduz a decisão dele para 5s, então o aviso aparece de imediato.
+
 ## Fluxo de Estados por Tipo de Ação
 
 ### Ações Imediatas (Renda, Golpe de Estado)
@@ -121,6 +130,19 @@ Em qualquer janela de reação o jogador pode **passar** ("deixo passar": não b
   → ninguém contestou: ação bloqueada → `proximo_turno`
   → alguém contestou: `resolvendo_contestacao` → resolve → `proximo_turno`
 → alguém contestou a ação: `resolvendo_contestacao` → resolve → `proximo_turno`
+
+## Espectadores
+Quem abre o link de uma sala com a **partida em andamento** (ou com os **6 lugares ocupados** no
+lobby) entra como **espectador**, em vez de ser recusado.
+- Vê a mesa pública (moedas, cartas reveladas, jogadas, histórico), **nunca as cartas ocultas de
+  ninguém**, nem a escolha de cartas de uma Troca. O servidor monta essa view; o cliente não filtra.
+- Não age: ações, bloqueios, contestações, passar, revelar, "passar automático", iniciar e pedir
+  revanche são recusados pelo servidor.
+- **Vira jogador** por ordem de chegada, até 6, quando: (1) uma revanche começa, (2) o host inicia
+  uma partida do lobby, (3) abre vaga no lobby. Quem não cabe segue espectador; espectador
+  desconectado é descartado. O token dele continua valendo (mesmo id), sem reentrar.
+- Não conta como "alguém online": não segura o relógio nem a sala (sala só com espectadores segue a
+  regra de sala abandonada). Se cair, tem 20s para voltar (F5); sair de propósito tira da lista na hora.
 
 ## Casos Especiais
 

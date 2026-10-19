@@ -2,13 +2,16 @@
   "name": "coup-online",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "tsx server.ts",
     "build": "next build",
     "start": "NODE_ENV=production tsx server.ts",
     "lint": "eslint",
-    "test": "node --import tsx --test \"src/**/*.test.ts\"",
-    "test:e2e": "npm run build && node --import tsx --test --test-concurrency=1 --test-timeout=180000 \"tests/e2e/*.e2e.test.ts\""
+    "test": "node --import tsx --test \"src/**/*.test.ts\" \"tools/**/*.test.ts\"",
+    "test:e2e": "npm run build && node --import tsx --test --test-concurrency=1 --test-timeout=180000 \"tests/e2e/*.e2e.test.ts\"",
+    "check": "npm test && tsc --noEmit && eslint .",
+    "plano:check": "tsx tools/plano-check.ts"
   },
   "dependencies": {
     "next": "16.2.9",
