@@ -274,6 +274,16 @@ test("mesa: Erário e baralho têm lugar fixo e a contagem do baralho é a real"
   noErrors(...ps);
 });
 
+test("fichas: assento e Erário mostram sprites carregados de verdade (P07.S4)", async () => {
+  const { ps } = await game(["Ana", "Bia", "Caio"]);
+  await ps[0].waitFor(`document.querySelectorAll('[data-chip-pile] img').length >= 4`, "pilhas de fichas na mesa");
+  const quebradas = await ps[0].eval<number>(
+    `[...document.querySelectorAll('[data-chip-pile] img')].filter(i => !i.complete || i.naturalWidth === 0).length`,
+  );
+  assert.equal(quebradas, 0);
+  noErrors(...ps);
+});
+
 // ── Animações de baralho (4.4) ───────────────────────────────────────────────
 /** Conta quantas moedas voadoras já foram criadas na camada (e quantas ainda estão no ar). */
 const espiarMoedas = (p: Page) =>

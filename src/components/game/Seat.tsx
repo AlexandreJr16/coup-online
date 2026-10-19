@@ -7,6 +7,7 @@ import { type CSSProperties, useState } from "react";
 
 import type { PublicPlayer } from "@/src/types/game";
 import Card from "./Card";
+import { ChipPile } from "./ChipPile";
 import { CoinDelta, useCountUp } from "./CoinFx";
 import { U } from "./escalaMesa";
 import { avatarColor, avatarInitials, avatarUrl, CINZEL, COLORS } from "./helpers";
@@ -177,7 +178,7 @@ export default function Seat({
           border: "1px solid rgba(240,165,0,0.35)",
         }}
       >
-        <span key={coins} className="pop" style={{ display: "inline-block" }}>🪙 {shownCoins}</span>
+        <ChipPile count={coins} shown={shownCoins} ownerId={player.id} />
         <CoinDelta delta={coinDelta} deltaKey={deltaKey} />
       </div>
 

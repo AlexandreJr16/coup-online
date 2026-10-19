@@ -69,7 +69,7 @@
   - [x] P07.S1 Gerador procedural fichas.ts com seed fixa
   - [ ] P07.S2 Curadoria de 3 variantes por quantidade `[H]`
   - [x] P07.S3 chipSprite(count, playerId) com testes
-  - [ ] P07.S4 Pilha no assento e montes no Erário
+  - [x] P07.S4 Pilha no assento e montes no Erário
   - [ ] P07.S5 Animações pop, voo e desmoronar
   - [ ] P07.S6 Hover na pilha (E8), fichas fantasma, fichas que pousam (E9) e aviso de 10+ (dono único)
 - [ ] **[P08](planos/P08-informacao-no-assento.md) Informação no assento e no centro** · onda 3 · risco médio

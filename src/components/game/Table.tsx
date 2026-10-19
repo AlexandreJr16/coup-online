@@ -6,7 +6,9 @@
 import { useEffect, useRef } from "react";
 
 import type { PublicPlayer } from "@/src/types/game";
+import { ChipPile } from "./ChipPile";
 import { useCountUp } from "./CoinFx";
+import { TREASURY_ID } from "./fichas";
 import Card from "./Card";
 import { U } from "./escalaMesa";
 import { centerOf, flyIn, reducedMotion } from "./motion";
@@ -105,7 +107,7 @@ export default function Table({
             <span style={{ fontFamily: CINZEL, fontWeight: 700, color: COLORS.text, fontSize: U(13) }}>
               Erário
             </span>
-            <span style={{ fontWeight: 800, color: COLORS.gold }}>🪙 {shownTreasury}</span>
+            <ChipPile count={treasury} shown={shownTreasury} ownerId={TREASURY_ID} bau height={30} />
           </div>
         )}
 
