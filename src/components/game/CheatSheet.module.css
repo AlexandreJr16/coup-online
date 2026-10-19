@@ -1,0 +1,328 @@
+/* Colinha como objeto (P22): uma peça única, como a carta de referência do Coup físico, que
+   sobe em degraus. Só lê variáveis do tema (`--k-*`, `--p-*`, `--u`, `--fonte-ui`, `--fe`), então
+   funciona nos estilos A (madeira e latão) e B (pergaminho). Sem gradiente, blur, glow nem
+   border-radius: bordas em 4 eixos por box-shadow, sombra dura.
+   Orçamento de 1280x720 (sem rolagem): moldura do modal 16px de cada lado; o corpo cabe em
+   ~560px e `.corpo` só rola se a viewport for menor que isso ou a fonte for muito maior. */
+
+.peca {
+  --u: 2px;
+  position: relative;
+  width: min(1200px, 100%);
+  font-family: var(--fonte-ui);
+  animation: sobe 0.5s steps(8, end) both;
+}
+
+@keyframes sobe {
+  from {
+    transform: translateY(56px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .peca {
+    animation: none;
+  }
+}
+
+/* ── Topo ────────────────────────────────────────────────────────────────── */
+
+.topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  box-shadow: 0 var(--u) 0 0 var(--k-filete);
+}
+
+.coroa {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  image-rendering: pixelated;
+}
+
+.titulo {
+  margin: 0;
+  font-size: calc(22px * var(--fe));
+  font-weight: 400;
+  letter-spacing: var(--u);
+}
+
+.dica {
+  flex: 1;
+  min-width: 0;
+  font-size: calc(12px * var(--fe));
+  color: var(--k-texto-fraco);
+}
+
+/* ── Corpo ───────────────────────────────────────────────────────────────── */
+
+.corpo {
+  --u: 2px;
+  box-sizing: border-box;
+  max-height: calc(100dvh - 122px);
+  padding: calc(var(--u) * 2);
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  color: var(--k-texto);
+  font-family: var(--fonte-ui);
+}
+
+.personagens {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.coluna {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px;
+  background: var(--k-slot);
+  box-shadow:
+    calc(var(--u) * -1) 0 0 0 var(--k-tinta),
+    var(--u) 0 0 0 var(--k-tinta),
+    0 calc(var(--u) * -1) 0 0 var(--k-tinta),
+    0 var(--u) 0 0 var(--k-tinta);
+}
+
+/* Retrato maior: a miniatura de 40x56 em 3x (pixels inteiros) = 120x168. */
+.retrato {
+  position: relative;
+  box-sizing: content-box;
+  width: 120px;
+  height: 168px;
+  margin: calc(var(--u) * 2);
+  box-shadow:
+    0 0 0 var(--u) var(--k-filete),
+    0 0 0 calc(var(--u) * 2) var(--k-tinta);
+}
+
+.retratoImg {
+  display: block;
+  width: 120px;
+  height: 168px;
+  image-rendering: pixelated;
+}
+
+/* Selo do poder: o ícone da ação do personagem, no canto do retrato. */
+.selo {
+  position: absolute;
+  right: -18px;
+  bottom: -12px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  background: var(--k-slot);
+  box-shadow:
+    0 0 0 var(--u) var(--k-filete),
+    0 0 0 calc(var(--u) * 2) var(--k-tinta);
+}
+
+.seloImg {
+  display: block;
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+}
+
+.nome {
+  margin: 2px 0 0;
+  font-size: calc(15px * var(--fe));
+  font-weight: 400;
+  letter-spacing: var(--u);
+  text-align: center;
+}
+
+/* Uma linha de ação: nome da ação e o que ela faz. */
+.acao {
+  align-self: stretch;
+  min-height: 56px;
+}
+
+.acaoNome {
+  font-size: calc(13px * var(--fe));
+  line-height: 1.2;
+}
+
+.efeito {
+  margin-top: 1px;
+  font-size: calc(11.5px * var(--fe));
+  line-height: 1.2;
+  color: var(--k-texto-fraco);
+}
+
+.semAcao {
+  color: var(--k-texto-fraco);
+}
+
+/* ── Contestável / bloqueável: ícones pixel no lugar de chips de texto ───── */
+
+.flags {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.flagsLinha {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+}
+
+.flag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+}
+
+.marca {
+  display: block;
+  width: 32px;
+  height: 32px;
+  margin: -2px; /* o ícone tem folga transparente: a linha ocupa 28px */
+  flex: none;
+  image-rendering: pixelated;
+}
+
+.rotulo {
+  display: flex;
+  flex-direction: column;
+  font-size: calc(12px * var(--fe));
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+.escopo {
+  font-size: calc(10px * var(--fe));
+  color: var(--k-texto-fraco);
+}
+
+.minis {
+  display: flex;
+  gap: 4px;
+  margin-left: 2px;
+}
+
+.mini {
+  display: block;
+  width: 20px;
+  height: 28px;
+  image-rendering: pixelated;
+  box-shadow: 0 0 0 var(--u) var(--k-tinta);
+}
+
+/* O que ESTE personagem bloqueia. */
+.bloqueia {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding-top: 4px;
+  box-shadow: 0 calc(var(--u) * -1) 0 0 var(--k-filete);
+  font-size: calc(12px * var(--fe));
+  line-height: 1.1;
+}
+
+.bloqueiaNada {
+  opacity: 0.6;
+}
+
+.bloqueiaImg {
+  display: block;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  image-rendering: pixelated;
+}
+
+/* ── Rodapé: ações livres e regras curtas ────────────────────────────────── */
+
+.rodape {
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  gap: 18px;
+  margin-top: 8px;
+}
+
+.secao {
+  margin: 0 0 4px;
+  font-size: calc(12px * var(--fe));
+  font-weight: 400;
+  letter-spacing: var(--u);
+  text-transform: uppercase;
+  color: var(--k-texto-fraco);
+}
+
+.lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.geral {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.geralSelo {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  margin: calc(var(--u) * 2);
+  background: var(--k-slot);
+  box-shadow:
+    0 0 0 var(--u) var(--k-filete),
+    0 0 0 calc(var(--u) * 2) var(--k-tinta);
+}
+
+.geralPerigo {
+  box-shadow:
+    0 0 0 var(--u) var(--p-rubro),
+    0 0 0 calc(var(--u) * 2) var(--k-tinta);
+}
+
+.geralTexto {
+  flex: 1;
+  min-width: 0;
+}
+
+.regra {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  font-size: calc(12.5px * var(--fe));
+  line-height: 1.2;
+}
+
+.regraIcone {
+  display: block;
+  width: 32px;
+  height: 32px;
+  margin: -2px 0;
+  flex: none;
+  image-rendering: pixelated;
+}

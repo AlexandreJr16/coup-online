@@ -1,5 +1,7 @@
-// Colinha das cartas e do jogo: botão "?" + painel com os personagens, ações e regras.
-// O conteúdo vem de buildCheatSheet() (cheatsheet.ts), derivado do catálogo de cartas.
+// Colinha das cartas e do jogo: botão "?" + UMA peça única (carta de referência que sobe, P22)
+// com os 5 personagens em colunas, as ações livres e 5 regras curtas. O conteúdo vem de
+// buildCheatSheet() (cheatsheet.ts, derivado do catálogo de cartas); só as regras curtas vêm de
+// RULES_CARD. Visual no kit (variáveis `--k-*`: vale para os estilos A e B), em CheatSheet.module.css.
 //
 // NÃO pausa nada: os timers são do servidor e o jogo segue rodando enquanto a pessoa lê.
 // Teclado: `?` abre/fecha; `Esc` fecha. O Esc é tratado em CAPTURA e interrompe a
@@ -8,26 +10,28 @@
 // em botão DENTRO do painel: aí é "ativar o botão", não "passar a reação".
 "use client";
 
-import { type CSSProperties, useEffect, useId, useRef, useState } from "react";
+import { type ComponentPropsWithoutRef, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import Card from "./Card";
 import {
   buildCheatSheet,
+  RULES_CARD,
   type ActionInfo,
   type BlockScope,
   type CharacterInfo,
 } from "./cheatsheet";
-import { ACTION_META, type ActionCategory, categoryColor, CINZEL, COLORS } from "./helpers";
+import { artUrl, iconUrl, type IconName } from "./helpers";
+import { CARD_BY_ID } from "@/src/lib/game/cards";
+import { cx } from "@/src/components/ui/cx";
 import { IconButton } from "@/src/components/ui/IconButton";
 import { PixelButton } from "@/src/components/ui/PixelButton";
+import { PixelPanel } from "@/src/components/ui/PixelPanel";
+import ui from "@/src/components/ui/ui.module.css";
+import c from "./CheatSheet.module.css";
 
 const SHEET = buildCheatSheet();
 
-// Cores de categoria que são escuras demais para TEXTO sobre o painel escuro.
-const LEGIVEL: Partial<Record<ActionCategory, string>> = { coup: COLORS.text, neutral: "#aab4d6" };
-
-const quemTxt = (q: BlockScope) => (q === "qualquer" ? "qualquer jogador" : "só o alvo");
+const quemTxt = (q: BlockScope) => (q === "qualquer" ? "qualquer um" : "só o alvo");
 
 function isTyping(t: EventTarget | null): boolean {
   if (!(t instanceof HTMLElement)) return false;
@@ -98,7 +102,7 @@ export function CheatSheetButton() {
         createPortal(
           <div
             data-testid="cheatsheet-backdrop"
-            style={backdrop}
+            className={ui.modalFundo}
             onClick={(e) => e.target === e.currentTarget && setOpen(false)}
           >
             <div
@@ -107,24 +111,26 @@ export function CheatSheetButton() {
               aria-modal="true"
               aria-labelledby={titleId}
               data-testid="cheatsheet"
-              className="panel-salon"
-              style={dialog}
+              className={c.peca}
             >
-              <div style={head}>
-                <h2 id={titleId} style={title}>
-                  Colinha
-                </h2>
-                <PixelButton
-                  ref={closeRef}
-                  data-testid="cheatsheet-close"
-                  aria-label="Fechar a colinha"
-                  onClick={() => setOpen(false)}
-                >
-                  Fechar
-                </PixelButton>
-              </div>
-              <CheatSheetBody />
-              <p style={foot}>Esc ou ? para fechar · o jogo continua rodando enquanto você lê.</p>
+              <PixelPanel>
+                <div className={c.topo}>
+                  <Px src={iconUrl("coroa")} className={c.coroa} />
+                  <h2 id={titleId} className={c.titulo}>
+                    Colinha
+                  </h2>
+                  <span className={c.dica}>Esc ou ? fecha. O jogo continua rodando enquanto você lê.</span>
+                  <PixelButton
+                    ref={closeRef}
+                    data-testid="cheatsheet-close"
+                    aria-label="Fechar a colinha"
+                    onClick={() => setOpen(false)}
+                  >
+                    Fechar
+                  </PixelButton>
+                </div>
+                <CheatSheetBody />
+              </PixelPanel>
             </div>
           </div>,
           document.body,
@@ -136,131 +142,141 @@ export function CheatSheetButton() {
 /** Corpo da colinha (usado também pela página de revisão /dev/colinha). */
 export function CheatSheetBody() {
   return (
-    <div data-testid="cheatsheet-body">
-      <h3 style={h3}>Personagens</h3>
-      <div style={grid}>
-        {SHEET.characters.map((c) => (
-          <CharacterTile key={c.id} c={c} />
+    <div className={c.corpo} data-testid="cheatsheet-body">
+      <div className={c.personagens} data-testid="colinha-personagens">
+        {SHEET.characters.map((ch) => (
+          <Coluna key={ch.id} ch={ch} />
         ))}
       </div>
 
-      <h3 style={h3}>Ações sempre disponíveis</h3>
-      <ul style={list}>
-        {SHEET.generalActions.map((a) => (
-          <li key={a.action} style={row} data-action={a.action}>
-            <ActionLine a={a} />
-          </li>
-        ))}
-      </ul>
+      <div className={c.rodape}>
+        <section data-testid="colinha-gerais" aria-label="Sem personagem">
+          <h3 className={c.secao}>Sem personagem</h3>
+          <ul className={c.lista}>
+            {SHEET.generalActions.map((a) => (
+              <li key={a.action} className={c.geral} data-action={a.action}>
+                <span className={cx(c.geralSelo, a.action === "golpe" && c.geralPerigo)}>
+                  <Px src={iconUrl(a.action)} className={c.seloImg} />
+                </span>
+                <div className={c.geralTexto}>
+                  <div className={c.acaoNome}>{a.label}</div>
+                  <div className={c.efeito}>{a.efeito}</div>
+                </div>
+                <Flags info={a} linha />
+              </li>
+            ))}
+          </ul>
+        </section>
 
-      <h3 style={h3}>Regras rápidas</h3>
-      <ul style={{ ...list, gap: 6 }}>
-        {SHEET.rules.map((r) => (
-          <li key={r} style={{ ...row, color: COLORS.text }}>
-            {r}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function CharacterTile({ c }: { c: CharacterInfo }) {
-  return (
-    <div style={tile} data-character={c.id}>
-      <Card character={c.id} size="sm" />
-      <div style={{ minWidth: 0 }}>
-        <div style={charName}>{c.nome}</div>
-        {c.acao ? (
-          <div style={line}>
-            <ActionLine a={c.acao} />
-          </div>
-        ) : (
-          <div style={{ ...line, color: COLORS.dim }}>Sem ação própria.</div>
-        )}
-        {c.bloqueia.map((b) => (
-          <div key={b.action} style={chip}>
-            Bloqueia {b.label} <span style={{ color: COLORS.dim }}>({quemTxt(b.quem)})</span>
-          </div>
-        ))}
+        <section data-testid="colinha-regras" aria-label="Regras rápidas">
+          <h3 className={c.secao}>Regras rápidas</h3>
+          <ul className={c.lista}>
+            {RULES_CARD.map((r) => (
+              <li key={r.id} className={c.regra} data-regra={r.id}>
+                <Px src={iconUrl(r.icone)} className={c.regraIcone} />
+                <span>{r.texto}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </div>
   );
 }
 
-function ActionLine({ a }: { a: ActionInfo }) {
-  const cor = categoryColor(ACTION_META[a.action].category);
+// Imagem pixel do kit (PNG de public/art/<tema>/). Decorativa por padrão (alt vazio).
+function Px({
+  src,
+  className,
+  alt = "",
+  ...resto
+}: { src: string | null; className: string } & Omit<ComponentPropsWithoutRef<"img">, "src" | "className">) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img {...resto} src={src ?? undefined} alt={alt} className={className} draggable={false} />;
+}
+
+function Coluna({ ch }: { ch: CharacterInfo }) {
+  const iconeDoPoder: IconName = ch.acao ? ch.acao.action : "bloquear";
   return (
-    <>
-      <b style={{ color: LEGIVEL[ACTION_META[a.action].category] ?? cor }}>{a.label}</b>
-      {a.custo != null && <span style={{ color: COLORS.dim }}> ({a.custo} moedas)</span>}
-      <span>: {a.efeito}</span>
-      <div style={tags}>
-        <span style={tag}>{a.contestavel ? "Pode ser contestada" : "Não pode ser contestada"}</span>
-        <span style={tag}>
-          {a.bloqueadaPor.length === 0
-            ? "Não pode ser bloqueada"
-            : `Bloqueada por ${a.bloqueadaPor.map((b) => b.nome).join(" ou ")} (${quemTxt(a.bloqueadaPor[0].quem)})`}
+    <div className={c.coluna} data-character={ch.id} data-action={ch.acao?.action ?? "nenhuma"}>
+      <div className={c.retrato} style={{ background: CARD_BY_ID[ch.id].cor }}>
+        <Px src={artUrl(ch.id, "neutro", "sm")} className={c.retratoImg} alt={ch.nome} />
+        <span className={c.selo}>
+          <Px src={iconUrl(iconeDoPoder)} className={c.seloImg} />
         </span>
       </div>
-    </>
+      <h3 className={c.nome}>{ch.nome}</h3>
+
+      <div className={c.acao}>
+        {ch.acao ? (
+          <>
+            <div className={c.acaoNome}>{ch.acao.label}</div>
+            <div className={c.efeito}>{ch.acao.efeito}</div>
+          </>
+        ) : (
+          <>
+            <div className={cx(c.acaoNome, c.semAcao)}>Sem ação de turno</div>
+            <div className={c.efeito}>Só defende: não joga no próprio turno.</div>
+          </>
+        )}
+      </div>
+
+      {ch.acao ? <Flags info={ch.acao} /> : <div className={c.flags} />}
+
+      <div className={cx(c.bloqueia, ch.bloqueia.length === 0 && c.bloqueiaNada)} data-flag="bloqueia">
+        <Px src={iconUrl("bloquear")} className={c.bloqueiaImg} />
+        <div>
+          {ch.bloqueia.length === 0 ? (
+            "Não bloqueia nada"
+          ) : (
+            ch.bloqueia.map((b) => (
+              <div key={b.action}>
+                Bloqueia {b.label}
+                <div className={c.escopo}>{quemTxt(b.quem)}</div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
-const backdrop: CSSProperties = {
-  position: "fixed",
-  inset: 0,
-  zIndex: 200, // acima do feed (20) e do toast (7); o filtro CRT (9999) fica por cima
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: 16,
-  background: "rgba(8,6,16,0.72)",
-};
-const dialog: CSSProperties = {
-  position: "relative",
-  width: "100%",
-  maxWidth: 780,
-  maxHeight: "calc(100dvh - 32px)",
-  overflowY: "auto",
-  scrollbarWidth: "thin",
-  scrollbarColor: "rgba(240,165,0,0.55) transparent",
-  padding: "18px 22px 14px",
-  color: COLORS.text,
-  fontSize: 13.5,
-  lineHeight: 1.45,
-};
-const head: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between" };
-const title: CSSProperties = { margin: 0, fontFamily: CINZEL, fontSize: 24, fontWeight: 900, color: COLORS.gold };
-const h3: CSSProperties = {
-  margin: "16px 0 8px",
-  fontFamily: CINZEL,
-  fontSize: 14,
-  letterSpacing: 0.6,
-  textTransform: "uppercase",
-  color: COLORS.dim,
-};
-const grid: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 10 };
-const tile: CSSProperties = {
-  display: "flex",
-  gap: 10,
-  padding: 10,
-  borderRadius: 10,
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(240,165,0,0.22)",
-};
-const charName: CSSProperties = { fontFamily: CINZEL, fontWeight: 800, fontSize: 15, color: COLORS.turn };
-const line: CSSProperties = { marginTop: 2 };
-const chip: CSSProperties = { marginTop: 4, fontSize: 12.5, color: COLORS.text };
-const tags: CSSProperties = { display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 };
-const tag: CSSProperties = {
-  padding: "1px 8px",
-  fontSize: 11.5,
-  color: COLORS.dim,
-  background: "rgba(0,0,0,0.3)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: 999,
-};
-const list: CSSProperties = { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 };
-const row: CSSProperties = { padding: "0 2px" };
-const foot: CSSProperties = { margin: "14px 0 0", fontSize: 12, color: COLORS.dim, textAlign: "center" };
+/** Contestável e bloqueável: ícone certo/errado em pixel, com os retratos de quem bloqueia. */
+function Flags({ info, linha = false }: { info: ActionInfo; linha?: boolean }) {
+  const bloqueavel = info.bloqueadaPor.length > 0;
+  const nomes = info.bloqueadaPor.map((b) => b.nome).join(" ou ");
+  return (
+    <div className={cx(c.flags, linha && c.flagsLinha)}>
+      <div className={c.flag} data-flag="contestar">
+        <Marca ok={info.contestavel} rotulo="Contestável" />
+        <span className={c.rotulo}>Contestável</span>
+      </div>
+      <div className={c.flag} data-flag="bloquear" title={bloqueavel ? `Bloqueada por ${nomes}` : undefined}>
+        <Marca ok={bloqueavel} rotulo="Bloqueável" />
+        <span className={c.rotulo}>
+          Bloqueável
+          {bloqueavel && <span className={c.escopo}>{quemTxt(info.bloqueadaPor[0].quem)}</span>}
+        </span>
+        {bloqueavel && (
+          <span className={c.minis}>
+            {info.bloqueadaPor.map((b) => (
+              <Px key={b.characterId} src={artUrl(b.characterId, "neutro", "sm")} className={c.mini} alt={b.nome} />
+            ))}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Marca({ ok, rotulo }: { ok: boolean; rotulo: string }) {
+  return (
+    <Px
+      src={iconUrl(ok ? "certo" : "errado")}
+      className={c.marca}
+      alt={`${rotulo}: ${ok ? "sim" : "não"}`}
+      data-mark={ok ? "sim" : "nao"}
+    />
+  );
+}

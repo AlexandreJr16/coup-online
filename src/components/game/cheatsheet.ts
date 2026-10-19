@@ -6,7 +6,7 @@
 
 import { CARDS, type CardId } from "@/src/lib/game/cards";
 import type { ActionType } from "@/src/types/game";
-import { ACTION_META, legalBlockChars, requiredCharacter } from "./helpers";
+import { ACTION_META, type IconName, legalBlockChars, requiredCharacter } from "./helpers";
 
 // Quem pode bloquear uma ação: `qualquer` (ex.: Ajuda Externa) ou só a `vitima`.
 export type BlockScope = "qualquer" | "vitima";
@@ -58,6 +58,27 @@ export const RULES_SUMMARY: readonly string[] = [
   "Quem fica sem influência é exilado e devolve as moedas ao Tesouro.",
   "Passar: nas janelas de reação, 'Passar' é definitivo para você naquela jogada.",
   "Se o tempo acabar, o jogo decide pelo caminho mais seguro: Renda no turno (Golpe com 10+ moedas), carta sorteada ao revelar, e a janela de reação simplesmente fecha.",
+];
+
+// Regras curtas da peça da colinha (P22): no máximo 5 linhas, ~60 palavras, uma por assunto, cada
+// uma com um ícone. Texto próprio (não passa por buildCheatSheet) e fiel ao game-rules.md: o
+// teste `RULES_CARD cita fatos do game-rules.md` confere os números lendo o próprio arquivo.
+export interface RegraCurta {
+  id: "comeco" | "moedas" | "golpe" | "contestar" | "passar";
+  icone: IconName;
+  texto: string;
+}
+
+export const RULES_CARD: readonly RegraCurta[] = [
+  { id: "comeco", icone: "coroa", texto: "Cada um começa com 2 moedas e 2 influências. Sem influência, você é exilado." },
+  { id: "moedas", icone: "moeda", texto: "Renda dá +1 moeda e Ajuda Externa dá +2. Nenhuma das duas pode ser contestada." },
+  { id: "golpe", icone: "golpe", texto: "Golpe de Estado custa 7 e não falha. Com 10 ou mais moedas, é obrigatório." },
+  {
+    id: "contestar",
+    icone: "contestar",
+    texto: "Todos podem contestar. Blefou e foi pego, ou contestou e errou: perde 1 influência.",
+  },
+  { id: "passar", icone: "passar", texto: "Passar é final naquela janela. Se o tempo estoura, o jogo escolhe por você." },
 ];
 
 // Quem pode bloquear `action`, derivado do catálogo + da regra de UI (legalBlockChars):
