@@ -101,12 +101,12 @@ function Legenda({ text, warning }: { text: string; warning: boolean }) {
     <div
       data-testid="center-caption"
       data-warning={warning ? "sim" : undefined}
-      style={{ position: "absolute", left: U(640), top: U(330), transform: "translateX(-50%)", maxWidth: U(560), zIndex: 2, pointerEvents: "none" }}
+      style={{ position: "absolute", left: U(640), top: U(318), transform: "translateX(-50%)", width: "max-content", maxWidth: U(620), zIndex: 2, pointerEvents: "none" }}
     >
       <div className="m3-caixa" style={vars({ "--m3-borda": warning ? "#e03a2c" : "#14101a", "--m3-fundo": "#241a2c" })}>
         <div className="m3-caixa-in m3-legenda-in" style={{ color: warning ? "#ff8f80" : undefined }}>
           <Pix rows={SPRITE_AMPULHETA} paleta={PAL_AMPULHETA} />
-          <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{text}</span>
+          <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", textAlign: "center" }}>{text}</span>
         </div>
       </div>
     </div>

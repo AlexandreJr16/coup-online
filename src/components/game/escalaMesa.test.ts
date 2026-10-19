@@ -129,7 +129,7 @@ describe("migração para a escala da mesa", () => {
     assert.ok(ler("src/components/game/Table.tsx").includes("left: U(layout[i].cx - ASSENTO_W / 2)"));
     for (const f of ["BasicActions"]) {
       const t = ler(`src/components/game/${f}.tsx`);
-      assert.ok(t.includes("width: U(208)") && !/width:\s*208\b/.test(t), f);
+      assert.ok(t.includes("width: U(240)") && !/width:\s*240\b/.test(t), f);
     }
   });
 

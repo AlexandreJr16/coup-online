@@ -514,22 +514,22 @@ html[data-crt="1"] body::after {
 :root[data-fonte="pixelify"] {
   --fonte-ui: var(--font-pixelify), "Courier New", monospace;
   --fe: 1;
-  --fw: 1; /* largura média relativa à Pixelify (F() da mesa) */
+  --fw: 1; /* largura média relativa à Pixelify, medida por tools/visual/larguras.ts (F() da mesa) */
 }
 :root[data-fonte="silkscreen"] {
   --fonte-ui: var(--font-silkscreen), "Courier New", monospace;
   --fe: 0.9;
-  --fw: 0.75; /* largura média relativa à Pixelify (F() da mesa) */
+  --fw: 0.76; /* largura média relativa à Pixelify, medida por tools/visual/larguras.ts (F() da mesa) */
 }
 :root[data-fonte="vt323"] {
   --fonte-ui: var(--font-vt323), "Courier New", monospace;
   --fe: 1.35;
-  --fw: 1.2; /* largura média relativa à Pixelify (F() da mesa) */
+  --fw: 1.3; /* largura média relativa à Pixelify, medida por tools/visual/larguras.ts (F() da mesa) */
 }
 :root[data-fonte="press"] {
   --fonte-ui: var(--font-press), "Courier New", monospace;
   --fe: 0.62;
-  --fw: 0.6; /* largura média relativa à Pixelify (F() da mesa) */
+  --fw: 0.52; /* largura média relativa à Pixelify, medida por tools/visual/larguras.ts (F() da mesa) */
 }
 
 /* Dock em 3 variações (P27.S5), escolhidas na aba de Aparência (html[data-dock]). As três zonas

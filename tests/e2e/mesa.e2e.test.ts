@@ -139,7 +139,7 @@ test("uma rodada completa clicando: Renda, Taxas com Passar, Assassinar com mira
   await b.waitFor(`document.querySelector('[data-seat="Ana"] [data-testid="claim-plate"]')?.innerText.includes("Assassinar")`, "balão do assassinato");
   const reacoes = await b.eval<string>(`document.querySelector('[data-zone="reacoes"]').innerText`);
   assert.match(reacoes, /Contestar/);
-  assert.match(reacoes, /Bloquear/);
+  assert.ok(await b.eval<boolean>(`!!document.querySelector('[data-zone="reacoes"] [title^="Bloquear com"]')`), "selo de bloqueio na bandeja");
   assert.match(reacoes, /Passar/);
   await b.click('[data-zone="reacoes"] button', "Passar");
 

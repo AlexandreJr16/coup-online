@@ -6,7 +6,7 @@
 import type { Character, GameView } from "@/src/types/game";
 import ActionSeal from "./ActionSeal";
 import { F, U } from "./escalaMesa";
-import { CHAR_LABEL, COLORS, reactionOptions } from "./helpers";
+import { CHAR_LABEL, CHAR_SHORT, COLORS, reactionOptions } from "./helpers";
 
 export default function ReactionTray({
   view,
@@ -27,20 +27,22 @@ export default function ReactionTray({
       {o.canReact && !o.passed && (
         <>
           {o.canChallenge && (
-            <ActionSeal icon="contestar" emoji="❗" label="Contestar" color={COLORS.red} hotkey="C" onClick={onChallenge} />
+            <ActionSeal icon="contestar" emoji="❗" label="Contestar" color={COLORS.red} hotkey="C" width={176} onClick={onChallenge} />
           )}
           {o.blocks.map((c, i) => (
             <ActionSeal
               key={c}
               icon="bloquear"
               emoji="🛡️"
-              label={`Bloquear · ${CHAR_LABEL[c]}`}
+              label={CHAR_SHORT[c]}
+              title={`Bloquear com ${CHAR_LABEL[c]}`}
+              width={176}
               color="#9aa7b8"
               hotkey={i === 0 ? "B" : undefined}
               onClick={() => onBlock(c)}
             />
           ))}
-          <ActionSeal icon="passar" emoji="🪭" label="Passar" color="#6b7186" hotkey="Espaço" onClick={onPass} />
+          <ActionSeal icon="passar" emoji="🪭" label="Passar" color="#6b7186" hotkey="Espaço" width={176} onClick={onPass} />
         </>
       )}
       {o.canReact && o.passed && (

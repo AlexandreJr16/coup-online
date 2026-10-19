@@ -71,6 +71,7 @@ async function main() {
           const nome = `${fase}-n${n}-${t.w}x${t.h}${fonte === "pixelify" ? "" : "-" + fonte}`;
           if (FILTRO && !nome.includes(FILTRO)) continue;
           const p = await browser.open(`${server.url}/dev/mesa?fase=${fase}&n=${n}&restante=30`, t, { reducedMotion: true });
+          await p.waitFor(`document.readyState === 'complete' && !!document.querySelector('[data-palco]')`, "palco");
           if (fonte !== "pixelify") await p.eval(`document.documentElement.setAttribute('data-fonte', '${fonte}')`);
           await p.eval(`document.fonts.ready.then(() => true)`);
           await new Promise((r) => setTimeout(r, 900));

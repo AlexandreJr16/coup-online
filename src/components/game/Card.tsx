@@ -283,7 +283,7 @@ function FrontFace({
               >
                 {CHAR_SHORT[character]}
               </span>
-              {hint && <span style={{ ...umaLinha, fontSize: F(10), color: "rgba(255,240,210,0.92)", textShadow: "0 1px 2px #000" }}>{hint}</span>}
+              {hint && <span style={{ ...duasLinhas, fontSize: F(10), color: "rgba(255,240,210,0.92)", textShadow: "0 1px 2px #000" }}>{hint}</span>}
             </div>
           )}
         </>
@@ -298,7 +298,7 @@ function FrontFace({
             </span>
           )}
           {size === "lg" && hint && (
-            <span style={{ ...umaLinha, fontSize: F(10), color: "rgba(255,255,255,0.78)" }}>{hint}</span>
+            <span style={{ ...duasLinhas, fontSize: F(10), color: "rgba(255,255,255,0.78)" }}>{hint}</span>
           )}
         </>
       )}
@@ -346,3 +346,5 @@ function Corner({ children, size }: { children: ReactNode; size: Size }) {
 
 // Rótulo de uma linha só: com fonte larga, corta com reticências em vez de sair da carta.
 const umaLinha: CSSProperties = { display: "block", maxWidth: "100%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+// Dica (o que a carta faz): até 2 linhas, centralizada.
+const duasLinhas: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", maxWidth: "100%", textAlign: "center", lineHeight: 1.1 };

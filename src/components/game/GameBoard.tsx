@@ -382,6 +382,13 @@ export default function GameBoard({
         <ChallengeReveal challenge={events.challenge} />
         <CoinFlights deltas={events.coinDeltas} deltaKey={events.deltaKey} />
 
+        {/* Passar automático: canto de cima à esquerda, embaixo do relógio (o dock fica só com selos) */}
+        {!spectator && (
+          <div style={{ position: "absolute", left: U(12), top: U(58), zIndex: 5 }}>
+            <AutoPassToggle enabled={autoPass} onChange={toggleAutoPass} />
+          </div>
+        )}
+
         {/* Relógio da fase (turno, reação, revelação, troca) */}
         {timer && (
           <div
@@ -450,7 +457,6 @@ export default function GameBoard({
               socket.emit("game_pass", ack);
             }}
           />
-          <AutoPassToggle enabled={autoPass} onChange={toggleAutoPass} />
         </div>
       </div>
       )}
