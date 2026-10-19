@@ -387,6 +387,7 @@ export default function GameBoard({
           passedIds={view.pending?.passedIds ?? []}
           caption={view.phase === "fim_de_jogo" ? undefined : centerCaption(view, myId, secondsLeft)}
           balloon={actionBalloon(view)}
+          custoFantasma={targetingAction ? (ACTION_META[targetingAction].coinCost ?? 0) : 0}
         />
 
         {/* Jogada em andamento (informação; não bloqueia a mesa) */}

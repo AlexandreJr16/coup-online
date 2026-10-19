@@ -144,3 +144,18 @@ test("o id do jogador entra no hash: ordem e separador não confundem (a:12 != a
 test("o Erário (sem dono) escolhe pelo id fixo e não muda entre chamadas", () => {
   for (let q = 1; q <= MAX_TESTADO; q++) assert.equal(baseSprite(q), chipSprite(q, "erario"));
 });
+
+// ── P07.S6: fichas fantasma e aviso de 10+ ───────────────────────────────────
+import { avisoDeGolpe, pilhaComFantasma } from "./fichas";
+
+test("pilhaComFantasma: separa o que sobra do que sairia; sem custo ou sem saldo, nada some", () => {
+  assert.deepEqual(pilhaComFantasma(5, 3), { resto: 2, fantasma: 3 });
+  assert.deepEqual(pilhaComFantasma(7, 7), { resto: 0, fantasma: 7 });
+  assert.deepEqual(pilhaComFantasma(2, 3), { resto: 2, fantasma: 0 });
+  assert.deepEqual(pilhaComFantasma(4, 0), { resto: 4, fantasma: 0 });
+  assert.deepEqual(pilhaComFantasma(NaN, 3), { resto: 0, fantasma: 0 });
+});
+
+test("avisoDeGolpe: só a partir de 10 fichas", () => {
+  assert.deepEqual([0, 9, 10, 14].map(avisoDeGolpe), [false, false, true, true]);
+});

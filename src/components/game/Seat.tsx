@@ -22,6 +22,7 @@ export default function Seat({
   urgent = false,
   passed = false,
   balloon,
+  custoFantasma = 0,
   style,
   coinDelta = 0,
   deltaKey = 0,
@@ -36,6 +37,7 @@ export default function Seat({
   urgent?: boolean; // a mesa espera por este jogador (revelar/trocar)
   passed?: boolean; // já passou nesta janela de reação (✔)
   balloon?: string; // jogada em andamento deste jogador ("Assassinar → Bia")
+  custoFantasma?: number; // custo da ação em foco: fichas fantasma na pilha de quem olha (P07.S6)
   style?: CSSProperties;
   coinDelta?: number; // variação de moedas na última transição (Economia viva)
   deltaKey?: number; // re-dispara a animação do "+N/−N"
@@ -203,7 +205,7 @@ export default function Seat({
           border: "1px solid rgba(240,165,0,0.35)",
         }}
       >
-        <ChipPile count={coins} shown={shownCoins} ownerId={player.id} />
+        <ChipPile count={coins} shown={shownCoins} ownerId={player.id} custo={isMe ? custoFantasma : 0} tombada={eliminated} />
         <CoinDelta delta={coinDelta} deltaKey={deltaKey} />
       </div>
 

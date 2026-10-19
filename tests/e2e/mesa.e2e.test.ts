@@ -284,6 +284,9 @@ test("fichas: assento e Erário mostram sprites carregados de verdade (P07.S4)",
     `[...document.querySelectorAll('[data-chip-pile] img')].filter(i => !i.complete || i.naturalWidth === 0).length`,
   );
   assert.equal(quebradas, 0);
+  // P07.S6: passar o mouse mostra o número exato; ninguém começa com fantasma nem aviso de Golpe.
+  assert.equal(await ps[0].eval<string>(`document.querySelector('[data-seat="Ana"] [data-chip-pile]').title`), "2 fichas");
+  assert.equal(await ps[0].eval<number>(`document.querySelectorAll('[data-chip-ghost], [data-chip-golpe]').length`), 0);
   noErrors(...ps);
 });
 

@@ -32,6 +32,7 @@ export default function Table({
   passedIds = [],
   caption,
   balloon,
+  custoFantasma = 0,
 }: {
   players: PublicPlayer[];
   currentPlayerId: string | null;
@@ -48,6 +49,7 @@ export default function Table({
   passedIds?: string[]; // quem já passou na janela de reação
   caption?: { text: string; warning: boolean }; // legenda do centro (P08.S1)
   balloon?: { actorId: string; text: string } | null; // balão da jogada (P08.S3)
+  custoFantasma?: number; // custo da ação em foco do jogador local (P07.S6)
 }) {
   // Rotaciona para o local virar índice 0 (assento de baixo).
   const meIndex = Math.max(0, players.findIndex((p) => p.id === myId));
@@ -147,6 +149,7 @@ export default function Table({
             urgent={urgentIds.includes(p.id)}
             passed={passedIds.includes(p.id)}
             balloon={balloon?.actorId === p.id ? balloon.text : undefined}
+            custoFantasma={p.id === myId ? custoFantasma : 0}
             avatar={avatarByPlayer.get(p.id)}
             style={seatStyle(layout[i])}
           />

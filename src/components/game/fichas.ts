@@ -86,3 +86,20 @@ export function baseSprite(count: number): string | null {
 export function bauSprite(count: number): string {
   return `${DIR}/bau/${bauLevel(count)}.png`;
 }
+
+/**
+ * Pilha com fichas fantasma (P07.S6, E8): com uma ação de custo `custo` em foco, a pilha mostra o
+ * que SOBRA e, à parte, o fantasma do que sairia. Sem custo (ou sem fichas para pagar), nada some.
+ */
+export function pilhaComFantasma(count: number, custo: number): { resto: number; fantasma: number } {
+  const n = normalize(count) ?? 0;
+  const c = normalize(custo) ?? 0;
+  if (c === 0 || c > n) return { resto: n, fantasma: 0 };
+  return { resto: n - c, fantasma: c };
+}
+
+/** Com 10+ fichas o Golpe é obrigatório (regra do jogo): a pilha ganha o aviso (P07.S6). */
+export const GOLPE_OBRIGATORIO = 10;
+export function avisoDeGolpe(count: number): boolean {
+  return (normalize(count) ?? 0) >= GOLPE_OBRIGATORIO;
+}
