@@ -350,3 +350,8 @@ export function actionBlockedReason(coins: number, action: ActionType): string |
   if (coins < cost) return `Faltam moedas: ${ACTION_META[action].label} custa ${cost}.`;
   return null;
 }
+
+/** Camadas do monte do baralho por faixa (P08.S5): cheio 3, médio 2, quase vazio 1, vazio 0. */
+export function deckLayers(n: number): number {
+  return n >= 10 ? 3 : n >= 4 ? 2 : n >= 1 ? 1 : 0;
+}

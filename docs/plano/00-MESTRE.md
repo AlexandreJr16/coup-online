@@ -77,8 +77,8 @@
   - [x] P08.S2 Cabeçalho sem texto de status e role=status oculto
   - [x] P08.S3 Balão da jogada sobre o assento
   - [x] P08.S4 Marca de quem a mesa espera
-  - [ ] P08.S5 Baralho por faixa e Erário com baú
-  - [ ] P08.S6 Histórico de Intrigas no kit
+  - [x] P08.S5 Baralho por faixa e Erário com baú
+  - [x] P08.S6 Histórico de Intrigas no kit
   - [ ] P08.S7 Dígitos do relógio em sprite
 - [ ] **[P09](planos/P09-dock.md) Dock imersivo** · onda 3 · risco médio
   - [ ] P09.S1 Casca do dock sem fundo de largura total (variação escolhida)

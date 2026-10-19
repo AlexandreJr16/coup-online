@@ -13,7 +13,7 @@ import Card from "./Card";
 import CenterCaption from "./CenterCaption";
 import { U } from "./escalaMesa";
 import { centerOf, flyIn, reducedMotion } from "./motion";
-import { assignAvatars, CINZEL, COLORS, seatLayout, seatStyle } from "./helpers";
+import { assignAvatars, CINZEL, deckLayers, COLORS, seatLayout, seatStyle } from "./helpers";
 import Seat from "./Seat";
 
 export default function Table({
@@ -123,7 +123,7 @@ export default function Table({
             style={{ position: "absolute", left: "70%", top: "56%", transform: "translate(-50%, -50%)", textAlign: "center" }}
           >
             <div style={{ position: "relative", width: U(52), height: U(66) }}>
-              {[2, 1, 0].map((i) => (
+              {Array.from({ length: deckLayers(deckCount) }, (_, k) => deckLayers(deckCount) - 1 - k).map((i) => (
                 <Card key={i} faceDown size="sm" style={{ position: "absolute", left: U(i * 3), top: U(-i * 2), width: U(40), height: U(56) }} />
               ))}
             </div>

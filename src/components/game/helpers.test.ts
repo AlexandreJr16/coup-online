@@ -7,6 +7,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import {
+  deckLayers,
   actionBlockedReason,
   artUrl,
   avatarColor,
@@ -311,4 +312,9 @@ test("tiltFromPointer: centro = 0; bordas = ±máximo; fora da carta é limitado
   assert.equal(tiltFromPointer(44, 0, 88, 124, 9).rx, 9); // topo: rotateX positivo
   assert.equal(tiltFromPointer(44, 124, 88, 124, 9).rx, -9);
   assert.equal(tiltFromPointer(500, -500, 88, 124, 9).ry, 9); // limitado
+});
+
+// P08.S5: o monte do baralho encolhe por faixa
+test("deckLayers: 3 camadas até 10+, 2 de 4 a 9, 1 de 1 a 3, 0 vazio", () => {
+  assert.deepEqual([15, 10, 9, 4, 3, 1, 0].map(deckLayers), [3, 3, 2, 2, 1, 1, 0]);
 });
