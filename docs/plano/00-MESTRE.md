@@ -52,9 +52,9 @@
   - [x] P05.S4 Ícones de prêmios e registro em ICONS_AVAILABLE
   - [ ] P05.S5 Zero emoji do sistema (busca em src/ e app/)
 - [ ] **[P06](planos/P06-escala.md) Escala em degraus inteiros** · onda 2 · risco médio
-  - [ ] P06.S1 Unidade de escala e hook
-  - [ ] P06.S2 Aplicar em Card DIMS, Seat e DOCK_HEIGHT
-  - [ ] P06.S3 layoutIssues nas 4 resoluções (teste escrito)
+  - [x] P06.S1 Unidade de escala e hook
+  - [x] P06.S2 Aplicar em Card DIMS, Seat e DOCK_HEIGHT
+  - [x] P06.S3 layoutIssues nas 4 resoluções (teste escrito)
 - [ ] **[P27](planos/P27-aba-de-aparencia.md) Aba de Aparência (jogador escolhe)** · onda 3 · risco médio
   - [x] P27.S1 Preferências de aparência puras (fonte, estilo, dock) com padrão, validação e storage protegido
   - [x] P27.S2 Tokens por tema: estilo A (madeira e latão) e B (pergaminho e tinta) como conjuntos de variáveis
@@ -66,9 +66,9 @@
 ### Programa B Mesa
 
 - [ ] **[P07](planos/P07-fichas.md) Fichas** · onda 3 · risco alto
-  - [ ] P07.S1 Gerador procedural fichas.ts com seed fixa
+  - [x] P07.S1 Gerador procedural fichas.ts com seed fixa
   - [ ] P07.S2 Curadoria de 3 variantes por quantidade `[H]`
-  - [ ] P07.S3 chipSprite(count, playerId) com testes
+  - [x] P07.S3 chipSprite(count, playerId) com testes
   - [ ] P07.S4 Pilha no assento e montes no Erário
   - [ ] P07.S5 Animações pop, voo e desmoronar
   - [ ] P07.S6 Hover na pilha (E8), fichas fantasma, fichas que pousam (E9) e aviso de 10+ (dono único)
@@ -168,17 +168,17 @@
 ### Programa D Telas
 
 - [ ] **[P21](planos/P21-fim-de-partida.md) Fim de partida** · onda 3 · risco médio
-  - [ ] P21.S1 Retrato do vencedor no PixelPanel
-  - [ ] P21.S2 Troféu e prêmios em ícones
-  - [ ] P21.S3 Botão de revanche grande com atalho
-  - [ ] P21.S4 Espaço do placar da noite
+  - [x] P21.S1 Retrato do vencedor no PixelPanel
+  - [x] P21.S2 Troféu e prêmios em ícones
+  - [x] P21.S3 Botão de revanche grande com atalho
+  - [x] P21.S4 Espaço do placar da noite
   - [ ] P21.S5 Animação leve de moedas/confete respeitando reduced motion (a cena de vitória do P16 vem depois)
 - [ ] **[P22](planos/P22-colinha.md) Colinha como objeto** · onda 3 · risco baixo
-  - [ ] P22.S1 Peça única que abre como carta
-  - [ ] P22.S2 Retrato maior e ícones de contestável e bloqueável
-  - [ ] P22.S3 No máximo 5 regras curtas
-  - [ ] P22.S4 Cabe em 1280x720 sem rolagem
-  - [ ] P22.S5 Atalhos ? e Esc preservados
+  - [x] P22.S1 Peça única que abre como carta
+  - [x] P22.S2 Retrato maior e ícones de contestável e bloqueável
+  - [x] P22.S3 No máximo 5 regras curtas
+  - [x] P22.S4 Cabe em 1280x720 sem rolagem
+  - [x] P22.S5 Atalhos ? e Esc preservados
 
 ### Programa E Retenção
 
@@ -209,11 +209,11 @@
   - [ ] P26.S5 Validação no ar do build final (branch ou serviço de teste no Render) `[H]`
   - [ ] P26.S6 Documentação e prints novos `[H]`
   - [ ] P26.S7 Merge na main, tag v3 e deploy (aprovação explícita) `[H]`
-- [ ] **[P28](planos/P28-release-v3-0.md) Release v3.0: visual novo** · onda 3 · risco alto · `[H]`
-  - [ ] P28.S1 E2E completo e checagens (só com pedido do Alexandre)
-  - [ ] P28.S2 Partida de teste com amigos
-  - [ ] P28.S3 README e prints novos
-  - [ ] P28.S4 Merge na main, tag v3.0 e deploy (aprovação explícita)
+- [ ] **[P28](planos/P28-release-v3-0.md) Release v3.0: visual novo (mesclada na main em 18/10/2026)** · onda 3 · risco alto · `[H]`
+  - [ ] P28.S1 E2E completo (feito: 68/68)
+  - [ ] P28.S2 Merge na main (feito)
+  - [ ] P28.S3 Tag v3.0, push e deploy (Alexandre)
+  - [ ] P28.S4 Partida de teste com amigos no ar
 - [ ] **[P29](planos/P29-release-v3-1.md) Release v3.1: mesa nova** · onda 3 · risco alto · `[H]`
   - [ ] P29.S1 E2E completo e layoutIssues nas 4 resoluções (só com pedido do Alexandre)
   - [ ] P29.S2 Teste dos 3 segundos em 1280x720 e 1920x1080
@@ -252,8 +252,8 @@
 | P25 | — |
 | P26 | todos os planos P03 a P29 |
 | P27 | P04, P09 |
-| P28 | P04, P05, P21, P22, P27 |
-| P29 | P06, P07, P08, P09, P28 |
+| P28 | P04, P05, P27 |
+| P29 | P06, P07, P08, P09, P21, P22, P28 |
 
 ## Ondas
 

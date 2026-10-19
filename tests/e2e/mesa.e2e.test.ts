@@ -423,10 +423,14 @@ test("áudio: o contexto nasce no primeiro gesto e o botão de mudo persiste", a
 
 // ── Fim de partida (4.8) ─────────────────────────────────────────────────────
 test("tela de vitória: vencedor, prêmios corretos e botão de revanche (página de revisão)", async () => {
-  const p = await open("/dev/mesa?fase=fim&n=4");
+  const p = await open("/dev/mesa?fase=fim&n=4", { w: 1280, h: 720 });
   await p.waitFor(`document.querySelector('[data-testid="victory"]')`, "tela de vitória");
   const txt = await p.eval<string>(`document.querySelector('[data-testid="victory"]').innerText`);
   assert.match(txt, /Ana vence!/);
+  assert.match(txt, /PARTIDA 4/);
+  assert.equal(/\p{Extended_Pictographic}/u.test(txt), false, `emoji do sistema na tela de vitória: ${txt}`);
+
+  // Prêmios (mesma lógica de antes) e cada um com o seu ícone pixel carregado de verdade.
   const premios = await p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-award]')].map(e => e.getAttribute('data-award') + ':' + e.innerText.replace(/\\s+/g,' ')))`);
   const lista = JSON.parse(premios) as string[];
   assert.ok(lista.some((l) => l.startsWith("mentiroso:") && l.includes("Bia") && l.includes("3 vezes")), premios);
@@ -434,7 +438,73 @@ test("tela de vitória: vencedor, prêmios corretos e botão de revanche (págin
   assert.ok(lista.some((l) => l.startsWith("olho_de_lince:") && l.includes("Ana") && l.includes("3 de 4")), premios);
   assert.ok(lista.some((l) => l.startsWith("carrasco:") && l.includes("Ana")), premios);
   assert.ok(lista.some((l) => l.startsWith("ricaco:") && l.includes("11")), premios);
-  await p.click('[data-testid="victory"] .seal', "Jogar de novo"); // o clique não pode estar coberto
+  await p.waitFor(
+    `[...document.querySelectorAll('[data-award]')].length === 5 && [...document.querySelectorAll('[data-award]')].every(e => { const i = e.querySelector('img'); return i && i.complete && i.naturalWidth > 0 && i.src.includes('/icones/' + e.getAttribute('data-award') + '.sm.png'); })`,
+    "ícone pixel de cada prêmio carregado",
+  );
+
+  // Vencedor: o MESMO retrato da mesa, em moldura, com coroa e troféu em PNG pixel.
+  const retrato = await p.eval<{ slug: string; ok: boolean }>(`(() => {
+    const i = document.querySelector('[data-testid="victory-retrato"]');
+    return { slug: i.getAttribute('data-avatar'), ok: i.complete && i.naturalWidth === 64 };
+  })()`);
+  assert.ok(retrato.ok, "retrato do vencedor não carregou (64x92)");
+  assert.equal(
+    await p.eval<boolean>(`!!document.querySelector('[data-seat] img[src$="/avatares/${retrato.slug}.png"]')`),
+    true,
+    `a mesa deveria usar o mesmo retrato (${retrato.slug}) para a Ana`,
+  );
+  for (const id of ["victory-coroa", "victory-trofeu"]) {
+    await p.waitFor(`(() => { const i = document.querySelector('[data-testid="${id}"]'); return i && i.complete && i.naturalWidth > 0; })()`, `${id} carregado`);
+  }
+
+  // Placar da noite (fictício): uma linha por jogador, líder em destaque, títulos com ícone.
+  await p.waitFor(`document.querySelectorAll('[data-testid="placar-linhas"] li').length === 4`, "4 linhas no placar da noite");
+  const linhas = await p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-testid="placar-linhas"] li')].map(e => ({ id: e.getAttribute('data-player'), lider: e.getAttribute('data-lider'), wins: e.querySelector('[data-testid="placar-vitorias"]').innerText, t: e.innerText.replace(/\\s+/g, ' ') })))`);
+  const placar = JSON.parse(linhas) as Array<{ id: string; lider: string | null; wins: string; t: string }>;
+  assert.deepEqual(placar.map((l) => [l.id, l.wins]), [["p1", "2"], ["p2", "1"], ["p3", "1"], ["p4", "0"]], linhas);
+  assert.deepEqual(placar.map((l) => l.lider), ["sim", null, null, null], "só a Ana lidera");
+  assert.ok(placar[0].t.includes("Ana") && placar[0].t.includes("Líder") && placar[0].t.includes("2 vitórias em 4 partidas"), linhas);
+  assert.ok(placar[3].t.includes("0 vitórias em 4 partidas"), linhas);
+  const titulos = await p.eval<string>(`JSON.stringify([...document.querySelectorAll('[data-title]')].map(e => e.getAttribute('data-title') + ':' + e.innerText.replace(/\\s+/g,' ') + ':' + (e.querySelector('img')?.naturalWidth ?? 0)))`);
+  const tit = JSON.parse(titulos) as string[];
+  assert.ok(tit.some((t) => t.startsWith("mentiroso:") && t.includes("Mentiroso da noite") && t.includes("Bia") && t.includes("2 vezes") && t.endsWith(":32")), titulos);
+  assert.ok(tit.some((t) => t.startsWith("ricaco:") && t.includes("Ana e Bia") && t.includes("1 vez") && t.endsWith(":32")), titulos);
+  assert.match(txt, /4 partidas nesta sala/);
+
+  // Moedas: existem, respeitam o teto e estão animadas (movimento só por transform).
+  const fx = await p.eval<{ n: number; anim: string; eventos: string }>(`(() => {
+    const f = document.querySelector('[data-testid="victory-fx"]');
+    const m = f.firstElementChild;
+    return { n: f.children.length, anim: getComputedStyle(m).animationName, eventos: getComputedStyle(f).pointerEvents };
+  })()`);
+  assert.ok(fx.n >= 1 && fx.n <= 24, `moedas: ${fx.n}`);
+  assert.notEqual(fx.anim, "none");
+  assert.equal(fx.eventos, "none"); // a chuva nunca cobre o botão
+
+  // Revanche: botão grande, com atalho anunciado, clicável (nada por cima).
+  const btn = await p.eval<{ h: number; keys: string | null }>(`(() => {
+    const b = document.querySelector('[data-testid="revanche"]');
+    return { h: b.getBoundingClientRect().height, keys: b.getAttribute('aria-keyshortcuts') };
+  })()`);
+  assert.ok(btn.h >= 56, `botão de revanche pequeno: ${btn.h}px`);
+  assert.equal(btn.keys, "Enter R");
+  assert.ok(txt.includes("Enter") && txt.includes("Jogar de novo"));
+  assert.equal(
+    await p.eval<boolean>(`(() => { const r = document.querySelector('[data-testid="victory-panel"]').getBoundingClientRect(); const b = document.querySelector('[data-testid="revanche"]').getBoundingClientRect(); return r.top >= 0 && b.bottom <= innerHeight && b.top >= r.top; })()`),
+    true,
+    "o botão de revanche tem de aparecer inteiro na tela 1280x720",
+  );
+  await p.click('[data-testid="revanche"]', "Jogar de novo"); // o clique não pode estar coberto
+  noErrors(p);
+});
+
+test("tela de vitória com 2 jogadores e reduced-motion: placar sem sobra e moedas ocultas", async () => {
+  const p = await open("/dev/mesa?fase=fim&n=2", { w: 1280, h: 720 }, { reducedMotion: true });
+  await p.waitFor(`document.querySelectorAll('[data-testid="placar-linhas"] li').length === 2`, "2 linhas no placar");
+  assert.equal(await p.eval<string>(`getComputedStyle(document.querySelector('[data-testid="victory-fx"]')).display`), "none");
+  assert.equal(await p.eval<string>(`getComputedStyle(document.querySelector('[data-testid="victory-coroa"]')).animationName`), "none");
+  await p.click('[data-testid="revanche"]', "Jogar de novo");
   noErrors(p);
 });
 
@@ -475,9 +545,51 @@ for (const n of [2, 3, 4, 5, 6]) {
   });
 }
 
-test("layout 1920×1080 com 6 jogadores", async () => {
-  const { ps } = await game(["Ana", "Bia", "Caio", "Davi", "Eva", "Fábio"], { w: 1920, h: 1080 });
-  await ps[0].waitFor(`document.querySelectorAll('[data-seat]').length === 6`, "6 assentos");
+// Escala em degraus (P06/DEC-13): a mesa cresce com a tela (1x até 1600×900, 1,5x em 1920×1080,
+// 2x em 2560×1440) e continua sem assento cortado, sobreposto ou invadindo o dock. Também confere
+// que o degrau chegou de verdade ao DOM: dock = 214u, carta da mão = 88u×124u, assento = 96u.
+const DEGRAUS_DE_TELA: Array<{ w: number; h: number; u: number }> = [
+  { w: 1600, h: 900, u: 1 },
+  { w: 1920, h: 1080, u: 1.5 },
+  { w: 2560, h: 1440, u: 2 },
+];
+for (const { w, h, u } of DEGRAUS_DE_TELA) {
+  for (const n of [2, 6]) {
+    test(`layout ${w}×${h} (escala ${u}x) com ${n} jogadores: nada cortado, sobreposto nem invadindo o dock`, async () => {
+      const names = ["Ana", "Bia", "Caio", "Davi", "Eva", "Fábio"].slice(0, n);
+      const { ps } = await game(names, { w, h });
+      await ps[0].waitFor(`document.querySelectorAll('[data-seat]').length === ${n}`, `${n} assentos`);
+      await ps[0].waitFor(`document.querySelectorAll('[data-zone="centro"] .hand-card').length === 5`, "mão");
+      const medidas = await ps[0].eval<{ mu: string; dock: number; carta: number[]; assento: number }>(`(() => {
+        const dock = document.querySelector('[data-testid="dock"]');
+        const carta = document.querySelector('[data-zone="centro"] .hand-card');
+        return {
+          mu: getComputedStyle(dock).getPropertyValue('--mu').trim(),
+          dock: dock.getBoundingClientRect().height,
+          // a carta tem rotate/scale no transform: usa o tamanho de layout, não o do retângulo girado
+          carta: [carta.offsetWidth, carta.offsetHeight],
+          assento: document.querySelector('[data-seat]').offsetWidth,
+        };
+      })()`);
+      assert.equal(medidas.mu, `${u}px`, "o contêiner da mesa não recebeu o degrau");
+      assert.ok(Math.abs(medidas.dock - 214 * u) < 1, `dock ${medidas.dock} != ${214 * u}`);
+      assert.deepEqual(medidas.carta, [88 * u, 124 * u], "carta da mão fora da escala");
+      assert.equal(medidas.assento, 96 * u, "assento fora da escala");
+      assert.deepEqual(await layoutIssues(ps[0]), []);
+      noErrors(...ps);
+    });
+  }
+}
+
+test("escala: redimensionar a janela troca o degrau da mesa (1x -> 1,5x -> 1x) sem erros", async () => {
+  const { ps } = await game(["Ana", "Bia"], { w: 1280, h: 720 });
+  const mu = () => ps[0].eval<string>(`getComputedStyle(document.querySelector('[data-testid="dock"]')).getPropertyValue('--mu').trim()`);
+  assert.equal(await mu(), "1px");
+  await ps[0].resize(1920, 1080);
+  await ps[0].waitFor(`getComputedStyle(document.querySelector('[data-testid="dock"]')).getPropertyValue('--mu').trim() === '1.5px'`, "mesa a 1,5x");
+  assert.deepEqual(await layoutIssues(ps[0]), []);
+  await ps[0].resize(1280, 720);
+  await ps[0].waitFor(`getComputedStyle(document.querySelector('[data-testid="dock"]')).getPropertyValue('--mu').trim() === '1px'`, "mesa de volta a 1x");
   assert.deepEqual(await layoutIssues(ps[0]), []);
   noErrors(...ps);
 });
@@ -623,10 +735,38 @@ test("colinha: abre por clique e por '?', mostra os 5 personagens e fecha por X,
   assert.equal(aria.expanded, "true");
   const corpo = await p.eval<string>(`document.querySelector('[data-testid="cheatsheet"]').innerText`);
   for (const n of NOMES_PERSONAGENS) assert.ok(corpo.includes(n), `falta ${n} na colinha`);
-  for (const t of ["Renda", "Ajuda Externa", "Golpe de Estado", "Pode ser contestada", "Bloqueada por", "10 ou mais moedas"]) {
+  for (const t of ["Renda", "Ajuda Externa", "Golpe de Estado", "Contestável", "Bloqueável", "10 ou mais moedas"]) {
     assert.ok(corpo.includes(t), `falta "${t}" na colinha`);
   }
   assert.ok(!/Duque|Capitão|Condessa|Embaixador|Inquisidor/.test(corpo), "nome original do Coup vazou na UI");
+
+  // P22: "contestável" e "bloqueável" são ícones certo/errado (data-mark), não chips de texto.
+  const marcas = await p.eval<Record<string, string>>(`(() => {
+    const out = {};
+    const pega = (el) => ['contestar', 'bloquear'].map((f) => el.querySelector('[data-flag="' + f + '"] [data-mark]')?.getAttribute('data-mark') ?? '-').join('/');
+    for (const el of document.querySelectorAll('[data-testid="cheatsheet"] [data-testid="colinha-personagens"] [data-character]')) out[el.getAttribute('data-character')] = pega(el);
+    for (const el of document.querySelectorAll('[data-testid="cheatsheet"] [data-testid="colinha-gerais"] [data-action]')) out[el.getAttribute('data-action')] = pega(el);
+    return out;
+  })()`);
+  assert.deepEqual(marcas, {
+    duque: "sim/nao", // Taxas: contestável, ninguém bloqueia
+    assassino: "sim/sim", // Assassinar: a Benzedeira bloqueia
+    capitao: "sim/sim", // Extorquir: Coronel ou Regatão bloqueiam
+    embaixador: "sim/nao", // Trocar
+    condessa: "-/-", // sem ação de turno: só defende
+    renda: "nao/nao",
+    ajuda_externa: "nao/sim", // o Barão do Café bloqueia
+    golpe: "nao/nao",
+  });
+  // (A página /dev/colinha mostra o corpo embutido E o diálogo: as consultas olham só o diálogo.)
+  // Quem bloqueia aparece como mini-retrato (Extorquir: 2; Assassinar e Ajuda Externa: 1).
+  const minis = await p.eval<Record<string, number>>(`({
+    capitao: document.querySelectorAll('[data-testid="cheatsheet"] [data-character="capitao"] [data-flag="bloquear"] img[alt]:not([data-mark])').length,
+    assassino: document.querySelectorAll('[data-testid="cheatsheet"] [data-character="assassino"] [data-flag="bloquear"] img[alt]:not([data-mark])').length,
+    ajuda_externa: document.querySelectorAll('[data-testid="cheatsheet"] [data-action="ajuda_externa"] [data-flag="bloquear"] img[alt]:not([data-mark])').length,
+  })`);
+  assert.deepEqual(minis, { capitao: 2, assassino: 1, ajuda_externa: 1 });
+  assert.equal(await p.eval<number>(`document.querySelectorAll('[data-testid="cheatsheet"] [data-testid="colinha-regras"] [data-regra]').length`), 5, "5 regras curtas");
 
   // Fecha pelo X (foco volta ao botão ?).
   await p.click('[data-testid="cheatsheet-close"]');
@@ -705,6 +845,55 @@ test("colinha: na mesa, Esc com o painel aberto NÃO cancela a mira por baixo; d
   // Com a colinha fechada, o Esc volta a cancelar a mira.
   await a.key("Escape");
   await a.waitFor(`!document.querySelector('[data-target="sim"]')`, "Esc cancelou a mira com a colinha fechada");
+  noErrors(...ps);
+});
+
+test("colinha (P22): numa sala em 1280x720 a peça cabe sem rolagem, nos estilos A e B, com todas as imagens carregadas", async () => {
+  const { ps } = await game(["Ana", "Bia"], { w: 1280, h: 720 });
+  const [a] = ps;
+  const medir = () =>
+    a.eval<{
+      vw: number; vh: number; w: number; h: number; top: number; bottom: number; left: number; right: number;
+      dialogoRola: boolean; corpoRola: boolean; corpoRolaLado: boolean; vazando: string[]; semImagem: string[];
+      colunas: number; regras: number; gerais: number;
+    }>(`(() => {
+      const d = document.querySelector('[data-testid="cheatsheet"]');
+      const corpo = document.querySelector('[data-testid="cheatsheet-body"]');
+      const r = d.getBoundingClientRect();
+      const vazando = [...d.querySelectorAll('[data-character], [data-regra], [data-action]')]
+        .filter((el) => { const b = el.getBoundingClientRect(); return b.bottom > r.bottom + 0.5 || b.right > r.right + 0.5 || b.top < r.top - 0.5 || b.left < r.left - 0.5; })
+        .map((el) => el.getAttribute('data-character') || el.getAttribute('data-regra') || el.getAttribute('data-action'));
+      const semImagem = [...d.querySelectorAll('img')].filter((i) => !i.complete || i.naturalWidth === 0).map((i) => i.getAttribute('src') || '?');
+      return {
+        vw: innerWidth, vh: innerHeight, w: d.offsetWidth, h: d.offsetHeight,
+        top: r.top, bottom: r.bottom, left: r.left, right: r.right,
+        dialogoRola: d.scrollHeight > d.clientHeight, corpoRola: corpo.scrollHeight > corpo.clientHeight,
+        corpoRolaLado: corpo.scrollWidth > corpo.clientWidth,
+        vazando, semImagem,
+        colunas: d.querySelectorAll('[data-testid="colinha-personagens"] [data-character]').length,
+        regras: d.querySelectorAll('[data-regra]').length,
+        gerais: d.querySelectorAll('[data-testid="colinha-gerais"] [data-action]').length,
+      };
+    })()`);
+
+  for (const estilo of ["A", "B"]) {
+    await a.eval(`document.documentElement.setAttribute('data-estilo', '${estilo}')`);
+    await a.click('[data-testid="cheatsheet-toggle"]');
+    await a.waitFor(`!!document.querySelector('[data-testid="cheatsheet"]')`, `colinha aberta (estilo ${estilo})`);
+    // A peça sobe com uma animação de ~0.5s: só mede o retângulo depois dela.
+    await new Promise((r) => setTimeout(r, 900));
+    const m = await medir();
+    assert.ok(m.w <= m.vw && m.h <= m.vh, `${estilo}: painel ${m.w}x${m.h} maior que a viewport ${m.vw}x${m.vh}`);
+    assert.ok(m.top >= 0 && m.left >= 0 && m.bottom <= m.vh + 0.5 && m.right <= m.vw + 0.5, `${estilo}: painel fora da tela ${JSON.stringify(m)}`);
+    assert.equal(m.dialogoRola, false, `${estilo}: o painel tem rolagem (scrollHeight > clientHeight)`);
+    assert.equal(m.corpoRola, false, `${estilo}: o corpo da colinha tem rolagem vertical`);
+    assert.equal(m.corpoRolaLado, false, `${estilo}: o corpo da colinha tem rolagem horizontal`);
+    assert.deepEqual(m.vazando, [], `${estilo}: blocos fora do painel`);
+    assert.deepEqual(m.semImagem, [], `${estilo}: imagens que não carregaram`);
+    assert.deepEqual([m.colunas, m.regras, m.gerais], [5, 5, 3]);
+    await a.key("Escape");
+    await a.waitFor(`!document.querySelector('[data-testid="cheatsheet"]')`, `colinha fechada (estilo ${estilo})`);
+  }
   noErrors(...ps);
 });
 
@@ -1023,6 +1212,8 @@ test("espectador (/dev/mesa): na vitória não há 'Jogar de novo', só o aviso 
   const p = await open("/dev/mesa?fase=fim&n=4&espectador=1", { w: 1280, h: 720 });
   await p.waitFor(`!!document.querySelector('[data-testid="victory-wait"]')`, "aviso de espera da revanche");
   assert.equal((await p.text()).includes("Jogar de novo"), false);
+  assert.equal(await p.eval<boolean>(`!document.querySelector('[data-testid="revanche"]')`), true);
+  await p.waitFor(`document.querySelectorAll('[data-testid="placar-linhas"] li').length === 4`, "espectador também vê o placar da noite");
   noErrors(p);
 });
 

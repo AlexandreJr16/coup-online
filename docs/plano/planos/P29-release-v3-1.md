@@ -2,11 +2,11 @@
 
 > Programa **F Fechamento** · Onda **3** · Risco **alto** · Estado: `[ ]` esboçado (detalhar com `arquiteto` + `revisor-de-plano` antes de executar).
 
-**Objetivo:** Fechar e lançar a v3.1 (fichas, anel de tempo, balão, legenda, dock e escala).
+**Objetivo:** Fechar e lançar a v3.1 (mesa nova: escala, fichas, assento, legenda, dock) mais tela de vitória com placar e a colinha como peça.
 
 - **Seções do índice:** 13
 - **IDs cobertos:** (ver objetivo)
-- **Depende de:** P06, P07, P08, P09, P28
+- **Depende de:** P06, P07, P08, P09, P21, P22, P28
 - **Arquivos que toca:** README.md, docs/ROADMAP.md, tools/readme-shots.ts
 - **Verificação exigida:** Chave dupla: revisor-de-codigo + auditor-de-vazamento
 - **Decisões que bloqueiam:** nenhuma
