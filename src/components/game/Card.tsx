@@ -14,9 +14,11 @@ import { type CSSProperties, type ReactNode, useState } from "react";
 import type { Expressao } from "@/src/lib/game/cards";
 import type { Character } from "@/src/types/game";
 import { Pic } from "./ActionSeal";
+import { U } from "./escalaMesa";
 import { artUrl, backUrl, CHAR_LABEL, CHAR_SHORT, CHAR_VISUAL, CINZEL, COLORS } from "./helpers";
 
 type Size = "sm" | "lg";
+// Tamanhos em UNIDADES DA MESA (1 unidade = 1 px em 1280x720); o degrau de escala entra por U().
 interface Dim {
   w: number;
   h: number;
@@ -69,9 +71,9 @@ export default function Card({
   const d = DIMS[size];
   const outer: CSSProperties = {
     position: "relative",
-    width: d.w,
-    height: d.h,
-    borderRadius: d.radius,
+    width: U(d.w),
+    height: U(d.h),
+    borderRadius: U(d.radius),
     flex: "none",
     cursor: onClick ? "pointer" : "default",
     userSelect: "none",
@@ -85,7 +87,7 @@ export default function Card({
         onClick={onClick}
         title={character ? CHAR_LABEL[character] : undefined}
         className={className}
-        style={{ ...outer, perspective: 700 }}
+        style={{ ...outer, perspective: U(700) }}
       >
         <div
           style={{
@@ -143,13 +145,13 @@ function faceStyle(d: Dim, extra: CSSProperties): CSSProperties {
   return {
     position: "absolute",
     inset: 0,
-    borderRadius: d.radius,
+    borderRadius: U(d.radius),
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
-    padding: d.label ? 8 : 2,
+    gap: U(4),
+    padding: U(d.label ? 8 : 2),
     boxSizing: "border-box",
     overflow: "hidden",
     backfaceVisibility: "hidden",
@@ -188,7 +190,7 @@ function BackFace({ d, size, transform }: { d: Dim; size: Size; transform?: stri
           }}
         />
       ) : (
-        <span style={{ fontSize: d.icon, opacity: 0.3, color: COLORS.gold }}>♛</span>
+        <span style={{ fontSize: U(d.icon), opacity: 0.3, color: COLORS.gold }}>♛</span>
       )}
     </div>
   );
@@ -226,8 +228,8 @@ function FrontFace({
   const frame = lost
     ? "1px solid #555"
     : bluff
-      ? "2px solid #3a3a3a"
-      : `2px solid ${COLORS.gold}`;
+      ? `${U(2)} solid #3a3a3a`
+      : `${U(2)} solid ${COLORS.gold}`;
   return (
     <div
       style={faceStyle(d, {
@@ -239,8 +241,8 @@ function FrontFace({
         // exato da carta — escala 1:1 mantém os pixels nítidos.
         border: art ? "none" : frame,
         boxShadow: muted
-          ? "inset 0 -18px 26px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.4)"
-          : `inset 0 -18px 26px rgba(0,0,0,0.35), 0 0 ${selected ? 16 : 10}px 1px rgba(240,165,0,0.55), 0 4px 10px rgba(0,0,0,0.4)`,
+          ? `inset 0 ${U(-18)} ${U(26)} rgba(0,0,0,0.35), 0 ${U(2)} ${U(6)} rgba(0,0,0,0.4)`
+          : `inset 0 ${U(-18)} ${U(26)} rgba(0,0,0,0.35), 0 0 ${U(selected ? 16 : 10)} 1px rgba(240,165,0,0.55), 0 ${U(4)} ${U(10)} rgba(0,0,0,0.4)`,
         transform,
       })}
     >
@@ -268,7 +270,7 @@ function FrontFace({
             style={{
               position: "absolute",
               inset: 0,
-              borderRadius: d.radius,
+              borderRadius: U(d.radius),
               border: frame,
               boxSizing: "border-box",
               pointerEvents: "none",
@@ -277,26 +279,26 @@ function FrontFace({
           {size === "lg" && (
             <div data-caption style={caption}>
               <span
-                style={{ fontFamily: CINZEL, fontWeight: 800, fontSize: d.label, letterSpacing: 0.3, textShadow: "0 1px 2px #000, 0 0 6px #000" }}
+                style={{ fontFamily: CINZEL, fontWeight: 800, fontSize: U(d.label), letterSpacing: 0.3, textShadow: "0 1px 2px #000, 0 0 6px #000" }}
               >
                 {CHAR_SHORT[character]}
               </span>
-              {hint && <span style={{ fontSize: 10, color: "rgba(255,240,210,0.92)", textShadow: "0 1px 2px #000" }}>{hint}</span>}
+              {hint && <span style={{ fontSize: U(10), color: "rgba(255,240,210,0.92)", textShadow: "0 1px 2px #000" }}>{hint}</span>}
             </div>
           )}
         </>
       ) : (
         <>
-          <span style={{ fontSize: d.icon, lineHeight: 1 }}>{v.icon}</span>
+          <span style={{ fontSize: U(d.icon), lineHeight: 1 }}>{v.icon}</span>
           {size === "lg" && (
             <span
-              style={{ fontFamily: CINZEL, fontWeight: 700, fontSize: d.label, letterSpacing: 0.5 }}
+              style={{ fontFamily: CINZEL, fontWeight: 700, fontSize: U(d.label), letterSpacing: 0.5 }}
             >
               {CHAR_SHORT[character]}
             </span>
           )}
           {size === "lg" && hint && (
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.78)" }}>{hint}</span>
+            <span style={{ fontSize: U(10), color: "rgba(255,255,255,0.78)" }}>{hint}</span>
           )}
         </>
       )}
@@ -305,7 +307,7 @@ function FrontFace({
       {lost && <Corner size={size}>❌</Corner>}
       {bluff && !lost && (
         <Corner size={size}>
-          <Pic name="mascara" emoji="🎭" size={size === "sm" ? 16 : 16} />
+          <Pic name="mascara" emoji="🎭" size={16} />
         </Corner>
       )}
     </div>
@@ -318,7 +320,7 @@ const caption: CSSProperties = {
   left: 0,
   right: 0,
   bottom: 0,
-  padding: "14px 4px 5px",
+  padding: `${U(14)} ${U(4)} ${U(5)}`,
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -331,9 +333,9 @@ function Corner({ children, size }: { children: ReactNode; size: Size }) {
     <span
       style={{
         position: "absolute",
-        top: size === "sm" ? 2 : 4,
-        right: size === "sm" ? 3 : 6,
-        fontSize: size === "sm" ? 12 : 13,
+        top: U(size === "sm" ? 2 : 4),
+        right: U(size === "sm" ? 3 : 6),
+        fontSize: U(size === "sm" ? 12 : 13),
         lineHeight: 1,
       }}
     >

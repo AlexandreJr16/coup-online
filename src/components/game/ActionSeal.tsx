@@ -9,6 +9,7 @@
 
 import { type CSSProperties, type ReactNode, useState } from "react";
 
+import { U } from "./escalaMesa";
 import { CINZEL, type IconName, iconUrl, type SealState } from "./helpers";
 
 export default function ActionSeal({
@@ -20,7 +21,7 @@ export default function ActionSeal({
   state = "ready",
   bluff = false,
   onClick,
-  width = 208,
+  width = 208, // em unidades da mesa (U)
   title,
   hotkey,
 }: {
@@ -46,16 +47,30 @@ export default function ActionSeal({
       title={title}
       data-state={state}
       className={`seal${state === "mandatory" ? " urgent-pulse" : ""}`}
-      style={{ "--c": color, width } as CSSProperties}
+      style={
+        {
+          "--c": color,
+          // A classe .seal tem os tamanhos de 1x; o inline os leva ao degrau da mesa.
+          width: U(width),
+          minHeight: U(46),
+          gap: U(10),
+          padding: `${U(6)} ${U(12)} ${U(6)} ${U(8)}`,
+          fontSize: U(14),
+        } as CSSProperties
+      }
     >
       <Pic name={locked ? "cadeado" : icon} emoji={locked ? "🔒" : emoji} />
       <span style={{ flex: 1, minWidth: 0, textAlign: "left", fontFamily: CINZEL, fontWeight: 700, letterSpacing: 0.3 }}>
         {label}
       </span>
       {sub !== undefined && <b style={{ fontVariantNumeric: "tabular-nums", opacity: locked ? 0.7 : 1 }}>{sub}</b>}
-      {hotkey && !disabled && <kbd className="seal-key">{hotkey}</kbd>}
+      {hotkey && !disabled && (
+        <kbd className="seal-key" style={{ top: U(-9), left: U(10), fontSize: U(10), lineHeight: U(14), padding: `${U(1)} ${U(6)}` }}>
+          {hotkey}
+        </kbd>
+      )}
       {bluff && !disabled && (
-        <span style={{ position: "absolute", top: -9, right: -7 }} aria-label="blefe" title="você não tem esta carta (blefe)">
+        <span style={{ position: "absolute", top: U(-9), right: U(-7) }} aria-label="blefe" title="você não tem esta carta (blefe)">
           <Pic name="mascara" emoji="🎭" size={16} />
         </span>
       )}
@@ -63,11 +78,11 @@ export default function ActionSeal({
   );
 }
 
-// Ícone pixel art em escala inteira (32px nativo; 16px = metade). Cai no emoji se faltar.
+// Ícone pixel art (32 unidades nativo; 16 = metade; `size` em unidades da mesa). Cai no emoji se faltar.
 export function Pic({ name, emoji, size = 32 }: { name: IconName; emoji: string; size?: number }) {
   const [failed, setFailed] = useState(false);
   const src = failed ? null : iconUrl(name, "sm");
-  if (!src) return <span style={{ width: size, height: size, fontSize: size * 0.7, lineHeight: `${size}px`, textAlign: "center" }}>{emoji}</span>;
+  if (!src) return <span style={{ width: U(size), height: U(size), fontSize: U(size * 0.7), lineHeight: U(size), textAlign: "center" }}>{emoji}</span>;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -75,7 +90,7 @@ export function Pic({ name, emoji, size = 32 }: { name: IconName; emoji: string;
       alt=""
       draggable={false}
       onError={() => setFailed(true)}
-      style={{ width: size, height: size, imageRendering: "pixelated", flex: "none" }}
+      style={{ width: U(size), height: U(size), imageRendering: "pixelated", flex: "none" }}
     />
   );
 }

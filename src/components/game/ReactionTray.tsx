@@ -5,6 +5,7 @@
 
 import type { Character, GameView } from "@/src/types/game";
 import ActionSeal from "./ActionSeal";
+import { U } from "./escalaMesa";
 import { CHAR_LABEL, COLORS, reactionOptions } from "./helpers";
 
 export default function ReactionTray({
@@ -22,7 +23,7 @@ export default function ReactionTray({
 }) {
   const o = reactionOptions(view, myId);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, width: 208 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: U(10), width: U(208) }}>
       {o.canReact && !o.passed && (
         <>
           {o.canChallenge && (
@@ -43,7 +44,7 @@ export default function ReactionTray({
         </>
       )}
       {o.canReact && o.passed && (
-        <div style={{ color: COLORS.dim, textAlign: "center", fontSize: 13 }}>✔ passou</div>
+        <div style={{ color: COLORS.dim, textAlign: "center", fontSize: U(13) }}>✔ passou</div>
       )}
     </div>
   );

@@ -38,6 +38,8 @@ import {
   requiredCharacter,
 } from "./helpers";
 import { PixelButton } from "@/src/components/ui/PixelButton";
+import { U } from "./escalaMesa";
+import { useEscalaMesa } from "./useEscalaMesa";
 import { useGameAudio } from "./useGameAudio";
 import { useGameEvents } from "./useGameEvents";
 
@@ -47,8 +49,9 @@ const REACTION_PHASES = new Set<GameView["phase"]>([
   "janela_contestar_bloqueio",
 ]);
 
-const DOCK_HEIGHT = 214;
-const FEED_LANE = 232; // largura reservada ao feed de Intrigas aberto (painel 216 + folga)
+// Medidas em UNIDADES DA MESA (1 = 1 px em 1280x720); U() as leva ao degrau da tela (escalaMesa.ts).
+const DOCK_HEIGHT = U(214);
+const FEED_LANE = U(232); // largura reservada ao feed de Intrigas aberto (painel 216 + folga)
 
 export default function GameBoard({
   view,
@@ -62,6 +65,7 @@ export default function GameBoard({
   spectator?: boolean; // só assiste: sem mão, sem ações e sem revanche; entra na próxima partida
 }) {
   const socket = getSocket();
+  const { style: escalaStyle } = useEscalaMesa(); // --mu/--u da mesa (1, 1,5 ou 2)
   const [error, setError] = useState("");
   const [feedOpen, setFeedOpen] = useState(true);
   const [targetingAction, setTargetingAction] = useState<ActionType | null>(null);
@@ -290,10 +294,10 @@ export default function GameBoard({
   } else if (view.phase === "aguardando_revelacao" && view.mustRevealPlayerId === myId) {
     // Só as MINHAS cartas ocultas, pulsando: clicar numa revela (perde a influência).
     center = (
-      <div style={{ display: "flex", gap: 14 }}>
+      <div style={{ display: "flex", gap: U(14) }}>
         {me?.cards.map((c, i) =>
           c.revealed ? null : (
-            <div key={i} className="urgent-pulse" style={{ borderRadius: 10 }}>
+            <div key={i} className="urgent-pulse" style={{ borderRadius: U(10) }}>
               <Card
                 size="lg"
                 character={c.character}
@@ -312,7 +316,7 @@ export default function GameBoard({
     const keepCount = me?.cards.filter((c) => !c.revealed).length ?? 0;
     const pool = view.exchange.pool;
     center = (
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: U(14) }}>
         {pool.map((c, i) => {
           const card = (
             <Card
@@ -325,7 +329,7 @@ export default function GameBoard({
                 )
               }
               style={{
-                transform: keepSel.includes(i) ? "translateY(-12px)" : undefined,
+                transform: keepSel.includes(i) ? `translateY(${U(-12)})` : undefined,
                 transition: "transform 120ms ease",
               }}
             />
@@ -356,7 +360,7 @@ export default function GameBoard({
   }
 
   return (
-    <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", color: COLORS.text }}>
+    <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", color: COLORS.text, ...escalaStyle }}>
       {/* Mesa — ocupa todo o espaço acima do dock */}
       <div className={shaking ? "shake" : undefined} style={{ position: "relative", flex: 1, minHeight: 0 }}>
        {/* Palco: a mesa e tudo que se ancora nela. Com o feed de Intrigas aberto, ele
@@ -398,7 +402,7 @@ export default function GameBoard({
 
         {/* Jogador da vez sem conexão: aviso discreto junto do timer */}
         {view.currentPlayerId && absentIds.includes(view.currentPlayerId) && (
-          <div style={{ ...timerPill, top: 52, color: COLORS.dim, background: "rgba(20,20,40,0.85)" }}>
+          <div style={{ ...timerPill, top: U(52), color: COLORS.dim, background: "rgba(20,20,40,0.85)" }}>
             sem conexão
           </div>
         )}
@@ -438,10 +442,10 @@ export default function GameBoard({
       {spectator ? (
         <div data-testid="dock" data-spectator="sim" style={{ ...dock, display: "flex", justifyContent: "center" }}>
           <div data-testid="spectator-notice" style={spectatorNotice}>
-            <div style={{ fontFamily: CINZEL, fontSize: 18, fontWeight: 800, color: COLORS.turn }}>
+            <div style={{ fontFamily: CINZEL, fontSize: U(18), fontWeight: 800, color: COLORS.turn }}>
               👁 Você está assistindo
             </div>
-            <div style={{ marginTop: 4, color: COLORS.dim, fontSize: 13.5 }}>
+            <div style={{ marginTop: U(4), color: COLORS.dim, fontSize: U(13.5) }}>
               Você vê a mesa, mas não as cartas de ninguém. Entra como jogador na próxima partida.
             </div>
           </div>
@@ -451,10 +455,10 @@ export default function GameBoard({
         <div data-zone="basicas" style={{ justifySelf: "end" }}>
           <BasicActions view={view} myId={myId} canAct={canAct} onAction={onAction} />
         </div>
-        <div data-zone="centro" style={{ display: "flex", justifyContent: "center", minWidth: 380 }}>
+        <div data-zone="centro" style={{ display: "flex", justifyContent: "center", minWidth: U(380) }}>
           {center}
         </div>
-        <div data-zone="reacoes" style={{ justifySelf: "start", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div data-zone="reacoes" style={{ justifySelf: "start", display: "flex", flexDirection: "column", gap: U(12) }}>
           <ReactionTray
             view={view}
             myId={myId}
@@ -481,35 +485,37 @@ export default function GameBoard({
 
 const timerPill: CSSProperties = {
   position: "absolute",
-  top: 12,
-  left: 12,
+  top: U(12),
+  left: U(12),
   zIndex: 5,
-  padding: "6px 12px",
+  padding: `${U(6)} ${U(12)}`,
+  fontSize: U(16),
   border: "1px solid rgba(255,255,255,0.12)",
   borderRadius: 999,
   fontVariantNumeric: "tabular-nums",
-  boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
+  boxShadow: `0 ${U(4)} ${U(14)} rgba(0,0,0,0.4)`,
 };
 const toast: CSSProperties = {
   position: "absolute",
   left: "50%",
-  bottom: 14,
+  bottom: U(14),
   transform: "translateX(-50%)",
   zIndex: 7,
-  padding: "8px 14px",
+  padding: `${U(8)} ${U(14)}`,
+  fontSize: U(16),
   color: "#fff",
   background: "rgba(139,26,26,0.92)",
   border: "1px solid rgba(255,255,255,0.15)",
   borderRadius: 999,
-  boxShadow: "0 4px 14px rgba(0,0,0,0.45)",
+  boxShadow: `0 ${U(4)} ${U(14)} rgba(0,0,0,0.45)`,
   whiteSpace: "nowrap",
 };
 const spectatorNotice: CSSProperties = {
   alignSelf: "center",
-  maxWidth: 520,
-  padding: "14px 22px",
+  maxWidth: U(520),
+  padding: `${U(14)} ${U(22)}`,
   textAlign: "center",
-  borderRadius: 12,
+  borderRadius: U(12),
   background: "rgba(0,0,0,0.28)",
   border: "1px solid rgba(240,165,0,0.3)",
 };
@@ -519,10 +525,10 @@ const dock: CSSProperties = {
   display: "grid",
   gridTemplateColumns: "1fr auto 1fr",
   alignItems: "center",
-  gap: 20,
-  padding: "0 20px",
+  gap: U(20),
+  padding: `0 ${U(20)}`,
   // Balcão de madeira escura com filete dourado em cima (mesmo vocabulário da mesa).
   background: "linear-gradient(#2b1f1c, #1a1214 70%, #120c0f)",
-  borderTop: "2px solid rgba(240,165,0,0.6)",
-  boxShadow: "inset 0 1px 0 rgba(255,225,160,0.18), 0 -10px 24px rgba(0,0,0,0.45)",
+  borderTop: `${U(2)} solid rgba(240,165,0,0.6)`,
+  boxShadow: `inset 0 1px 0 rgba(255,225,160,0.18), 0 ${U(-10)} ${U(24)} rgba(0,0,0,0.45)`,
 };

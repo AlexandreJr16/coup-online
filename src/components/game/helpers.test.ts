@@ -30,6 +30,7 @@ import {
   seatLayout,
   seatStyle,
 } from "./helpers";
+import { U } from "./escalaMesa";
 import { makeView, player } from "./test-utils";
 
 // ── Assentos ─────────────────────────────────────────────────────────────────
@@ -64,8 +65,8 @@ test("seatLayout: fora do intervalo cai no extremo mais próximo (não quebra)",
 });
 
 test("seatStyle: ancora pelas bordas (nunca por % calculado que possa cortar)", () => {
-  assert.equal(seatStyle({ x: 50, anchor: "bottom" }).bottom, 12);
-  assert.equal(seatStyle({ x: 50, anchor: "top" }).top, 14);
+  assert.equal(seatStyle({ x: 50, anchor: "bottom" }).bottom, U(12));
+  assert.equal(seatStyle({ x: 50, anchor: "top" }).top, U(14));
   assert.equal(seatStyle({ x: 9, anchor: "mid" }).top, "50%");
   assert.equal(seatStyle({ x: 9, anchor: "midLow" }).left, "9%");
 });

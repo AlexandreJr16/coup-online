@@ -8,6 +8,7 @@ import { useEffect, useRef } from "react";
 import type { PublicPlayer } from "@/src/types/game";
 import { useCountUp } from "./CoinFx";
 import Card from "./Card";
+import { U } from "./escalaMesa";
 import { centerOf, flyIn, reducedMotion } from "./motion";
 import { assignAvatars, CINZEL, COLORS, seatLayout, seatStyle } from "./helpers";
 import Seat from "./Seat";
@@ -71,9 +72,9 @@ export default function Table({
         position: "relative",
         width: "100%",
         height: "100%",
-        minHeight: 420,
+        minHeight: U(420),
         background: "transparent", // o fundo vem do TableBackdrop (cenário do tema)
-        borderRadius: 12,
+        borderRadius: U(12),
         overflow: "hidden",
       }}
     >
@@ -92,16 +93,16 @@ export default function Table({
               transform: "translate(-50%, -50%)",
               display: "flex",
               alignItems: "center",
-              gap: 8,
-              padding: "6px 14px",
+              gap: U(8),
+              padding: `${U(6)} ${U(14)}`,
               borderRadius: 999,
               background: "rgba(0,0,0,0.4)",
               border: `1px solid ${COLORS.gold}55`,
-              boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
+              boxShadow: `0 ${U(4)} ${U(14)} rgba(0,0,0,0.4)`,
               whiteSpace: "nowrap",
             }}
           >
-            <span style={{ fontFamily: CINZEL, fontWeight: 700, color: COLORS.text, fontSize: 13 }}>
+            <span style={{ fontFamily: CINZEL, fontWeight: 700, color: COLORS.text, fontSize: U(13) }}>
               Erário
             </span>
             <span style={{ fontWeight: 800, color: COLORS.gold }}>🪙 {shownTreasury}</span>
@@ -114,12 +115,12 @@ export default function Table({
             data-deck
             style={{ position: "absolute", left: "70%", top: "56%", transform: "translate(-50%, -50%)", textAlign: "center" }}
           >
-            <div style={{ position: "relative", width: 52, height: 66 }}>
+            <div style={{ position: "relative", width: U(52), height: U(66) }}>
               {[2, 1, 0].map((i) => (
-                <Card key={i} faceDown size="sm" style={{ position: "absolute", left: i * 3, top: -i * 2, width: 40, height: 56 }} />
+                <Card key={i} faceDown size="sm" style={{ position: "absolute", left: U(i * 3), top: U(-i * 2), width: U(40), height: U(56) }} />
               ))}
             </div>
-            <div style={{ marginTop: 4, fontSize: 12, color: COLORS.dim, fontFamily: CINZEL }}>Corte · {deckCount}</div>
+            <div style={{ marginTop: U(4), fontSize: U(12), color: COLORS.dim, fontFamily: CINZEL }}>Corte · {deckCount}</div>
           </div>
         )}
 

@@ -11,6 +11,7 @@ import type {
   PublicPlayer,
 } from "@/src/types/game";
 import { CARDS, CARD_BY_ID, type Expressao } from "@/src/lib/game/cards";
+import { U } from "./escalaMesa";
 
 // Fonte de títulos/marca (carregada em app/layout.tsx via next/font). Única definição.
 export const CINZEL = "var(--font-cinzel), Georgia, serif";
@@ -329,9 +330,9 @@ export function seatStyle(pos: SeatPos): CSSProperties {
   const left = `${pos.x}%`;
   switch (pos.anchor) {
     case "top":
-      return { left, top: 14, transform: "translateX(-50%)" };
+      return { left, top: U(14), transform: "translateX(-50%)" };
     case "bottom":
-      return { left, bottom: 12, transform: "translateX(-50%)" };
+      return { left, bottom: U(12), transform: "translateX(-50%)" };
     case "midHigh":
       return { left, top: "33%", transform: "translate(-50%, -50%)" };
     case "midLow":

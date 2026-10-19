@@ -6,6 +6,7 @@
 
 import type { CSSProperties } from "react";
 
+import { U } from "./escalaMesa";
 import { CINZEL } from "./helpers";
 import type { GameLogEntry } from "./useGameEvents";
 
@@ -54,7 +55,7 @@ export default function IntrigueFeed({
       </div>
       <div style={body}>
         {entries.length === 0 ? (
-          <span style={{ color: "#7a6a4d", fontSize: 12, fontStyle: "italic" }}>
+          <span style={{ color: "#7a6a4d", fontSize: U(12), fontStyle: "italic" }}>
             Sem intrigas ainda…
           </span>
         ) : (
@@ -74,64 +75,64 @@ const parchment = "linear-gradient(160deg, #e9dcbf, #d8c59a)";
 
 const panel: CSSProperties = {
   position: "absolute",
-  top: 10,
-  right: 10,
+  top: U(10),
+  right: U(10),
   zIndex: 20,
-  width: 216,
+  width: U(216),
   maxHeight: "78%",
   display: "flex",
   flexDirection: "column",
   background: parchment,
   color: "#3a2c18",
   border: "1px solid #b8923f",
-  borderRadius: 10,
-  boxShadow: "0 10px 28px rgba(0,0,0,0.45)",
+  borderRadius: U(10),
+  boxShadow: `0 ${U(10)} ${U(28)} rgba(0,0,0,0.45)`,
   overflow: "hidden",
 };
 const header: CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  padding: "7px 10px",
+  padding: `${U(7)} ${U(10)}`,
   borderBottom: "1px solid rgba(110,80,30,0.35)",
   background: "rgba(110,80,30,0.12)",
-  fontSize: 14,
+  fontSize: U(14),
 };
 const body: CSSProperties = {
   overflowY: "auto",
-  padding: "6px 8px",
+  padding: `${U(6)} ${U(8)}`,
   display: "flex",
   flexDirection: "column",
-  gap: 4,
+  gap: U(4),
 };
 const entry: CSSProperties = {
   display: "flex",
-  gap: 6,
-  fontSize: 12.5,
+  gap: U(6),
+  fontSize: U(12.5),
   lineHeight: 1.25,
-  paddingBottom: 4,
+  paddingBottom: U(4),
   borderBottom: "1px dashed rgba(110,80,30,0.25)",
 };
 const closeBtn: CSSProperties = {
   border: "none",
   background: "transparent",
   color: "#6e501e",
-  fontSize: 18,
+  fontSize: U(18),
   lineHeight: 1,
   cursor: "pointer",
   padding: 0,
 };
 const collapsedBtn: CSSProperties = {
   position: "absolute",
-  top: 10,
-  right: 10,
+  top: U(10),
+  right: U(10),
   zIndex: 20,
-  width: 38,
-  height: 38,
-  borderRadius: 10,
+  width: U(38),
+  height: U(38),
+  borderRadius: U(10),
   border: "1px solid #b8923f",
   background: parchment,
   cursor: "pointer",
-  fontSize: 18,
-  boxShadow: "0 6px 16px rgba(0,0,0,0.4)",
+  fontSize: U(18),
+  boxShadow: `0 ${U(6)} ${U(16)} rgba(0,0,0,0.4)`,
 };

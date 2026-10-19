@@ -9,8 +9,11 @@ import type { CSSProperties } from "react";
 import type { GameView } from "@/src/types/game";
 import { Pic } from "./ActionSeal";
 import Card from "./Card";
+import { U } from "./escalaMesa";
 import { ACTION_ICON, ACTION_META, CHAR_LABEL, CINZEL, COLORS } from "./helpers";
 
+// Medidas em unidades da mesa (U): o anel é um SVG com viewBox nessas unidades, então o
+// perímetro (e o ringOffset) não mudam com o degrau de escala.
 const CARD_W = 88;
 const CARD_H = 124;
 const PAD = 8; // folga do anel em volta da carta
@@ -39,8 +42,8 @@ export default function ClaimCard({ view, secondsLeft }: { view: GameView; secon
 
   return (
     <div data-testid="claim-plate" data-pct={Math.round(pct)} style={wrap}>
-      <div style={{ position: "relative", width: W, height: H }}>
-        <svg width={W} height={H} style={{ position: "absolute", inset: 0 }} aria-hidden>
+      <div style={{ position: "relative", width: U(W), height: U(H) }}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ position: "absolute", inset: 0, width: U(W), height: U(H) }} aria-hidden>
           <rect x={2} y={2} width={W - 4} height={H - 4} rx={R} fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth={4} />
           <rect
             x={2}
@@ -57,7 +60,7 @@ export default function ClaimCard({ view, secondsLeft }: { view: GameView; secon
             style={{ transition: "stroke-dashoffset 250ms linear, stroke 200ms" }}
           />
         </svg>
-        <div style={{ position: "absolute", left: PAD, top: PAD, boxShadow: "0 10px 26px rgba(0,0,0,0.55)", borderRadius: 10 }}>
+        <div style={{ position: "absolute", left: U(PAD), top: U(PAD), boxShadow: `0 ${U(10)} ${U(26)} rgba(0,0,0,0.55)`, borderRadius: U(10) }}>
           <Card faceDown size="lg" />
         </div>
         {/* Lacre da ação preso à carta */}
@@ -79,32 +82,32 @@ const wrap: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: 8,
+  gap: U(8),
   pointerEvents: "none",
 };
 const seal: CSSProperties = {
   position: "absolute",
-  right: -10,
-  bottom: -6,
-  width: 46,
-  height: 46,
+  right: U(-10),
+  bottom: U(-6),
+  width: U(46),
+  height: U(46),
   borderRadius: "50%",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   background: "radial-gradient(circle at 35% 30%, #d0453a, #8b1a1a 70%)",
-  border: "2px solid #5c1620",
-  boxShadow: "0 3px 8px rgba(0,0,0,0.55), inset 0 2px 3px rgba(255,255,255,0.25)",
+  border: `${U(2)} solid #5c1620`,
+  boxShadow: `0 ${U(3)} ${U(8)} rgba(0,0,0,0.55), inset 0 ${U(2)} ${U(3)} rgba(255,255,255,0.25)`,
 };
 const legend: CSSProperties = {
-  padding: "4px 12px",
+  padding: `${U(4)} ${U(12)}`,
   fontFamily: CINZEL,
   fontWeight: 700,
-  fontSize: 14,
+  fontSize: U(14),
   color: "#2b2236",
   background: "linear-gradient(#e9dcbf, #d8c59a)",
   border: "1px solid #b8923f",
-  borderRadius: 8,
+  borderRadius: U(8),
   whiteSpace: "nowrap",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.45)",
+  boxShadow: `0 ${U(4)} ${U(12)} rgba(0,0,0,0.45)`,
 };
