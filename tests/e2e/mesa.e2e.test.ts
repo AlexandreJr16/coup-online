@@ -276,7 +276,10 @@ test("mesa: Erário e baralho têm lugar fixo e a contagem do baralho é a real"
 
 test("fichas: assento e Erário mostram sprites carregados de verdade (P07.S4)", async () => {
   const { ps } = await game(["Ana", "Bia", "Caio"]);
-  await ps[0].waitFor(`document.querySelectorAll('[data-chip-pile] img').length >= 4`, "pilhas de fichas na mesa");
+  await ps[0].waitFor(
+    `(() => { const im = [...document.querySelectorAll('[data-chip-pile] img')]; return im.length >= 4 && im.every(i => i.complete); })()`,
+    "pilhas de fichas na mesa, com as imagens terminadas de carregar",
+  );
   const quebradas = await ps[0].eval<number>(
     `[...document.querySelectorAll('[data-chip-pile] img')].filter(i => !i.complete || i.naturalWidth === 0).length`,
   );
