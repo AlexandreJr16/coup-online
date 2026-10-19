@@ -1,14 +1,11 @@
-// Feed de Intrigas: registro em "pergaminho" das últimas jogadas/contestações,
-// derivado do stream de game_state (ver useGameEvents). Ajuda a dedução — memória
-// de quem alegou o quê, o núcleo do Coup. Painel recolhível numa faixa à direita
-// da mesa (o GameBoard desloca o palco para os assentos não ficarem cobertos).
+// Feed de Intrigas: as últimas jogadas e contestações, derivadas do stream de game_state (ver
+// useGameEvents). Ajuda a dedução — memória de quem alegou o quê, o núcleo do Coup. Porte do
+// mockup aprovado (P03.S2): lista compacta no canto de cima à direita do palco, com ícone pixel
+// por tipo; mostra só as últimas linhas para nunca descer sobre o assento da direita.
 "use client";
 
-import type { CSSProperties } from "react";
-
 import { IconButton } from "../ui/IconButton";
-import { PixelPanel } from "../ui/PixelPanel";
-import { U } from "./escalaMesa";
+import { F, U } from "./escalaMesa";
 import { type IconName, iconUrl } from "./helpers";
 import type { GameLogEntry } from "./useGameEvents";
 
@@ -21,16 +18,19 @@ const ICON: Record<GameLogEntry["kind"], IconName> = {
   winner: "trofeu",
 };
 
+/** Linhas visíveis: o painel termina antes do assento lateral (y = 222 no palco). */
+export const LINHAS_FEED = 6;
+
 export default function IntrigueFeed({
   log,
   open,
   onOpenChange,
 }: {
   log: GameLogEntry[];
-  open: boolean; // o GameBoard reserva uma faixa para o painel quando aberto
+  open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const entries = [...log].slice(-14).reverse(); // mais recentes no topo
+  const entries = [...log].slice(-LINHAS_FEED).reverse(); // mais recentes no topo
 
   if (!open) {
     return (
@@ -39,70 +39,35 @@ export default function IntrigueFeed({
         icone="olho"
         rotulo="Mostrar intrigas"
         onClick={() => onOpenChange(true)}
-        style={collapsedBtn}
+        style={{ position: "absolute", top: U(6), right: U(12), zIndex: 10 }}
       />
     );
   }
 
   return (
-    <PixelPanel data-feed titulo="Intrigas" style={panel}>
-      <button onClick={() => onOpenChange(false)} title="Recolher" aria-label="Recolher" style={closeBtn}>
-        ×
-      </button>
-      <div style={body}>
-        {entries.length === 0 ? (
-          <span style={{ opacity: 0.7, fontSize: U(12) }}>Sem intrigas ainda…</span>
-        ) : (
-          entries.map((e) => (
-            <div key={e.id} style={entry}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={iconUrl(ICON[e.kind]) ?? undefined} alt="" aria-hidden style={{ width: U(16), height: U(16), flex: "none", imageRendering: "pixelated" }} />
-              <span>{e.text}</span>
-            </div>
-          ))
-        )}
+    <aside data-feed className="m3-historico" aria-label="Histórico de intrigas">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span className="m3-historico-titulo">Intrigas</span>
+        <button
+          onClick={() => onOpenChange(false)}
+          title="Recolher"
+          aria-label="Recolher"
+          style={{ border: "none", background: "transparent", color: "#9aa0a6", cursor: "pointer", padding: 0, fontSize: F(14), lineHeight: 1 }}
+        >
+          ×
+        </button>
       </div>
-    </PixelPanel>
+      {entries.length === 0 ? (
+        <div className="m3-historico-linha">Sem intrigas ainda…</div>
+      ) : (
+        entries.map((e, i) => (
+          <div key={e.id} className="m3-historico-linha" data-atual={i === 0 ? "sim" : undefined}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={iconUrl(ICON[e.kind]) ?? undefined} alt="" aria-hidden style={{ width: U(16), height: U(16), flex: "none", imageRendering: "pixelated" }} />
+            <span>{e.text}</span>
+          </div>
+        ))
+      )}
+    </aside>
   );
 }
-
-const panel: CSSProperties = {
-  position: "absolute",
-  top: U(10),
-  right: U(10),
-  zIndex: 20,
-  width: U(216),
-  maxHeight: "78%",
-};
-const body: CSSProperties = {
-  maxHeight: "60vh",
-  overflowY: "auto",
-  display: "flex",
-  flexDirection: "column",
-  gap: U(4),
-};
-const entry: CSSProperties = {
-  display: "flex",
-  gap: U(6),
-  fontSize: U(12.5),
-  lineHeight: 1.25,
-  paddingBottom: U(4),
-};
-const closeBtn: CSSProperties = {
-  position: "absolute",
-  top: U(2),
-  right: U(6),
-  border: "none",
-  background: "transparent",
-  color: "inherit",
-  fontSize: U(18),
-  lineHeight: 1,
-  cursor: "pointer",
-  padding: 0,
-};
-const collapsedBtn: CSSProperties = {
-  position: "absolute",
-  top: U(10),
-  right: U(10),
-  zIndex: 20,
-};

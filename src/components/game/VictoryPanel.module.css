@@ -6,7 +6,7 @@
   inset: 0;
   z-index: 30;
   display: flex;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
   overflow: hidden;
   container-type: size; /* 100cqh = altura da mesa: o painel nunca passa dela */
@@ -53,7 +53,7 @@
 .painel {
   position: relative;
   z-index: 1;
-  width: min(940px, calc(100cqw - 24px));
+  width: min(calc(var(--u) * 320), calc(100cqw - 24px));
   max-width: 100%;
 }
 
@@ -345,4 +345,26 @@
   .chuva { display: none; }
   .coroa { animation: none; }
   .pulso { animation: none; opacity: 0.6; }
+}
+
+/* Títulos da noite em uma linha (cabem com o placar sem rolagem, 19/10). */
+.itemCompacto {
+  padding-block: var(--u);
+}
+.itemCompacto .texto {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  align-items: baseline;
+  gap: calc(var(--u) * 2);
+}
+/* Revanche na coluna do vencedor (ocupa o vão embaixo do nome, 19/10). */
+.vencedor .acoes {
+  width: 100%;
+}
+.vencedor .revanche {
+  min-width: 0;
+  width: 100%;
+  min-height: max(56px, calc(var(--u) * 18));
+  font-size: calc(var(--u) * 6 * var(--fe));
 }

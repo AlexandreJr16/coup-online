@@ -129,6 +129,29 @@ export default function VictoryPanel({ view, onRematch }: { view: GameView; onRe
               <h2 className={v.nome} data-testid="victory-title">
                 {winner ? `${winner.name} vence!` : "Empate"}
               </h2>
+              <div className={v.acoes}>
+                {onRematch ? (
+                  <>
+                    <PixelButton
+                      className={v.revanche}
+                      data-testid="revanche"
+                      aria-keyshortcuts="Enter R"
+                      onClick={onRematch}
+                    >
+                      <Icone nome="trocar" className="" />
+                      Jogar de novo
+                    </PixelButton>
+                    <span className={v.atalho} aria-hidden>
+                      <kbd>Enter</kbd> ou <kbd>R</kbd>
+                    </span>
+                  </>
+                ) : (
+                  <p data-testid="victory-wait" className={v.espera}>
+                    <Icone nome="ampulheta" className="" />
+                    <span>Você está assistindo: se um jogador pedir a revanche, você entra na próxima partida.</span>
+                  </p>
+                )}
+              </div>
             </section>
 
             {/* Prêmios da partida */}
@@ -190,13 +213,11 @@ export default function VictoryPanel({ view, onRematch }: { view: GameView; onRe
                       <h3 className={v.titulo}>Títulos da noite</h3>
                       <ul className={v.lista}>
                         {placar.titulos.map((t) => (
-                          <li key={t.id} data-title={t.id} className={v.item}>
+                          <li key={t.id} data-title={t.id} className={`${v.item} ${v.itemCompacto}`} title={`${t.titulo}: ${t.quem} · ${t.detalhe}`}>
                             <Icone nome={t.icone} />
                             <span className={v.texto}>
                               <b className={v.nomeLinha}>{t.titulo}</b>
-                              <span className={v.detalhe}>
-                                {t.quem} · {t.detalhe}
-                              </span>
+                              <span className={v.detalhe}>{t.quem} · {t.detalhe}</span>
                             </span>
                           </li>
                         ))}
@@ -214,29 +235,6 @@ export default function VictoryPanel({ view, onRematch }: { view: GameView; onRe
           </div>
         </div>
 
-        <div className={v.acoes}>
-          {onRematch ? (
-            <>
-              <PixelButton
-                className={v.revanche}
-                data-testid="revanche"
-                aria-keyshortcuts="Enter R"
-                onClick={onRematch}
-              >
-                <Icone nome="trocar" className="" />
-                Jogar de novo
-              </PixelButton>
-              <span className={v.atalho} aria-hidden>
-                <kbd>Enter</kbd> ou <kbd>R</kbd>
-              </span>
-            </>
-          ) : (
-            <p data-testid="victory-wait" className={v.espera}>
-              <Icone nome="ampulheta" className="" />
-              <span>Você está assistindo: se um jogador pedir a revanche, você entra na próxima partida.</span>
-            </p>
-          )}
-        </div>
       </PixelPanel>
     </div>
   );

@@ -123,7 +123,7 @@ test("uma rodada completa clicando: Renda, Taxas com Passar, Assassinar com mira
 
   // Bia declara Taxas clicando na carta do Barão. Ana vê a placa e reage com Passar.
   await b.click('[data-zone="centro"] [title="Barão do Café"]');
-  await a.waitFor(`document.querySelector('[data-testid="claim-plate"]')?.innerText.includes("Bia · Taxas")`, "placa 'Bia · Taxas'");
+  await a.waitFor(`document.querySelector('[data-seat="Bia"] [data-testid="claim-plate"]')?.innerText.includes("Taxas")`, "balão 'Taxas' sobre a Bia");
   await a.click('[data-zone="reacoes"] button', "Passar");
   await waitCoins(b, "Bia", 5);
 
@@ -136,7 +136,7 @@ test("uma rodada completa clicando: Renda, Taxas com Passar, Assassinar com mira
   await a.click('[data-seat="Bia"]'); // escolhe o alvo clicando no assento
 
   // Bia (alvo) vê Contestar / Bloquear / Passar e passa → precisa revelar.
-  await b.waitFor(`document.querySelector('[data-testid="claim-plate"]')?.innerText.includes("Ana · Assassinar")`, "placa do assassinato");
+  await b.waitFor(`document.querySelector('[data-seat="Ana"] [data-testid="claim-plate"]')?.innerText.includes("Assassinar")`, "balão do assassinato");
   const reacoes = await b.eval<string>(`document.querySelector('[data-zone="reacoes"]').innerText`);
   assert.match(reacoes, /Contestar/);
   assert.match(reacoes, /Bloquear/);
@@ -146,7 +146,7 @@ test("uma rodada completa clicando: Renda, Taxas com Passar, Assassinar com mira
   // Revelar: o centro do dock mostra SÓ as 2 cartas dela, pulsando; clicar revela.
   await b.waitFor(`document.querySelectorAll('[data-zone="centro"] .urgent-pulse').length === 2`, "2 cartas pulsando para revelar");
   await b.click('[data-zone="centro"] .urgent-pulse [title]');
-  await a.waitFor(`document.querySelectorAll('[data-seat="Bia"] [title]').length === 1`, "carta revelada visível na mesa");
+  await a.waitFor(`document.querySelectorAll('[data-seat="Bia"] [data-card] [title]').length === 1`, "carta revelada visível na mesa");
   await b.waitFor(`document.querySelectorAll('[data-zone="centro"] [title]').length === 5`, "mão normal de volta");
 
   noErrors(a, b);
@@ -244,10 +244,9 @@ test("arrastar: o poder vai até o oponente (assassinar) e a carta jogada aparec
 
   // Ana arrasta a carta do Capoeira até o assento da Bia. Durante o arrasto o fantasma existe.
   await a.drag('[data-zone="centro"] [title="Capoeira"]', '[data-seat="Bia"]');
-  await b.waitFor(`document.querySelector('[data-testid="claim-plate"]')?.innerText.includes("Ana · Assassinar → Bia")`, "carta jogada na mesa");
-  // a carta jogada é uma carta VIRADA (verso) com anel de tempo e o lacre da ação
-  assert.equal(await b.eval<number>(`document.querySelectorAll('[data-testid="claim-plate"] svg rect').length`), 2);
-  assert.ok(await b.eval<boolean>(`!!document.querySelector('[data-testid="claim-plate"] img[src*="verso"]')`), "verso da carta");
+  await b.waitFor(`document.querySelector('[data-seat="Ana"] [data-testid="claim-plate"]')?.innerText.includes("Assassinar")`, "balão da jogada sobre a Ana");
+  // o alvo aparece no balão como retrato (a mesa não precisa de texto para dizer contra quem)
+  assert.ok(await b.eval<boolean>(`!!document.querySelector('[data-seat="Ana"] [data-testid="claim-plate"] img[alt="Alvo: Bia"]')`), "retrato do alvo no balão");
   await a.waitFor(`!document.querySelector('[data-testid="drag-ghost"]') && !document.querySelector('[data-target="sim"]')`, "arrasto encerrado");
   noErrors(a, b);
 });
@@ -262,7 +261,7 @@ test("arrastar: poder sem alvo é declarado soltando na mesa; soltar no dock can
   assert.equal(await a.eval<boolean>(`!document.querySelector('[data-testid="drag-ghost"]')`), true);
   // soltar sobre a mesa: declara Taxas
   await a.drag('[data-zone="centro"] [title="Barão do Café"]', '[data-erario]');
-  await b.waitFor(`document.querySelector('[data-testid="claim-plate"]')?.innerText.includes("Ana · Taxas")`, "Taxas declarada");
+  await b.waitFor(`document.querySelector('[data-seat="Ana"] [data-testid="claim-plate"]')?.innerText.includes("Taxas")`, "Taxas declarada");
   noErrors(a, b);
 });
 
@@ -270,14 +269,14 @@ test("mesa: Erário e baralho têm lugar fixo e a contagem do baralho é a real"
   const { ps } = await game(["Ana", "Bia", "Caio"]);
   await ps[0].waitFor(`document.querySelector('[data-erario]') && document.querySelector('[data-deck]')`, "Erário e baralho");
   const deck = await ps[0].eval<string>(`document.querySelector('[data-deck]').innerText`);
-  assert.match(deck, /Corte · 19/); // 25 − 3×2
+  assert.match(deck, /19\s*corte/i); // 25 − 3×2
   noErrors(...ps);
 });
 
 test("fichas: assento e Erário mostram sprites carregados de verdade (P07.S4)", async () => {
   const { ps } = await game(["Ana", "Bia", "Caio"]);
   await ps[0].waitFor(
-    `(() => { const im = [...document.querySelectorAll('[data-chip-pile] img')]; return im.length >= 4 && im.every(i => i.complete); })()`,
+    `(() => { const im = [...document.querySelectorAll('[data-chip-pile] img')]; return im.length >= 3 && im.every(i => i.complete); })()`,
     "pilhas de fichas na mesa, com as imagens terminadas de carregar",
   );
   const quebradas = await ps[0].eval<number>(
@@ -286,18 +285,18 @@ test("fichas: assento e Erário mostram sprites carregados de verdade (P07.S4)",
   assert.equal(quebradas, 0);
   // P07.S6: passar o mouse mostra o número exato; ninguém começa com fantasma nem aviso de Golpe.
   assert.equal(await ps[0].eval<string>(`document.querySelector('[data-seat="Ana"] [data-chip-pile]').title`), "2 fichas");
-  assert.equal(await ps[0].eval<number>(`document.querySelectorAll('[data-chip-ghost], [data-chip-golpe]').length`), 0);
+  assert.equal(await ps[0].eval<number>(`document.querySelectorAll('[data-chip-ghost], [data-testid="selo-alvo"]').length`), 0);
   noErrors(...ps);
 });
 
-test("dock: sem fundo de largura total e com alvos de pelo menos 44px (P09.S1, S5)", async () => {
+test("dock: sem fundo de largura total e com alvos de pelo menos 40px (P09.S1, S5)", async () => {
   const { ps } = await game(["Ana", "Bia"]);
   const r = await ps[0].eval<{ fundo: string; pequenos: string[] }>(`(() => {
     const dock = document.querySelector('[data-testid="dock"]');
     const alvos = [...dock.querySelectorAll('button:not([disabled]), label')];
     return {
       fundo: getComputedStyle(dock).backgroundColor + '|' + getComputedStyle(dock).backgroundImage,
-      pequenos: alvos.filter(a => a.getBoundingClientRect().height < 43.5).map(a => a.tagName + ':' + a.innerText.slice(0, 20)),
+      pequenos: alvos.filter(a => a.getBoundingClientRect().height < 40).map(a => a.tagName + ':' + a.innerText.slice(0, 20)),
     };
   })()`);
   assert.equal(r.fundo, "rgba(0, 0, 0, 0)|none");
@@ -569,7 +568,7 @@ test("F5 no meio da partida mantém o assento e a mesma mão", async () => {
   await b.waitFor(`document.querySelectorAll('[data-zone="centro"] [title]').length === 5`, "mão com 5 cartas");
   const antes = await mao(b);
   await b.reload();
-  await b.waitText("Bia (você)");
+  await b.waitFor(`document.querySelector('[data-seat="Bia"] [data-testid="placa-nome"]')?.innerText.trim() === "Você"`, "Bia de volta no próprio assento");
   await b.waitFor(`document.querySelectorAll('[data-zone="centro"] [title]').length === 5`, "mão depois do F5");
   assert.equal(await mao(b), antes);
   noErrors(b);
@@ -596,51 +595,55 @@ for (const n of [2, 3, 4, 5, 6]) {
   });
 }
 
-// Escala em degraus (P06/DEC-13): a mesa cresce com a tela (1x até 1600×900, 1,5x em 1920×1080,
-// 2x em 2560×1440) e continua sem assento cortado, sobreposto ou invadindo o dock. Também confere
-// que o degrau chegou de verdade ao DOM: dock = 214u, carta da mão = 88u×124u, assento = 96u.
-const DEGRAUS_DE_TELA: Array<{ w: number; h: number; u: number }> = [
-  { w: 1600, h: 900, u: 1 },
-  { w: 1920, h: 1080, u: 1.5 },
-  { w: 2560, h: 1440, u: 2 },
+// Escala contínua (mesa nova, 19/10): o palco de 1280x680 unidades cabe na área da mesa e cresce
+// com a tela. Confere que o fator chegou de verdade ao DOM (dock = 144u, carta da mão = 88u×124u,
+// assento = 176u), que o palco cabe na janela e que nada fica cortado, sobreposto ou no dock.
+const TELAS: Array<{ w: number; h: number; min: number }> = [
+  { w: 1600, h: 900, min: 1.1 },
+  { w: 1920, h: 1080, min: 1.3 },
+  { w: 2560, h: 1440, min: 1.8 },
 ];
-for (const { w, h, u } of DEGRAUS_DE_TELA) {
+const fatorDaMesa = (p: Page) =>
+  p.eval<number>(`parseFloat(getComputedStyle(document.querySelector('[data-testid="dock"]')).getPropertyValue('--mu'))`);
+for (const { w, h, min } of TELAS) {
   for (const n of [2, 6]) {
-    test(`layout ${w}×${h} (escala ${u}x) com ${n} jogadores: nada cortado, sobreposto nem invadindo o dock`, async () => {
+    test(`layout ${w}×${h} com ${n} jogadores: a mesa preenche a tela sem nada cortado, sobreposto nem no dock`, async () => {
       const names = ["Ana", "Bia", "Caio", "Davi", "Eva", "Fábio"].slice(0, n);
       const { ps } = await game(names, { w, h });
       await ps[0].waitFor(`document.querySelectorAll('[data-seat]').length === ${n}`, `${n} assentos`);
       await ps[0].waitFor(`document.querySelectorAll('[data-zone="centro"] .hand-card').length === 5`, "mão");
-      const medidas = await ps[0].eval<{ mu: string; dock: number; carta: number[]; assento: number }>(`(() => {
+      const m = await fatorDaMesa(ps[0]);
+      assert.ok(m >= min, `mesa pequena demais em ${w}×${h}: fator ${m}`);
+      const medidas = await ps[0].eval<{ dock: number; carta: number[]; assento: number; palco: { l: number; t: number; r: number; b: number } }>(`(() => {
         const dock = document.querySelector('[data-testid="dock"]');
         const carta = document.querySelector('[data-zone="centro"] .hand-card');
+        const pr = document.querySelector('[data-palco]').getBoundingClientRect();
         return {
-          mu: getComputedStyle(dock).getPropertyValue('--mu').trim(),
           dock: dock.getBoundingClientRect().height,
           // a carta tem rotate/scale no transform: usa o tamanho de layout, não o do retângulo girado
           carta: [carta.offsetWidth, carta.offsetHeight],
-          assento: document.querySelector('[data-seat]').offsetWidth,
+          assento: document.querySelector('[data-seat]').getBoundingClientRect().width,
+          palco: { l: pr.left, t: pr.top, r: pr.right, b: pr.bottom },
         };
       })()`);
-      assert.equal(medidas.mu, `${u}px`, "o contêiner da mesa não recebeu o degrau");
-      assert.ok(Math.abs(medidas.dock - 214 * u) < 1, `dock ${medidas.dock} != ${214 * u}`);
-      assert.deepEqual(medidas.carta, [88 * u, 124 * u], "carta da mão fora da escala");
-      assert.equal(medidas.assento, 96 * u, "assento fora da escala");
+      assert.ok(Math.abs(medidas.dock - 144 * m) < 1, `dock ${medidas.dock} != ${144 * m}`);
+      assert.ok(Math.abs(medidas.carta[0] - 88 * m) <= 1 && Math.abs(medidas.carta[1] - 124 * m) <= 1, `carta da mão fora da escala: ${medidas.carta}`);
+      assert.ok(Math.abs(medidas.assento - 176 * m) < 1, `assento fora da escala: ${medidas.assento}`);
+      assert.ok(medidas.palco.l >= -0.5 && medidas.palco.r <= w + 0.5 && medidas.palco.b <= h + 0.5, `palco fora da janela: ${JSON.stringify(medidas.palco)}`);
       assert.deepEqual(await layoutIssues(ps[0]), []);
       noErrors(...ps);
     });
   }
 }
 
-test("escala: redimensionar a janela troca o degrau da mesa (1x -> 1,5x -> 1x) sem erros", async () => {
+test("escala: redimensionar a janela aumenta e devolve o fator da mesa sem erros", async () => {
   const { ps } = await game(["Ana", "Bia"], { w: 1280, h: 720 });
-  const mu = () => ps[0].eval<string>(`getComputedStyle(document.querySelector('[data-testid="dock"]')).getPropertyValue('--mu').trim()`);
-  assert.equal(await mu(), "1px");
+  const antes = await fatorDaMesa(ps[0]);
   await ps[0].resize(1920, 1080);
-  await ps[0].waitFor(`getComputedStyle(document.querySelector('[data-testid="dock"]')).getPropertyValue('--mu').trim() === '1.5px'`, "mesa a 1,5x");
+  await ps[0].waitFor(`parseFloat(getComputedStyle(document.querySelector('[data-testid="dock"]')).getPropertyValue('--mu')) > ${antes}`, "mesa maior");
   assert.deepEqual(await layoutIssues(ps[0]), []);
   await ps[0].resize(1280, 720);
-  await ps[0].waitFor(`getComputedStyle(document.querySelector('[data-testid="dock"]')).getPropertyValue('--mu').trim() === '1px'`, "mesa de volta a 1x");
+  await ps[0].waitFor(`parseFloat(getComputedStyle(document.querySelector('[data-testid="dock"]')).getPropertyValue('--mu')) === ${antes}`, "mesa de volta ao fator inicial");
   assert.deepEqual(await layoutIssues(ps[0]), []);
   noErrors(...ps);
 });

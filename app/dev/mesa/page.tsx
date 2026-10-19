@@ -1,5 +1,5 @@
 // Mesa de demonstração (sem socket): partida FICTÍCIA só para revisar visual.
-// Estados por query: ?fase=turno (padrão) | reacao | contestar | revelar | troca | fim
+// Estados por query: ?fase=turno (padrão) | reacao | extorquir | contestar | revelar | troca | fim
 //   fim mostra o painel de fim de partida com um placar da noite FICTÍCIO (publicado no
 //   scoreStore, o mesmo caminho do `room:score` real).
 //   ?n=2..6 muda o número de jogadores. Útil para as Fases 3–4 do ROADMAP.
@@ -75,6 +75,15 @@ function build(fase: string, n: number): GameView {
         currentPlayerId: "p2",
         pending: { action: "taxas", actorId: "p2", targetId: null, claimedCharacter: "duque", block: null, passedIds: ["p3"] },
         timer: { phase: "janela_reacao_global", seconds: 5, remainingMs: 3400 },
+      };
+    case "extorquir":
+      // Vítima pode contestar e bloquear com 2 personagens: o dock mostra 4 reações (pior caso).
+      return {
+        ...base,
+        phase: "janela_reacao_vitima",
+        currentPlayerId: "p2",
+        pending: { action: "extorquir", actorId: "p2", targetId: "p1", claimedCharacter: "capitao", block: null, passedIds: [] },
+        timer: { phase: "janela_reacao_vitima", seconds: 5, remainingMs: 3400 },
       };
     case "contestar":
       return {

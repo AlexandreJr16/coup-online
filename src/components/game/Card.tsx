@@ -14,7 +14,7 @@ import { type CSSProperties, type ReactNode, useState } from "react";
 import type { Expressao } from "@/src/lib/game/cards";
 import type { Character } from "@/src/types/game";
 import { Pic } from "./ActionSeal";
-import { U } from "./escalaMesa";
+import { F, U } from "./escalaMesa";
 import { artUrl, backUrl, CHAR_LABEL, CHAR_SHORT, CHAR_VISUAL, CINZEL, COLORS } from "./helpers";
 
 type Size = "sm" | "lg";
@@ -190,7 +190,7 @@ function BackFace({ d, size, transform }: { d: Dim; size: Size; transform?: stri
           }}
         />
       ) : (
-        <span style={{ fontSize: U(d.icon), opacity: 0.3, color: COLORS.gold }}>♛</span>
+        <span style={{ fontSize: F(d.icon), opacity: 0.3, color: COLORS.gold }}>♛</span>
       )}
     </div>
   );
@@ -279,26 +279,26 @@ function FrontFace({
           {size === "lg" && (
             <div data-caption style={caption}>
               <span
-                style={{ fontFamily: CINZEL, fontWeight: 800, fontSize: U(d.label), letterSpacing: 0.3, textShadow: "0 1px 2px #000, 0 0 6px #000" }}
+                style={{ ...umaLinha, fontFamily: CINZEL, fontWeight: 800, fontSize: F(d.label), letterSpacing: 0.3, textShadow: "0 1px 2px #000, 0 0 6px #000" }}
               >
                 {CHAR_SHORT[character]}
               </span>
-              {hint && <span style={{ fontSize: U(10), color: "rgba(255,240,210,0.92)", textShadow: "0 1px 2px #000" }}>{hint}</span>}
+              {hint && <span style={{ ...umaLinha, fontSize: F(10), color: "rgba(255,240,210,0.92)", textShadow: "0 1px 2px #000" }}>{hint}</span>}
             </div>
           )}
         </>
       ) : (
         <>
-          <span style={{ fontSize: U(d.icon), lineHeight: 1 }}>{v.icon}</span>
+          <span style={{ fontSize: F(d.icon), lineHeight: 1 }}>{v.icon}</span>
           {size === "lg" && (
             <span
-              style={{ fontFamily: CINZEL, fontWeight: 700, fontSize: U(d.label), letterSpacing: 0.5 }}
+              style={{ ...umaLinha, fontFamily: CINZEL, fontWeight: 700, fontSize: F(d.label), letterSpacing: 0.5 }}
             >
               {CHAR_SHORT[character]}
             </span>
           )}
           {size === "lg" && hint && (
-            <span style={{ fontSize: U(10), color: "rgba(255,255,255,0.78)" }}>{hint}</span>
+            <span style={{ ...umaLinha, fontSize: F(10), color: "rgba(255,255,255,0.78)" }}>{hint}</span>
           )}
         </>
       )}
@@ -335,7 +335,7 @@ function Corner({ children, size }: { children: ReactNode; size: Size }) {
         position: "absolute",
         top: U(size === "sm" ? 2 : 4),
         right: U(size === "sm" ? 3 : 6),
-        fontSize: U(size === "sm" ? 12 : 13),
+        fontSize: F(size === "sm" ? 12 : 13),
         lineHeight: 1,
       }}
     >
@@ -343,3 +343,6 @@ function Corner({ children, size }: { children: ReactNode; size: Size }) {
     </span>
   );
 }
+
+// Rótulo de uma linha só: com fonte larga, corta com reticências em vez de sair da carta.
+const umaLinha: CSSProperties = { display: "block", maxWidth: "100%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };

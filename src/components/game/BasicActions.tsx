@@ -27,7 +27,7 @@ export default function BasicActions({
 }) {
   const coins = view.players.find((p) => p.id === myId)?.coins ?? 0;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: U(10), width: U(208) }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: U(4), width: U(208) }}>
       {BASICS.map(({ action, icon, emoji, sub, color }) => (
         <ActionSeal
           key={action}

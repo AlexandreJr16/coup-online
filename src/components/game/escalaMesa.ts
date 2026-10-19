@@ -1,4 +1,4 @@
-// Escala da mesa em degraus (DEC-13, P06). Os tamanhos da mesa são medidos em "unidades da
+// Escala da mesa (P06; contínua desde 19/10, ver escalaDoPalco). Os tamanhos da mesa são medidos em "unidades da
 // mesa": 1 unidade = 1 px num monitor de 1280x720. O degrau (1, 1,5 ou 2) multiplica tudo
 // por `calc(var(--mu) * N)`, e a custom property `--mu` é posta num contêiner só (GameBoard,
 // pelo hook useEscalaMesa). Fora do contêiner (colinha em portal, páginas /dev) o fallback é
@@ -13,33 +13,32 @@
 // `image-rendering: pixelated` cai em escala fracionária. Isso está aceito no DEC-13.
 import type { CSSProperties } from "react";
 
-export type Escala = 1 | 1.5 | 2;
-
-/** Tela de referência em que 1 unidade = 1 px (o layout foi calibrado nela). */
-export const BASE = { largura: 1280, altura: 720 } as const;
-
-/** Degraus disponíveis, do maior para o menor. */
-export const DEGRAUS: readonly Escala[] = [2, 1.5, 1];
+/** Fator de escala da mesa (px de tela por unidade). Contínuo desde a mesa nova (19/10). */
+export type Escala = number;
 
 /**
- * Folga na comparação: uma tela de 1920x1080 inteira precisa dar 1,5x, mas janelas só um
- * pouco menores (barra de rolagem, 1px de borda) não devem cair para 1x.
+ * Palco da mesa em unidades (porte do mockup P03.S2): a mesa ocupa 0..536 e o dock 536..680.
+ * Tudo dentro do palco é posicionado nessas unidades, então nenhuma peça cruza outra em
+ * resolução nenhuma: o layout é o MESMO, só muda o fator.
  */
-const FOLGA = 0.02;
+export const PALCO = { largura: 1280, altura: 680, mesa: 536 } as const;
+
+/** Limites do fator: abaixo de 0,6 a mesa fica ilegível; acima de 3 não há tela que peça. */
+export const ESCALA_MIN = 0.6;
+export const ESCALA_MAX = 3;
 
 /**
- * Degrau da tela. Usa a MENOR relação entre largura/1280 e altura/720, então a mesa nunca
- * estoura em nenhum dos dois eixos (o eixo da altura costuma ser o limitante, pois o dock é
- * fixo). Limiares: 1,5x a partir de 1895x1066 (1920x1080 cheio); 2x a partir de 2535x1426
- * (2560x1440 cheio). Abaixo disso, 1x. Valores inválidos (0, negativo, NaN, Infinity) dão 1.
+ * Fator que faz o palco caber na área (largura x altura) da mesa, arredondado para baixo em
+ * passos de 0,05 (evita relayout a cada pixel de resize). Decisão de 19/10: o degrau inteiro do
+ * DEC-13 deixava a mesa em 1x numa janela 1920x940 (assentos minúsculos numa mesa enorme); a
+ * arte pixel em fator fracionário fica com pixels levemente desiguais, o que foi aceito.
+ * Valores inválidos (0, negativo, NaN, Infinity) dão 1.
  */
-export function escalaDaTela(largura: number, altura: number): Escala {
+export function escalaDoPalco(largura: number, altura: number): Escala {
   if (!Number.isFinite(largura) || !Number.isFinite(altura) || largura <= 0 || altura <= 0) return 1;
-  const relacao = Math.min(largura / BASE.largura, altura / BASE.altura);
-  for (const degrau of DEGRAUS) {
-    if (relacao >= degrau - FOLGA) return degrau;
-  }
-  return 1;
+  const bruto = Math.min(largura / PALCO.largura, altura / PALCO.altura);
+  const passo = Math.floor(bruto * 20 + 1e-9) / 20;
+  return Math.min(ESCALA_MAX, Math.max(ESCALA_MIN, passo));
 }
 
 /** `n` unidades da mesa em pixels, para um degrau (uso numérico: geometria calculada). */
@@ -52,9 +51,18 @@ export function U(n: number): string {
   return `calc(var(--mu, 1px) * ${n})`;
 }
 
+/**
+ * `n` unidades da mesa como TAMANHO DE FONTE: além do --mu, multiplica pelo fator de largura da
+ * fonte escolhida na Aparência (`--fw`, globals.css). Assim as 4 fontes ocupam ~a mesma largura e
+ * nenhum rótulo estoura a caixa ao trocar de fonte (queixa de 19/10).
+ */
+export function F(n: number): string {
+  return `calc(var(--mu, 1px) * ${n} * var(--fw, 1))`;
+}
+
 /** Lado do "pixel" do kit de UI (`--u` do globals.css) dentro da mesa, por degrau. */
 export function unidadeDoKit(escala: Escala): number {
-  return escala === 2 ? 6 : escala === 1.5 ? 4 : 3;
+  return Math.max(2, Math.round(3 * escala));
 }
 
 /** Custom properties do contêiner da mesa: `--mu` (mesa) e `--u` (kit, mesma proporção). */

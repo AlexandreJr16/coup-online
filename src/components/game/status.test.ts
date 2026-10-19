@@ -268,10 +268,20 @@ test("centerCaption: sem aviso usa o detalhe; com 3s sobrando o aviso toma o lug
   assert.match(urgente.text, /joga Renda em 3/);
 });
 
-test("actionBalloon: null sem jogada; com alvo mostra 'Ação → Nome'; sem alvo só a ação", () => {
+test("actionBalloon: null sem jogada; ação com ícone e alvo; bloqueio vira balão do bloqueador", () => {
   assert.equal(actionBalloon(makeView()), null);
-  const sem = actionBalloon(makeView({ pending: pending({}) }));
-  assert.deepEqual(sem, { actorId: ANA, text: "Taxas" });
-  const com = actionBalloon(makeView({ pending: pending({ action: "assassinar", targetId: BIA, claimedCharacter: "assassino" }) }));
-  assert.deepEqual(com, { actorId: ANA, text: "Assassinar → Bia" });
+  assert.deepEqual(actionBalloon(makeView({ pending: pending({}) })), { actorId: ANA, icone: "taxas", texto: "Taxas", alvoId: null });
+  assert.deepEqual(
+    actionBalloon(makeView({ pending: pending({ action: "assassinar", targetId: BIA, claimedCharacter: "assassino" }) })),
+    { actorId: ANA, icone: "assassinar", texto: "Assassinar", alvoId: BIA },
+  );
+  const bloqueio = actionBalloon(
+    makeView({
+      phase: "janela_contestar_bloqueio",
+      pending: pending({ action: "ajuda_externa", claimedCharacter: null, block: { blockerId: CAIO, character: "duque" } }),
+    }),
+  );
+  assert.equal(bloqueio?.actorId, CAIO);
+  assert.equal(bloqueio?.icone, "bloquear");
+  assert.match(bloqueio?.texto ?? "", /^Bloqueio · /);
 });

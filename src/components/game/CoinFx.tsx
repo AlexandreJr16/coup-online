@@ -41,7 +41,7 @@ export function CoinDelta({ delta, deltaKey }: { delta: number; deltaKey: number
       className="coin-rise"
       style={{ ...float, color: positive ? "#ffd866" : "#e07a5f" }}
     >
-      {positive ? `+${delta}` : `${delta}`} 🪙
+      {positive ? `+${delta}` : `${delta}`}
     </span>
   );
 }

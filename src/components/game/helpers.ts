@@ -13,8 +13,9 @@ import type {
 import { CARDS, CARD_BY_ID, type Expressao } from "@/src/lib/game/cards";
 import { U } from "./escalaMesa";
 
-// Fonte de títulos/marca (carregada em app/layout.tsx via next/font). Única definição.
-export const CINZEL = "var(--font-cinzel), Georgia, serif";
+// Fonte de títulos do jogo. Era o Cinzel; desde a mesa nova (19/10) é a fonte pixel do kit que o
+// jogador escolhe na Aparência (--fonte-ui), para não misturar duas linguagens visuais.
+export const CINZEL = "var(--fonte-ui)";
 
 // Paleta (DESIGN.md "Tipografia e Cores"). Inline styles, sem lib de UI.
 export const COLORS = {

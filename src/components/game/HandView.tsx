@@ -30,7 +30,7 @@ export default function HandView({
 }) {
   const owned = myFaceDownChars(view, myId);
   return (
-    <div style={{ display: "flex", justifyContent: "center", paddingTop: U(26) }}>
+    <div style={{ display: "flex", justifyContent: "center", paddingTop: U(4) }}>
       {ALL_CHARACTERS.map((char, i) => {
         const have = owned.includes(char);
         const isArmed = armed === char;

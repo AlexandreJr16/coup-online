@@ -9,7 +9,7 @@
 
 import { type CSSProperties, type ReactNode, useState } from "react";
 
-import { U } from "./escalaMesa";
+import { F, U } from "./escalaMesa";
 import { CINZEL, type IconName, iconUrl, type SealState } from "./helpers";
 
 export default function ActionSeal({
@@ -52,20 +52,20 @@ export default function ActionSeal({
           "--c": color,
           // A classe .seal tem os tamanhos de 1x; o inline os leva ao degrau da mesa.
           width: U(width),
-          minHeight: U(46),
+          minHeight: U(44),
           gap: U(10),
-          padding: `${U(6)} ${U(12)} ${U(6)} ${U(8)}`,
-          fontSize: U(14),
+          padding: `${U(4)} ${U(12)} ${U(4)} ${U(8)}`,
+          fontSize: F(14),
         } as CSSProperties
       }
     >
       <Pic name={locked ? "cadeado" : icon} emoji={locked ? "🔒" : emoji} />
-      <span style={{ flex: 1, minWidth: 0, textAlign: "left", fontFamily: CINZEL, fontWeight: 700, letterSpacing: 0.3 }}>
+      <span style={{ flex: 1, minWidth: 0, textAlign: "left", fontFamily: CINZEL, fontWeight: 700, letterSpacing: 0.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
         {label}
       </span>
-      {sub !== undefined && <b style={{ fontVariantNumeric: "tabular-nums", opacity: locked ? 0.7 : 1 }}>{sub}</b>}
+      {sub !== undefined && <b style={{ flex: "none", fontVariantNumeric: "tabular-nums", opacity: locked ? 0.7 : 1 }}>{sub}</b>}
       {hotkey && !disabled && (
-        <kbd className="seal-key" style={{ top: U(-9), left: U(10), fontSize: U(9), lineHeight: U(12), padding: `${U(1)} ${U(6)}` }}>
+        <kbd className="seal-key" style={{ top: U(-9), left: U(10), fontSize: F(9), lineHeight: U(12), padding: `${U(1)} ${U(6)}` }}>
           {hotkey}
         </kbd>
       )}
@@ -82,7 +82,7 @@ export default function ActionSeal({
 export function Pic({ name, emoji, size = 32 }: { name: IconName; emoji: string; size?: number }) {
   const [failed, setFailed] = useState(false);
   const src = failed ? null : iconUrl(name, "sm");
-  if (!src) return <span style={{ width: U(size), height: U(size), fontSize: U(size * 0.7), lineHeight: U(size), textAlign: "center" }}>{emoji}</span>;
+  if (!src) return <span style={{ width: U(size), height: U(size), fontSize: F(size * 0.7), lineHeight: U(size), textAlign: "center" }}>{emoji}</span>;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img

@@ -129,7 +129,9 @@ export default function RoomPage() {
   return (
     <main
       style={{
-        height: "100%",
+        // Na partida, a altura precisa ser DEFINIDA (o palco mede a área e centraliza nela); o
+        // body só tem min-height, então "100%" virava auto e a mesa media 0 (bug de 19/10).
+        height: view ? "100dvh" : "100%",
         display: "flex",
         flexDirection: "column",
         background: COLORS.bg,
