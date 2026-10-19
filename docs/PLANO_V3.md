@@ -335,4 +335,5 @@ P = poucas horas, M = uma sessão, G = mais de uma sessão.
 - Trilha de música por IA e troca de temas (Fase 8 do `docs/ROADMAP.md`).
 - Rostos novos para os 12 avatares (H8) e assinaturas restantes das ações, se a medição mostrar ganho (ver `docs/VIDA_E_BLEFE.md`, seção 18).
 - Versão para celular (adiada para a v4).
+- Reações (Contestar, Bloquear, Passar) como selos perto da jogada (P09.S3): adiado em 19/10 para não quebrar as zonas fixas do dock nem a memória muscular dos atalhos C, B e Espaço. Reavaliar com playtest.
 - _(coloque aqui qualquer ideia nova que surgir durante a v3)_

@@ -83,7 +83,7 @@
 - [ ] **[P09](planos/P09-dock.md) Dock imersivo** · onda 3 · risco médio
   - [x] P09.S1 Casca do dock sem fundo de largura total (variação escolhida)
   - [x] P09.S2 Ações básicas como selos sobre a madeira
-  - [ ] P09.S3 Reações como selos perto da jogada
+  - [x] P09.S3 Reações como selos perto da jogada (decisão 19/10: não mover; zonas fixas e atalhos C/B/Espaço. Ideia vai ao backlog pós-v3)
   - [x] P09.S4 Chave de passar automático e dicas de tecla menores
   - [x] P09.S5 Alvos de 44 px e atalhos C, B, Espaço intactos
 - [ ] **[P10](planos/P10-microanimacoes.md) Microanimações de intuição** · onda 5 · risco médio

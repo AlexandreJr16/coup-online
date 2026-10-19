@@ -76,3 +76,9 @@ Formato:
 - P23: revisor de código independente (baea3db) não achou vazamento; pediu 2 correções médias. Corrigido por implementador (teste + código, 3 mutações reais reprovadas pelos testes): placar sem linha duplicada (token aposentado reabre o histórico; nome sem token não herda), filtro de partida duplicada testado, `room:score` depois do `game_state` final, `winnerName` removido do log, testes frouxos apertados. Suíte completa 397/397.
 - P04/P27.S1-S3: kit real em `src/components/ui`, tokens por estilo, 4 fontes e preferências de aparência (commit do kit). Vitrine `/dev/kit`. Telas do jogo ainda não migradas.
 - E2E e build: não executados. Nada exercitado no navegador.
+
+### 2026-10-19 · P07.S4–S6, P08, P09, P21.S5, P23.S3/S4, P27.S5 · lote da mesa nova (v3.1)
+- Autor: orquestrador (teste e código juntos, rigor proporcional) · Verificação: `npm test` 546/546, `tsc` e `eslint` limpos; E2E **filtrado** (só cenários tocados: fichas, faixa de status, dock, colinha, moedas) contra build de produção, verde. Suíte E2E completa: não executada.
+- Decisões: P09.S3 não move as reações (zonas fixas e atalhos; ideia no backlog pós-v3). "Desmoronar" das fichas virou pilha que tomba e apaga, sem voo ao Erário: a engine não devolve as moedas de quem sai, e a animação não pode mentir sobre o estado. P21.S5 já existia (`ChuvaDeMoedas`).
+- Achado: o commit do dock (P09.S5) quebrou o teste de migração de escala (`minHeight: 44` em px); corrigido em `f2f0020`. Lição: rodar `npm test` em toda entrega, mesmo quando o E2E filtrado passa.
+- Pendente para a v3.1: P07.S2 (curadoria, gate humano) e P29 (E2E completo, teste dos 3 s, partida com amigos, merge e tag).
