@@ -79,7 +79,7 @@
   - [x] P08.S4 Marca de quem a mesa espera
   - [x] P08.S5 Baralho por faixa e Erário com baú
   - [x] P08.S6 Histórico de Intrigas no kit
-  - [ ] P08.S7 Dígitos do relógio em sprite
+  - [x] P08.S7 Dígitos do relógio em sprite
 - [ ] **[P09](planos/P09-dock.md) Dock imersivo** · onda 3 · risco médio
   - [x] P09.S1 Casca do dock sem fundo de largura total (variação escolhida)
   - [x] P09.S2 Ações básicas como selos sobre a madeira
@@ -172,7 +172,7 @@
   - [x] P21.S2 Troféu e prêmios em ícones
   - [x] P21.S3 Botão de revanche grande com atalho
   - [x] P21.S4 Espaço do placar da noite
-  - [ ] P21.S5 Animação leve de moedas/confete respeitando reduced motion (a cena de vitória do P16 vem depois)
+  - [x] P21.S5 Animação leve de moedas/confete respeitando reduced motion (a cena de vitória do P16 vem depois)
 - [ ] **[P22](planos/P22-colinha.md) Colinha como objeto** · onda 3 · risco baixo
   - [x] P22.S1 Peça única que abre como carta
   - [x] P22.S2 Retrato maior e ícones de contestável e bloqueável

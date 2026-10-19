@@ -880,9 +880,9 @@ test("colinha: na mesa, Esc com o painel aberto NÃO cancela a mira por baixo; d
   assert.equal(await a.eval<boolean>(`!!document.querySelector('[data-seat="Bia"][data-target="sim"]')`), true, "mira some ao abrir a colinha");
 
   // O jogo segue vivo e o relógio do servidor continua correndo com o painel aberto.
-  const t1 = await a.eval<string>(`document.body.innerText.match(/⏱\\s*(\\d+)/)?.[1] ?? ''`);
+  const t1 = await a.eval<string>(`document.querySelector('[data-testid="relogio"]')?.getAttribute('data-segundos') ?? ''`);
   await new Promise((r) => setTimeout(r, 2200));
-  const t2 = await a.eval<string>(`document.body.innerText.match(/⏱\\s*(\\d+)/)?.[1] ?? ''`);
+  const t2 = await a.eval<string>(`document.querySelector('[data-testid="relogio"]')?.getAttribute('data-segundos') ?? ''`);
   if (t1 && t2) assert.ok(Number(t2) < Number(t1), `timer parado com a colinha aberta: ${t1} → ${t2}`);
 
   // Esc fecha SÓ a colinha: a mira segue armada.

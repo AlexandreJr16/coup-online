@@ -27,6 +27,9 @@ import ReactionTray from "./ReactionTray";
 import Table from "./Table";
 import { actionBalloon, centerCaption, deriveRoundStatus } from "./status";
 import TurnBanner from "./TurnBanner";
+import { Pic } from "./ActionSeal";
+import { bitmapDoNumero } from "../ui/digitos";
+import { PixelBitmap } from "../ui/PixelBitmap";
 import WaxSeal, { type SealData } from "./WaxSeal";
 import {
   ACTION_META,
@@ -400,7 +403,10 @@ export default function GameBoard({
               background: secondsLeft <= 10 ? "rgba(192,57,43,0.9)" : "rgba(20,20,40,0.85)",
             }}
           >
-            ⏱ {Math.ceil(secondsLeft)}s
+            <span data-testid="relogio" data-segundos={Math.ceil(secondsLeft)} style={{ display: "inline-flex", alignItems: "center", gap: U(6) }}>
+              <Pic name="ampulheta" emoji="⏳" size={18} />
+              <PixelBitmap linhas={bitmapDoNumero(Math.ceil(secondsLeft))} cores={{ "#": "currentColor" }} celula={2} titulo={`${Math.ceil(secondsLeft)} segundos`} />
+            </span>
           </div>
         )}
 
